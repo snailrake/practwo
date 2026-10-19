@@ -1,7 +1,23 @@
 {
   "checks": [
     {
-      "name": "Desktop first render with Python results",
+      "name": "Desktop first render with real Python results",
+      "passed": true
+    },
+    {
+      "name": "All eleven initial values accessible",
+      "passed": true
+    },
+    {
+      "name": "No extra sign convention selector",
+      "passed": true
+    },
+    {
+      "name": "Reference visual language: white, square, monospace",
+      "passed": true
+    },
+    {
+      "name": "Report available in DOCX and PDF",
       "passed": true
     },
     {
@@ -17,11 +33,27 @@
       "passed": true
     },
     {
-      "name": "Seven factor forms",
+      "name": "All eleven characteristic graphs",
       "passed": true
     },
     {
-      "name": "Changed configuration is visibly stale",
+      "name": "Seven factor equations and plots",
+      "passed": true
+    },
+    {
+      "name": "Factor equations use rendered mathematics",
+      "passed": true
+    },
+    {
+      "name": "Four separate quarter radars",
+      "passed": true
+    },
+    {
+      "name": "Quarter table includes all eleven rows",
+      "passed": true
+    },
+    {
+      "name": "Changed configuration visibly marked stale",
       "passed": true
     },
     {
@@ -37,7 +69,11 @@
       "passed": true
     },
     {
-      "name": "Unsafe expression rejected and shown",
+      "name": "All eleven equations correctly rendered",
+      "passed": true
+    },
+    {
+      "name": "Unsafe expression rejected visibly",
       "passed": true
     },
     {
@@ -45,7 +81,7 @@
       "passed": true
     },
     {
-      "name": "Live five-check verification passes",
+      "name": "Live five-check numerical verification passes",
       "passed": true
     },
     {
@@ -61,11 +97,19 @@
       "passed": true
     },
     {
-      "name": "Initial conditions edit recomputes",
+      "name": "Initial conditions editing recomputes",
       "passed": true
     },
     {
-      "name": "Scenario JSON import works",
+      "name": "Scenario JSON import restores baseline",
+      "passed": true
+    },
+    {
+      "name": "Volume experiment uses original model",
+      "passed": true
+    },
+    {
+      "name": "Different intervals are not silently compared",
       "passed": true
     },
     {
@@ -73,19 +117,23 @@
       "passed": true
     },
     {
-      "name": "Mobile radar and table fit viewport",
+      "name": "Mobile mathematical equations do not overflow page",
       "passed": true
     },
     {
-      "name": "Negative radar is explicitly refused, numbers preserved",
+      "name": "Mobile radars and table fit viewport",
       "passed": true
     },
     {
-      "name": "Empty numeric field is rejected without a crash",
+      "name": "Negative radar refused, values preserved",
       "passed": true
     },
     {
-      "name": "No JavaScript uncaught errors",
+      "name": "Empty numeric field rejected without crash",
+      "passed": true
+    },
+    {
+      "name": "No uncaught JavaScript errors",
       "passed": true
     }
   ],

@@ -29,7 +29,7 @@ BASE = {
     "initial": [0.7, 0.6, 0.8, 0.5, 0.1, 0.15, 0.08, 0.5, 0.4, 0.3, 0.45],
     "scales": [0.2, 1, 0.0001, 2, 1, 30, 1, 2, 4, 1, 500],
     "factors": ["0.8", "0.5", "0.8", "1.1", "0.6", "0.8", "0.6"],
-    "plus": PLUS, "minus": MINUS, "mode": "literal",
+    "plus": PLUS, "minus": MINUS,
     "method": "DOP853", "rtol": 1e-8, "atol": 1e-10,
     "samples": 401, "t_end": 1.0,
 }
@@ -43,6 +43,7 @@ def presets():
     alarm = deepcopy(BASE)
     alarm.update(name="Большая задержка оповещения")
     alarm["factors"][4] = "0.9"
-    magnitudes = deepcopy(BASE)
-    magnitudes.update(name="Сравнение соглашений о знаках", mode="loss-magnitudes")
-    return [baseline, wind, alarm, magnitudes]
+    volume = deepcopy(BASE)
+    volume.update(name="Больший объём выброса")
+    volume["factors"][0] = "1.2"
+    return [baseline, wind, alarm, volume]

@@ -2,7 +2,9 @@
 .venv
 frontend/node_modules
 frontend/dist
-report
+report/*
+!report/*.docx
+!report/*.pdf
 work
 __pycache__
 .pytest_cache

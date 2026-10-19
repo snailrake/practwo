@@ -9,7 +9,11 @@ from .model import SimulationConfig, simulate
 
 
 def verify(config: SimulationConfig):
-    reference = config.model_copy(update={"rtol": 1e-11, "atol": 1e-13, "method": "DOP853"})
+    # Remain stricter even when the user already selected very small tolerances.
+    # Internal reference tolerances may be below the screen-form input limits.
+    reference = config.model_copy(update={
+        "rtol": min(1e-11, config.rtol / 10),
+        "atol": min(1e-13, config.atol / 10), "method": "DOP853"})
     precise = simulate(reference, step_divisor=1000)
     checks = []
     for method in ["DOP853", "RK45", "Radau"]:

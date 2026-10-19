@@ -62,14 +62,13 @@
       "0",
       "-0.0018/F5"
     ],
-    "mode": "literal",
     "method": "DOP853",
     "rtol": 1e-8,
     "atol": 1e-10,
     "samples": 401,
     "t_end": 1
   },
-  "fingerprint": "c9b92e7fe958e41b47b7e10c7231f1ebe6cea4362fefcebe89fcba4f124aeb6d",
+  "fingerprint": "623fcfc1cfe340e15410986a3578b54d3fa858b7461ce6dc5cbad3b65a43fa5b",
   "t": [
     0,
     0.0025,
@@ -25097,6 +25096,28 @@
     "Население",
     "Убежища"
   ],
+  "equations_tex": [
+    "S_{1}\\frac{dX_{1}}{d\\tau}=0.0186\\cdot X_{2}\\cdot {F_{1}}^{0.8}-\\left(\\frac{0.01\\cdot X_{9}\\cdot X_{10}}{F_{3}\\cdot F_{4}}\\right)",
+    "S_{2}\\frac{dX_{2}}{d\\tau}=\\frac{0.085\\cdot X_{3}\\cdot X_{7}\\cdot X_{8}\\cdot {F_{1}}^{0.8}}{F_{5}}-\\left(\\left(-0.95\\right)\\cdot X_{9}\\cdot X_{10}\\right)",
+    "S_{3}\\frac{dX_{3}}{d\\tau}=\\frac{\\left(-3.58\\cdot 10^{-6}\\right)\\cdot {F_{1}}^{0.8}\\cdot F_{3}\\cdot F_{4}}{{X_{1}}^{2.9}}",
+    "S_{4}\\frac{dX_{4}}{d\\tau}=0.9\\cdot X_{1}-\\left(\\left(-0.0322\\right)\\cdot {F_{1}}^{0.8}\\cdot F_{3}\\cdot F_{4}\\right)",
+    "S_{5}\\frac{dX_{5}}{d\\tau}=\\frac{0.0145\\cdot F_{2}}{{X_{1}}^{2.1}}",
+    "S_{6}\\frac{dX_{6}}{d\\tau}=0.002\\cdot X_{2}\\cdot F_{5}\\cdot F_{6}-\\left(\\frac{\\left(-0.606\\right)\\cdot X_{4}}{X_{10}\\cdot X_{11}\\cdot F_{7}}\\right)",
+    "S_{7}\\frac{dX_{7}}{d\\tau}=0.95\\cdot {\\left(X_{5}+X_{6}\\right)}^{0.6}\\cdot X_{10}",
+    "S_{8}\\frac{dX_{8}}{d\\tau}=0.817\\cdot X_{3}-\\left(\\left(-0.42\\right)\\cdot X_{9}\\cdot X_{10}\\right)",
+    "S_{9}\\frac{dX_{9}}{d\\tau}=1.4\\cdot {\\left(X_{3}\\cdot X_{8}\\right)}^{0.2}",
+    "S_{10}\\frac{dX_{10}}{d\\tau}=0.052\\cdot \\sqrt{X_{3}\\cdot F_{6}}",
+    "S_{11}\\frac{dX_{11}}{d\\tau}=\\frac{375.1\\cdot X_{10}\\cdot F_{7}}{F_{6}}-\\left(\\frac{-0.0018}{F_{5}}\\right)"
+  ],
+  "factors_tex": [
+    "0.8",
+    "0.5",
+    "0.8",
+    "1.1",
+    "0.6",
+    "0.8",
+    "0.6"
+  ],
   "dependencies": [
     {
       "target": "X1",
@@ -25200,8 +25221,7 @@
   ],
   "warnings": [
     "Учебная агрегированная модель. Нет калибровки для объекта, вещества, физических единиц и реальных потерь.",
-    "В задании рисунок системы содержит X12 и X13, но перечень и таблица функций задают 11 характеристик. Использована таблица 1.",
-    "Буквальный режим: отрицательные f⁻ вычитаются и увеличивают производную. Знаки из задания не исправлены скрытно."
+    "В задании рисунок системы содержит X12 и X13, но перечень и таблица функций задают 11 характеристик. Использована таблица 1."
   ],
   "diagnostics": {
     "method": "DOP853",
@@ -25211,7 +25231,7 @@
     "njev": 0,
     "samples": 401,
     "max_step": 0.01,
-    "elapsed_ms": 366.55749999954423,
+    "elapsed_ms": 285.8668000008038,
     "scipy_success": true
   }
 }

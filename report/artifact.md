@@ -20,7 +20,7 @@ columns centered, vertical alignment centered, repeating headers, no fixed
 row heights. Retain the user's previously requested two-part table caption:
 table number on the right, descriptive title centered. Figures centered,
 caption underneath, bold italic as in the supplied reference. Figure palette
-is teal/navy/gold, consistent with the earlier work and the new application.
+is monochrome, consistent with the reference application requested by the user.
 Native Word math is centered with right aligned equation numbers.
 
 ## Content slots and intentional replacements
@@ -47,8 +47,8 @@ facts, wave screenshots, formula pictures or author names remain.
 The supplied assignment defines 11 indicators and Table 1 functions while
 its system image contains 13 indicators and inconsistent dependencies.
 Implement the complete 11-row table, explicitly documenting the discrepancy.
-Literal mode is (f+ - f-)/S with signs preserved; |f-| is a separately labelled
-research modification. Missing tabular functions are zero. Initial values,
+The only model is (f+ - f-)/S with original signs preserved; there is no
+alternate sign convention selector. Missing tabular functions are zero. Initial values,
 S parameters and factor levels are illustrative dimensionless assumptions,
 not measured or calibrated data. No conversion to casualties, km² or hours.
 

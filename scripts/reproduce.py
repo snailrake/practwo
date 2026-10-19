@@ -23,9 +23,9 @@ from backend.verification import verify
 
 OUT=ROOT/'report/evidence'; OUT.mkdir(parents=True,exist_ok=True)
 FIG=ROOT/'report/figures'; FIG.mkdir(parents=True,exist_ok=True)
-COLORS=['#176f70','#d49b3e','#173e58','#b56476','#7d6bac','#587f69','#ae795b','#498ca2','#977d2c','#48636d','#a25fa1']
+COLORS=['#111111','#666666','#999999','#333333','#777777','#555555','#222222','#888888','#444444','#aaaaaa','#000000']
 SHORT=['Испарение','Ликвидация','Площадь','Подход','Первичное облако','Вторичное облако','Госпитализация','Техника','Раствор','Ресурсы','Оповещение']
-plt.rcParams.update({'font.family':'DejaVu Sans','font.size':10,'axes.spines.top':False,'axes.spines.right':False,'axes.edgecolor':'#bdcbd0','axes.labelcolor':'#4b6572','xtick.color':'#637a84','ytick.color':'#637a84','grid.color':'#e1e9ec','axes.titleweight':'normal','savefig.facecolor':'white'})
+plt.rcParams.update({'font.family':'DejaVu Sans','font.size':10,'axes.spines.top':False,'axes.spines.right':False,'axes.edgecolor':'#999999','axes.labelcolor':'#333333','xtick.color':'#666666','ytick.color':'#666666','grid.color':'#dddddd','axes.titleweight':'normal','savefig.facecolor':'white'})
 
 def save(fig,name):
     fig.savefig(FIG/name,dpi=210,bbox_inches='tight',pad_inches=.14)
@@ -61,19 +61,19 @@ def generate():
     fig,axes=plt.subplots(4,2,figsize=(7.2,8.3),layout='constrained')
     for i,ax in enumerate(axes.flat[:7]):
         ax.plot(t,np.array(base['factors'])[:,i],color=COLORS[i],lw=2,label='Базовый')
-        if i in {2,4}:
-            r=experiments[1 if i==2 else 2]
+        if i in {0,2,4}:
+            r=experiments[{0:3,2:1,4:2}[i]]
             ax.plot(r['t'],np.array(r['factors'])[:,i],color=COLORS[1],ls='--',lw=2,label='Возмущение')
             ax.legend(fontsize=8,frameon=False)
         ax.set_title(f'F{i+1}  {FACTOR_NAMES[i]}',fontsize=10,loc='left');ax.grid(alpha=.6);ax.set_xlabel('τ');ax.set_ylabel('Отн. ед.')
-        if i not in {2,4}: ax.set_ylim(float(base['factors'][0][i])-.1,float(base['factors'][0][i])+.1)
+        if i not in {0,2,4}: ax.set_ylim(float(base['factors'][0][i])-.1,float(base['factors'][0][i])+.1)
     axes.flat[-1].set_visible(False);save(fig,'factors.png')
     angles=np.linspace(0,2*np.pi,11,endpoint=False)
     fig,axes=plt.subplots(2,2,figsize=(7.2,7.6),subplot_kw={'projection':'polar'},layout='constrained')
     for j,(ax,q) in enumerate(zip(axes.flat,base['quarters'])):
-        ax.set_theta_offset(np.pi/2);ax.set_theta_direction(-1)
-        ax.plot(np.r_[angles,angles[0]],q['normalized']+[q['normalized'][0]],color=COLORS[j],lw=2)
-        ax.fill(np.r_[angles,angles[0]],q['normalized']+[q['normalized'][0]],color=COLORS[j],alpha=.07)
+        ax.set_theta_offset(np.pi/2);ax.set_theta_direction(1)
+        ax.plot(np.r_[angles,angles[0]],q['normalized']+[q['normalized'][0]],color=COLORS[0],lw=2)
+        ax.fill(np.r_[angles,angles[0]],q['normalized']+[q['normalized'][0]],color=COLORS[0],alpha=.04)
         ax.set_xticks(angles,[f'X{i+1}' for i in range(11)]);ax.set_ylim(0,1);ax.set_yticks([.25,.5,.75,1],['0,25','0,50','0,75','1,00'],fontsize=7);ax.grid(alpha=.9);ax.set_title(f'Четверть {j+1}   τ = {q["t"]:.2f}',fontsize=12,pad=22)
     save(fig,'radar-four.png')
     fig,axes=plt.subplots(2,2,figsize=(7.2,5.5),layout='constrained')
@@ -84,9 +84,9 @@ def generate():
     handles,labels=axes[0,0].get_legend_handles_labels();fig.legend(handles,labels,loc='outside lower center',ncol=3,frameon=False);save(fig,'comparison.png')
     fig,axes=plt.subplots(1,3,figsize=(7.2,2.9),layout='constrained')
     for ax,i in zip(axes,[1,5,10]):
-        for j,r in enumerate([base,experiments[3]]):ax.plot(r['t'],np.array(r['y'])[:,i],color=COLORS[j*2],lw=2,label=['Буквальные знаки','Модуль f⁻'][j])
+        for j,r in enumerate([base,experiments[3]]):ax.plot(r['t'],np.array(r['y'])[:,i],color=COLORS[j],ls=['-','--'][j],lw=2,label=['Базовый объём','Увеличенный объём'][j])
         ax.set_title(f'X{i+1} {SHORT[i]}',loc='left',fontsize=10);ax.grid(alpha=.7);ax.set_xlabel('τ')
-    handles,labels=axes[0].get_legend_handles_labels();fig.legend(handles,labels,loc='outside lower center',ncol=2,frameon=False);save(fig,'signs.png')
+    handles,labels=axes[0].get_legend_handles_labels();fig.legend(handles,labels,loc='outside lower center',ncol=2,frameon=False);save(fig,'volume.png')
     fig,ax=plt.subplots(figsize=(10,3.8),layout='constrained')
     errors=[c['error'] for c in verification['checks']]
     ax.barh(range(5),errors,color=COLORS[:5]);ax.set_xscale('log');ax.set_yticks(range(5),['DOP853 / уточнение','RK45 / уточнение','Radau / уточнение','Экспоненциальный эталон','Матричная экспонента']);ax.invert_yaxis();ax.set_xlabel('Максимальная ошибка (логарифмическая шкала)');ax.grid(axis='x',alpha=.6)
@@ -97,7 +97,7 @@ def generate():
     fig,ax=plt.subplots(figsize=(10,4));ax.axis('off');ax.set_xlim(0,10);ax.set_ylim(0,4)
     nodes=[(.1,2.6,2.7,.9,'Браузер\nReact · TypeScript · ECharts'),(3.7,2.6,2.6,.9,'HTTP API\nFastAPI · Pydantic'),(7.2,2.6,2.7,.9,'Безопасные выражения\nРазбор AST без eval'),(7.2,.5,2.7,.95,'Вычислительное ядро\nSciPy solve_ivp'),(3.7,.5,2.6,.95,'Результаты\nX(τ) · F(τ) · срезы · JSON')]
     for x,z,w,h,label in nodes:
-        ax.add_patch(FancyBboxPatch((x,z),w,h,boxstyle='round,pad=0.03,rounding_size=0.06',fc='#f2f6f7',ec=COLORS[0],lw=1.1));ax.text(x+w/2,z+h/2,label,ha='center',va='center',fontsize=10,color='#244954')
+        ax.add_patch(FancyBboxPatch((x,z),w,h,boxstyle='round,pad=0.03,rounding_size=0.06',fc='#fafafa',ec=COLORS[0],lw=1.1));ax.text(x+w/2,z+h/2,label,ha='center',va='center',fontsize=10,color='#111111')
     for a,b in [((2.85,3.05),(3.65,3.05)),((6.35,3.05),(7.15,3.05)),((8.55,2.55),(8.55,1.5)),((7.15,.95),(6.35,.95))]:ax.add_patch(FancyArrowPatch(a,b,arrowstyle='-|>',mutation_scale=12,color=COLORS[0],lw=1.2))
     ax.add_patch(FancyArrowPatch((3.65,.95),(1.45,2.55),arrowstyle='-|>',mutation_scale=12,color=COLORS[0],lw=1.2,connectionstyle='angle,angleA=180,angleB=90,rad=12'))
     save(fig,'architecture.png')

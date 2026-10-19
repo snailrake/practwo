@@ -10,13 +10,13 @@ from .expressions import ModelError
 from .model import SimulationConfig, simulate
 from .verification import verify
 
-app = FastAPI(title="Химический выброс – лаборатория системной динамики", version="1.0.0")
+app = FastAPI(title="Моделирование химического выброса", version="2.0.0")
 workers = threading.BoundedSemaphore(2)
 
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "model": "assignment-table-1-11-states", "version": "1.0.0"}
+    return {"status": "ok", "model": "assignment-table-1-11-states", "version": "2.0.0"}
 
 
 @app.get("/api/presets")
@@ -43,6 +43,16 @@ def simulate_endpoint(config: SimulationConfig):
 @app.post("/api/verify")
 def verify_endpoint(config: SimulationConfig):
     return calculate(config, verify)
+
+
+@app.get('/api/report/{kind}')
+def report_file(kind: str):
+    if kind not in {'docx', 'pdf'}:
+        raise HTTPException(404, 'Неизвестный формат отчёта')
+    path = Path(__file__).resolve().parent.parent / 'report' / ('Практическая_работа_2_Химический_выброс.' + kind)
+    if not path.is_file(): raise HTTPException(404, 'Отчёт отсутствует в этой сборке')
+    media = 'application/pdf' if kind == 'pdf' else 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    return FileResponse(path, media_type=media, filename=path.name)
 
 
 DIST = Path(__file__).resolve().parent.parent / "frontend" / "dist"

@@ -1,39 +1,108 @@
 import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts/core';
-import {LineChart,RadarChart,GraphChart,BarChart} from 'echarts/charts';
-import {TooltipComponent,GridComponent,LegendComponent,DataZoomComponent,MarkLineComponent,TitleComponent,AriaComponent} from 'echarts/components';
-import {CanvasRenderer} from 'echarts/renderers';
-import type {EChartsCoreOption} from 'echarts/core';
-import type {Result} from './types';
-echarts.use([LineChart,RadarChart,GraphChart,BarChart,TooltipComponent,GridComponent,LegendComponent,DataZoomComponent,MarkLineComponent,TitleComponent,AriaComponent,CanvasRenderer]);
-export const COLORS=['#176f70','#db913d','#5274ac','#b56476','#7d6bac','#587f69','#ae795b','#498ca2','#977d2c','#48636d','#a25fa1'];
-export const short=['Испарение','Ликвидация','Площадь','Подход','Первичное облако','Вторичное облако','Госпитализация','Техника','Раствор','Ресурсы','Оповещение'];
-export const fmt=(x:number,d=3)=>Number.isFinite(x)?x.toLocaleString('ru-RU',{maximumFractionDigits:d}):'–';
+import { LineChart, RadarChart, GraphChart } from 'echarts/charts';
+import { TooltipComponent, GridComponent, LegendComponent, MarkLineComponent, AriaComponent } from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
+import type { EChartsCoreOption } from 'echarts/core';
+import type { Result } from './types';
 
-export function Chart({option,height=310,label}:{option:EChartsCoreOption;height?:number;label:string}){
- const div=useRef<HTMLDivElement>(null), chart=useRef<echarts.EChartsType|null>(null);
- useEffect(()=>{if(!div.current)return;chart.current=echarts.init(div.current,undefined,{renderer:'canvas',devicePixelRatio:2});
-  const o=new ResizeObserver(()=>chart.current?.resize());o.observe(div.current);return()=>{o.disconnect();chart.current?.dispose();};},[]);
- useEffect(()=>{chart.current?.setOption({animation:false,textStyle:{fontFamily:'Segoe UI, Arial, sans-serif',color:'#55646d'},...option},true);},[option]);
- return <div className="chart-wrap"><div ref={div} role="img" aria-label={label} style={{height,width:'100%'}}/><button className="chart-export" title="Скачать график PNG" aria-label={`Скачать ${label}`} onClick={()=>{if(!chart.current)return;const a=document.createElement('a');a.href=chart.current.getDataURL({type:'png',pixelRatio:2,backgroundColor:'#ffffff'});a.download=label.replace(/[^\p{L}\p{N}]/gu,'_')+'.png';a.click();}}>PNG ↓</button></div>;
+echarts.use([LineChart, RadarChart, GraphChart, TooltipComponent, GridComponent, LegendComponent, MarkLineComponent, AriaComponent, CanvasRenderer]);
+export const short = ['Испарение', 'Ликвидация', 'Площадь', 'Подход облака', 'Первичное облако', 'Вторичное облако', 'Госпитализация', 'Техника', 'Раствор', 'Ресурсы', 'Оповещение'];
+export const fmt = (x: number, digits = 4) => {
+  if (!Number.isFinite(x)) return '–';
+  if (x !== 0 && (Math.abs(x) < 10 ** -digits || Math.abs(x) >= 1e6)) return x.toExponential(2);
+  return x.toLocaleString('ru-RU', { maximumFractionDigits: digits });
+};
+const mono = 'Consolas, "Courier New", monospace';
+
+export function Chart({ option, height = 300, label }: { option: EChartsCoreOption; height?: number; label: string }) {
+  const host = useRef<HTMLDivElement>(null);
+  const instance = useRef<echarts.EChartsType | null>(null);
+  useEffect(() => {
+    if (!host.current) return;
+    instance.current = echarts.init(host.current, undefined, { renderer: 'canvas', devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2) });
+    const observer = new ResizeObserver(() => instance.current?.resize());
+    observer.observe(host.current);
+    return () => { observer.disconnect(); instance.current?.dispose(); };
+  }, []);
+  useEffect(() => {
+    instance.current?.setOption({ animation: false, textStyle: { fontFamily: mono, color: '#111', fontSize: 11 }, ...option }, true);
+  }, [option]);
+  return <div className="chart">
+    <div ref={host} role="img" aria-label={label} style={{ height, width: '100%' }} />
+    <button className="chart-download" aria-label={'Скачать ' + label} title="Сохранить график PNG" onClick={() => {
+      if (!instance.current) return;
+      const a = document.createElement('a');
+      a.href = instance.current.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#fff' });
+      a.download = label.replace(/[^\p{L}\p{N}]/gu, '_') + '.png';
+      a.click();
+    }}>PNG ↓</button>
+  </div>;
 }
 
-export function lineOption(r:Result, index:number, cursor?:number, comparison?:Result|null, type:'y'|'factors'|'derivatives'='y'):EChartsCoreOption{
- const plot=(rr:Result)=>rr.t.map((t,i)=>[t,rr[type][i][index]]);
- const series:object[]=[{name:type==='factors'?`F${index+1}`:`X${index+1}`,type:'line',showSymbol:false,data:plot(r),lineStyle:{width:2.4,color:COLORS[index%COLORS.length]},areaStyle:{color:COLORS[index%COLORS.length],opacity:0.06},markLine:cursor===undefined?undefined:{silent:true,symbol:'none',label:{show:false},lineStyle:{color:'#d19a45',type:'dashed'},data:[{xAxis:cursor}]}}];
- if(comparison)series.push({name:'Сценарий сравнения',type:'line',showSymbol:false,data:plot(comparison),lineStyle:{color:'#8b99a2',type:'dashed',width:1.7}});
- return {aria:{enabled:true},grid:{left:52,right:18,top:28,bottom:48,containLabel:false},tooltip:{trigger:'axis',valueFormatter:(v:unknown)=>fmt(Number(v),6)},xAxis:{type:'value',min:0,max:r.config.t_end,name:'τ',nameGap:8,axisLine:{lineStyle:{color:'#cbd5d8'}},splitLine:{show:false},axisLabel:{formatter:(v:number)=>fmt(v,2)}},yAxis:{type:'value',scale:true,axisLabel:{formatter:(v:number)=>fmt(v)},splitLine:{lineStyle:{color:'#edf1f2'}}},series};
+export function lineOption(r: Result, index: number, cursor?: number, comparison?: Result | null, type: 'y' | 'factors' = 'y'): EChartsCoreOption {
+  const points = (data: Result) => data.t.map((t, i) => [t, data[type][i][index]]);
+  const symbol = (type === 'factors' ? 'F' : 'X') + (index + 1);
+  const series: object[] = [{
+    type: 'line', name: symbol, data: points(r), showSymbol: false,
+    lineStyle: { color: '#111', width: 2 },
+    markLine: cursor === undefined ? undefined : {
+      symbol: 'none', silent: true, label: { show: false },
+      lineStyle: { color: '#888', type: 'dashed', width: 1 }, data: [{ xAxis: cursor }],
+    },
+  }];
+  if (comparison) series.push({ name: 'Эталон', type: 'line', showSymbol: false, data: points(comparison), lineStyle: { color: '#777', type: 'dashed', width: 1.6 } });
+  return {
+    aria: { enabled: true },
+    grid: { left: 14, right: 24, top: 32, bottom: 28, containLabel: true },
+    tooltip: { trigger: 'axis', confine: true, valueFormatter: (v: unknown) => fmt(Number(v), 7) },
+    xAxis: {
+      type: 'value', min: 0, max: r.config.t_end, name: 'τ', nameGap: 9,
+      axisLine: { lineStyle: { color: '#999' } }, splitLine: { show: false },
+      axisLabel: { formatter: (v: number) => fmt(v, 3), hideOverlap: true },
+    },
+    yAxis: {
+      type: 'value', scale: true, name: 'отн. ед.', nameGap: 13,
+      axisLabel: { formatter: (v: number) => fmt(v, 5), hideOverlap: true },
+      splitLine: { lineStyle: { color: '#dedede', type: 'dotted' } },
+    },
+    series,
+  };
 }
 
-export function Radar({r,comparison}:{r:Result;comparison?:Result|null}){
- if(r.quarters.some(q=>q.values.some(v=>v<0)))return <div className="dirty">Лепестковая диаграмма не строится для отрицательных характеристик. Значения не обрезаны: они доступны в таблице срезов, временных графиках и экспорте.</div>;
- const scales=r.radar_scales.map((x,i)=>Math.max(x,comparison?.radar_scales[i]??0));
- const option:EChartsCoreOption={tooltip:{trigger:'item'},legend:{bottom:0,itemWidth:18,data:r.quarters.map(q=>`τ = ${fmt(q.t,2)}`)},radar:{radius:'64%',center:['50%','45%'],splitNumber:4,indicator:short.map((s,i)=>({name:`X${i+1}\n${s}`,max:1})),axisName:{fontSize:11,color:'#52646e'},splitArea:{areaStyle:{color:['#fff','#f8fafb']}},splitLine:{lineStyle:{color:'#e0e8ea'}},axisLine:{lineStyle:{color:'#e0e8ea'}}},series:[{type:'radar',symbolSize:3,lineStyle:{width:2},data:r.quarters.map((q,i)=>({name:`τ = ${fmt(q.t,2)}`,value:q.values.map((v,j)=>v/scales[j]),itemStyle:{color:COLORS[i]},areaStyle:{opacity:i===3?0.045:0}}))}]};
- return <Chart label="Лепестковые диаграммы четырёх четвертей" option={option} height={480}/>;
+export function QuarterRadars({ r }: { r: Result }) {
+  if (r.quarters.some(q => q.values.some(v => v < 0))) return <p className="warning">Лепестковые диаграммы не строятся для отрицательных характеристик. Значения сохранены в таблице и временных графиках без обрезания.</p>;
+  return <div className="radar-grid">{r.quarters.map((q, i) => {
+    const option: EChartsCoreOption = {
+      tooltip: { trigger: 'item', confine: true },
+      radar: {
+        radius: '68%', center: ['50%', '50%'], splitNumber: 4,
+        indicator: short.map((_, j) => ({ name: 'X' + (j + 1), min: 0, max: 1 })),
+        axisName: { color: '#222', fontSize: 11 },
+        splitArea: { show: false }, splitLine: { lineStyle: { color: '#ccc' } },
+        axisLine: { lineStyle: { color: '#ddd' } },
+      },
+      series: [{ type: 'radar', symbolSize: 3, lineStyle: { color: '#111', width: 1.8 },
+        data: [{ name: 'τ = ' + fmt(q.t), value: q.normalized, itemStyle: { color: '#111' }, areaStyle: { color: '#111', opacity: .035 } }],
+      }],
+    };
+    return <div className="radar-cell" key={q.t}><h3>Четверть {i + 1} <span>τ = {fmt(q.t, 3)}</span></h3><Chart label={'Лепестковая диаграмма четверти ' + (i + 1)} height={300} option={option} /></div>;
+  })}</div>;
 }
 
-export function DependencyGraph({r}:{r:Result}){
- const nodes=[...Array.from({length:7},(_,i)=>({name:`F${i+1}`,x:60,y:30+i*65,symbolSize:32,itemStyle:{color:'#d6b476'},label:{color:'#33434c'}})),...short.map((s,i)=>({name:`X${i+1}`,x:300+(i%3)*180,y:30+Math.floor(i/3)*135,symbolSize:47,itemStyle:{color:COLORS[i]},label:{color:'#fff'}}))];
- const links=r.dependencies.flatMap(d=>d.sources.filter(s=>s!=='t').map(s=>({source:s,target:d.target})));
- return <Chart label="Граф зависимостей действующей модели" height={490} option={{tooltip:{formatter:(p:any)=>p.dataType==='node'?`${p.name} ${p.name.startsWith('X')?r.state_names[+p.name.slice(1)-1]:r.factor_names[+p.name.slice(1)-1]}`:`${p.data.source} → ${p.data.target}`},series:[{type:'graph',layout:'none',data:nodes,links,roam:true,label:{show:true,fontWeight:600},edgeSymbol:['none','arrow'],edgeSymbolSize:7,lineStyle:{color:'#9bafb7',opacity:0.35,curveness:0.08},emphasis:{focus:'adjacency',lineStyle:{width:2,opacity:1}},scaleLimit:{min:0.7,max:2.5}}]}}/>;
+export function DependencyGraph({ r }: { r: Result }) {
+  const nodes = [
+    ...Array.from({ length: 7 }, (_, i) => ({ name: 'F' + (i + 1), x: 0, y: i * 75, symbol: 'rect', symbolSize: [42, 27], itemStyle: { color: '#fff', borderColor: '#777', borderWidth: 1 }, label: { color: '#111' } })),
+    ...short.map((_, i) => ({ name: 'X' + (i + 1), x: 180 + (i % 3) * 180, y: Math.floor(i / 3) * 145, symbolSize: 43, itemStyle: { color: '#111' }, label: { color: '#fff' } })),
+  ];
+  return <Chart label="Граф зависимостей модели" height={450} option={{
+    tooltip: { confine: true, formatter: (p: any) => p.dataType === 'node' ? p.name + ' ' + (p.name.startsWith('X') ? r.state_names[+p.name.slice(1) - 1] : r.factor_names[+p.name.slice(1) - 1]) : p.data.source + ' → ' + p.data.target },
+    series: [{ type: 'graph', layout: 'none', data: nodes,
+      links: r.dependencies.flatMap(d => d.sources.filter(s => s !== 't').map(s => ({ source: s, target: d.target }))),
+      roam: true, label: { show: true }, edgeSymbol: ['none', 'arrow'], edgeSymbolSize: 6,
+      lineStyle: { color: '#aaa', opacity: .55, curveness: .06 },
+      emphasis: { focus: 'adjacency', lineStyle: { color: '#111', opacity: 1, width: 2 } },
+      scaleLimit: { min: .5, max: 3 },
+    }],
+  }} />;
 }

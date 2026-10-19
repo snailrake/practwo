@@ -11,6 +11,7 @@ from scipy.integrate import solve_ivp
 
 from .defaults import STATE_NAMES, FACTOR_NAMES
 from .expressions import Expression, ModelError
+from .notation import equation_tex, to_tex
 
 
 class SimulationConfig(BaseModel):
@@ -21,7 +22,6 @@ class SimulationConfig(BaseModel):
     factors: list[str] = Field(min_length=7, max_length=7)
     plus: list[str] = Field(min_length=11, max_length=11)
     minus: list[str] = Field(min_length=11, max_length=11)
-    mode: Literal["literal", "loss-magnitudes"] = "literal"
     method: Literal["DOP853", "RK45", "Radau"] = "DOP853"
     rtol: float = Field(default=1e-8, ge=1e-12, le=1e-3)
     atol: float = Field(default=1e-10, ge=1e-14, le=1e-4)
@@ -73,7 +73,7 @@ class Dynamics:
             except ModelError as exc:
                 raise ModelError(f"X{i+1}, τ={t:.6g}: {exc}") from exc
             pp.append(p)
-            mm.append(abs(m) if self.config.mode == "loss-magnitudes" else m)
+            mm.append(m)
         return np.array(pp), np.array(mm), np.array(factors)
 
     def rhs(self, t, y):
@@ -120,10 +120,6 @@ def simulate(config: SimulationConfig, *, step_divisor: int = 100):
         "Учебная агрегированная модель. Нет калибровки для объекта, вещества, физических единиц и реальных потерь.",
         "В задании рисунок системы содержит X12 и X13, но перечень и таблица функций задают 11 характеристик. Использована таблица 1.",
     ]
-    if config.mode == "literal" and np.any(minus < 0):
-        warnings.append("Буквальный режим: отрицательные f⁻ вычитаются и увеличивают производную. Знаки из задания не исправлены скрытно.")
-    if config.mode == "loss-magnitudes":
-        warnings.append("Исследовательская модификация: вычитается |f⁻|. Это не буквальное воспроизведение таблицы.")
     if np.min(y) < -1e-8:
         warnings.append("Есть отрицательные характеристики: математическое решение получено, но сценарий физически недопустим. Значения не обрезаны.")
     if np.min(y[:, 10]) < 0 or np.max(y[:, 10]) > 1:
@@ -136,6 +132,8 @@ def simulate(config: SimulationConfig, *, step_divisor: int = 100):
         "derivatives": ((plus - minus) / np.array(config.scales)).tolist(),
         "radar_scales": scales.tolist(), "quarters": snapshots,
         "state_names": STATE_NAMES, "factor_names": FACTOR_NAMES,
+        "equations_tex": [equation_tex(i+1, p, m) for i, (p,m) in enumerate(zip(config.plus, config.minus))],
+        "factors_tex": [to_tex(s) for s in config.factors],
         "dependencies": [{"target": f"X{i+1}", "sources": sorted(set(p.dependencies + m.dependencies))}
                          for i, (p, m) in enumerate(zip(dynamics.plus, dynamics.minus))],
         "warnings": warnings,

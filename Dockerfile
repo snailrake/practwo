@@ -9,6 +9,7 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt && useradd --create-home app
 COPY backend/ ./backend/
+COPY report/*.docx report/*.pdf ./report/
 COPY --from=frontend /app/frontend/dist ./frontend/dist/
 USER app
 EXPOSE 8000
