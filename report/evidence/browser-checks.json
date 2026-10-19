@@ -1,0 +1,93 @@
+{
+  "checks": [
+    {
+      "name": "Desktop first render with Python results",
+      "passed": true
+    },
+    {
+      "name": "Playback advances cursor",
+      "passed": true
+    },
+    {
+      "name": "Cursor slider works",
+      "passed": true
+    },
+    {
+      "name": "Exact half-time snapshot",
+      "passed": true
+    },
+    {
+      "name": "Seven factor forms",
+      "passed": true
+    },
+    {
+      "name": "Changed configuration is visibly stale",
+      "passed": true
+    },
+    {
+      "name": "New scenario calculated",
+      "passed": true
+    },
+    {
+      "name": "Comparison table includes differences",
+      "passed": true
+    },
+    {
+      "name": "All 22 model functions editable",
+      "passed": true
+    },
+    {
+      "name": "Unsafe expression rejected and shown",
+      "passed": true
+    },
+    {
+      "name": "Zero divisor rejected",
+      "passed": true
+    },
+    {
+      "name": "Live five-check verification passes",
+      "passed": true
+    },
+    {
+      "name": "CSV has 19 columns and full interval",
+      "passed": true
+    },
+    {
+      "name": "JSON contains actual solver result",
+      "passed": true
+    },
+    {
+      "name": "Graph PNG export has bytes",
+      "passed": true
+    },
+    {
+      "name": "Initial conditions edit recomputes",
+      "passed": true
+    },
+    {
+      "name": "Scenario JSON import works",
+      "passed": true
+    },
+    {
+      "name": "Mobile has no horizontal page overflow",
+      "passed": true
+    },
+    {
+      "name": "Mobile radar and table fit viewport",
+      "passed": true
+    },
+    {
+      "name": "Negative radar is explicitly refused, numbers preserved",
+      "passed": true
+    },
+    {
+      "name": "Empty numeric field is rejected without a crash",
+      "passed": true
+    },
+    {
+      "name": "No JavaScript uncaught errors",
+      "passed": true
+    }
+  ],
+  "errors": []
+}

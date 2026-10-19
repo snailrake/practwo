@@ -1,0 +1,97 @@
+{
+  "checks": [
+    {
+      "name": "ZIP integrity",
+      "passed": true
+    },
+    {
+      "name": "17 native editable equations",
+      "passed": true
+    },
+    {
+      "name": "13 real inline figures",
+      "passed": true
+    },
+    {
+      "name": "Continuous figure captions",
+      "passed": true
+    },
+    {
+      "name": "Continuous table captions",
+      "passed": true
+    },
+    {
+      "name": "Every figure referenced in prose",
+      "passed": true
+    },
+    {
+      "name": "Every table referenced in prose",
+      "passed": true
+    },
+    {
+      "name": "No em dashes or unfinished placeholders",
+      "passed": true
+    },
+    {
+      "name": "Centered illustrations",
+      "passed": true
+    },
+    {
+      "name": "Right aligned table numbers",
+      "passed": true
+    },
+    {
+      "name": "All 44 quarter values match the solver",
+      "passed": true
+    },
+    {
+      "name": "All 44 experiment endpoints match the solver",
+      "passed": true
+    },
+    {
+      "name": "All result numbers are finite",
+      "passed": true
+    },
+    {
+      "name": "All production equations have provenance records",
+      "passed": true
+    },
+    {
+      "name": "A4 and source margins retained",
+      "passed": true
+    },
+    {
+      "name": "No empty PDF pages",
+      "passed": true
+    },
+    {
+      "name": "Cached TOC contains all report headings",
+      "passed": true
+    },
+    {
+      "name": "Every TOC page agrees with exported PDF",
+      "passed": true
+    },
+    {
+      "name": "13 captions survive PDF export",
+      "passed": true
+    },
+    {
+      "name": "Browser QA passed",
+      "passed": true
+    }
+  ],
+  "pages": 31,
+  "passed": true,
+  "files": {
+    "Практическая_работа_2_Химический_выброс.docx": {
+      "bytes": 1924612,
+      "sha256": "859148d54ecad9b6adfd8c4efb502e047b05173a0aebe9420a527305de4a8c31"
+    },
+    "Практическая_работа_2_Химический_выброс.pdf": {
+      "bytes": 1815738,
+      "sha256": "f9d144b0e0b614194823ae950bd34de13aad32622158e51230299be96df95b0a"
+    }
+  },
+  "visual_review": "Each final rendered page separately reviewed; no clipping or detached captions accepted."
+}

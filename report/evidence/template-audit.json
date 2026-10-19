@@ -1,0 +1,370 @@
+{
+  "reference": "C:\\Users\\snail\\Documents\\Codex\\2026-09-20\\n\\work\\practwo-materials\\reference.docx",
+  "reference_sha256": "90517c5aa117060f1017f87c3e4e1a00ff7229e42d37a19e6042a3c825aad3ea",
+  "reference_pages": 36,
+  "report": "Практическая_работа_2_Химический_выброс.docx",
+  "substantive_tables": 8,
+  "figures": 13,
+  "equations": 17,
+  "native_equations": 17,
+  "headings": [
+    "1 Постановка задачи",
+    "1.1 Требования к программе",
+    "1.2 Состав результата",
+    "2 Предметная область",
+    "2.1 Агрегированные последствия химической аварии",
+    "2.2 Характеристики и внешние факторы",
+    "2.3 Отличие от расчёта опасной зоны",
+    "3 Математическая модель",
+    "3.1 Согласование записи исходного задания",
+    "3.2 Общая форма и начальные условия",
+    "3.3 Полная табличная система",
+    "3.4 Область определения и допустимость решений",
+    "3.5 Исследование соглашения о знаках",
+    "4 Численный метод",
+    "4.1 Адаптивное решение задачи Коши",
+    "4.2 Сетка вывода и четыре четверти интервала",
+    "4.3 Нормирование лепестковых диаграмм",
+    "4.4 Критерии численного сопоставления",
+    "5 Программная реализация",
+    "5.1 Архитектура и структура проекта",
+    "5.2 Безопасный редактор уравнений",
+    "5.3 Численное ядро и API",
+    "5.4 Проверяемость и экспорт",
+    "5.5 Сборка и запуск",
+    "6 Пользовательский интерфейс",
+    "6.1 Настройка и просмотр динамики",
+    "6.2 Факторы и редактирование модели",
+    "6.3 Лепестковые срезы и сравнение сценариев",
+    "6.4 Проверка и обработка ошибочного ввода",
+    "7 Верификация и вычислительные эксперименты",
+    "7.1 Аналитические и независимые численные проверки",
+    "7.2 Автоматические тесты и граничные случаи",
+    "7.3 Базовый сценарий",
+    "7.4 Лепестковые диаграммы четырёх четвертей",
+    "7.5 Изменение внешних факторов",
+    "7.6 Чувствительность к соглашению о знаках",
+    "8 Ограничения модели",
+    "8.1 Непроверенная физическая калибровка",
+    "8.2 Структурные и вычислительные ограничения",
+    "9 Заключение",
+    "Список использованных источников"
+  ],
+  "production_equations": [
+    {
+      "number": 2,
+      "production_source": "X1: plus=0.0186*X2*F1**0.8; minus=0.01*X9*X10/(F3*F4)"
+    },
+    {
+      "number": 3,
+      "production_source": "X2: plus=0.085*X3*X7*X8*F1**0.8/F5; minus=-0.95*X9*X10"
+    },
+    {
+      "number": 4,
+      "production_source": "X3: plus=-3.58e-6*F1**0.8*F3*F4/X1**2.9; minus=0"
+    },
+    {
+      "number": 5,
+      "production_source": "X4: plus=0.9*X1; minus=-0.0322*F1**0.8*F3*F4"
+    },
+    {
+      "number": 6,
+      "production_source": "X5: plus=0.0145*F2/X1**2.1; minus=0"
+    },
+    {
+      "number": 7,
+      "production_source": "X6: plus=0.002*X2*F5*F6; minus=-0.606*X4/(X10*X11*F7)"
+    },
+    {
+      "number": 8,
+      "production_source": "X7: plus=0.95*(X5+X6)**0.6*X10; minus=0"
+    },
+    {
+      "number": 9,
+      "production_source": "X8: plus=0.817*X3; minus=-0.42*X9*X10"
+    },
+    {
+      "number": 10,
+      "production_source": "X9: plus=1.4*(X3*X8)**0.2; minus=0"
+    },
+    {
+      "number": 11,
+      "production_source": "X10: plus=0.052*sqrt(X3*F6); minus=0"
+    },
+    {
+      "number": 12,
+      "production_source": "X11: plus=375.1*X10*F7/F6; minus=-0.0018/F5"
+    }
+  ],
+  "backend_tests": 45,
+  "browser_checks": 22,
+  "sections": [
+    {
+      "width_cm": 21.00086111111111,
+      "height_cm": 29.70036111111111,
+      "margins_cm": [
+        2.00025,
+        1.4993055555555554,
+        2.00025,
+        3.000375
+      ]
+    }
+  ],
+  "reference_parts": [
+    {
+      "path": "[Content_Types].xml",
+      "size": 2015,
+      "sha256": "43f454052e5084d0924e30f88b699c4e5e631a3f8fa5fa38cdadea62421c8ec6"
+    },
+    {
+      "path": "_rels/.rels",
+      "size": 590,
+      "sha256": "e19238d7a71fa7a2490776252686f70e2de6238c87cd509b5e3a3cc07c2ea4df"
+    },
+    {
+      "path": "word/document.xml",
+      "size": 749108,
+      "sha256": "1b5d570f50952dae49fddbf358ef1c026dbb926d461aff3cb66528204b15bc24"
+    },
+    {
+      "path": "word/_rels/document.xml.rels",
+      "size": 6152,
+      "sha256": "7c157dfb0f18a05f41a8c5cfc69595c7b48fa066778cbbf1d78a3f3be1d5206c"
+    },
+    {
+      "path": "word/footer2.xml",
+      "size": 2485,
+      "sha256": "d0ce0b2b9569ce716733c3955b056b5d59302173f66cc311a8706b8d6ef415a7"
+    },
+    {
+      "path": "word/footer1.xml",
+      "size": 2774,
+      "sha256": "9620c9d991fbe35583656026c1abb94137a9c987317eae18989ff6bcbf4a331a"
+    },
+    {
+      "path": "word/footnotes.xml",
+      "size": 2783,
+      "sha256": "e529d695149c914bd1445557c1a28a380acd5573f9e4999427965ce4599f75b6"
+    },
+    {
+      "path": "word/endnotes.xml",
+      "size": 2777,
+      "sha256": "b6e859510e6e19ba29202047d53a9bb11e24e47be1bcf542bf3810115d57ad10"
+    },
+    {
+      "path": "word/media/image2.png",
+      "size": 12490,
+      "sha256": "0f4244ff3a4b82fe1b083a81225247c9e38d2130633338768dbfe3d90c3cc34b"
+    },
+    {
+      "path": "word/media/image3.png",
+      "size": 10844,
+      "sha256": "5a735e4d831fc6b419042cbe4b3874685e496dc76e353e64a8558d10873e72c5"
+    },
+    {
+      "path": "word/media/image4.png",
+      "size": 8385,
+      "sha256": "639aad573b165dde59feec674795a98572780db6b5bacf55309b7638c87ad314"
+    },
+    {
+      "path": "word/media/image5.png",
+      "size": 10112,
+      "sha256": "c1d355ab6f78a264b42d9491d29b6966ac145ef8d41730671f503f2af6cf1b8c"
+    },
+    {
+      "path": "word/media/image6.png",
+      "size": 83049,
+      "sha256": "433b810aad1dc68af90646db004e291e41bed9966d1114be5c6e290637934922"
+    },
+    {
+      "path": "word/media/image7.png",
+      "size": 19210,
+      "sha256": "dc6d0ada0543e5b52fac0d44a97e4b414fd3808b92f04341cbc1749f98c89e77"
+    },
+    {
+      "path": "word/media/image8.png",
+      "size": 68943,
+      "sha256": "32d5c31bfa478623048277da039ef27a6322170036b7a9f37ec73eaed7b031b0"
+    },
+    {
+      "path": "word/media/image9.png",
+      "size": 11376,
+      "sha256": "cd7d915021b4160b7a441419dad4efbf3784c4a70a7e5a402e59ccd6e527d722"
+    },
+    {
+      "path": "word/media/image10.png",
+      "size": 14133,
+      "sha256": "27a87467e98e983a9dee069f683e91b76470b547f4fc91402e6ca5936e6820d6"
+    },
+    {
+      "path": "word/media/image11.png",
+      "size": 63387,
+      "sha256": "c2a9d4025ba19930e2885a2773a640c1fe268d3ac5c880418682cc0d6d6eeac8"
+    },
+    {
+      "path": "word/media/image12.png",
+      "size": 13136,
+      "sha256": "a8f520780c84e36b6a53dcbdb148ca75fbbc71d8213b321e849e709c209d9b93"
+    },
+    {
+      "path": "word/media/image13.png",
+      "size": 62669,
+      "sha256": "4a48e23251df93b6f375bb9c3769947a739a10c356431780429535eaa2cb464c"
+    },
+    {
+      "path": "word/media/image14.png",
+      "size": 10787,
+      "sha256": "c62655d2387f9f3f9298f5e1120112511945b50c42782b8f8c0b5787085aae2a"
+    },
+    {
+      "path": "word/media/image15.png",
+      "size": 10779,
+      "sha256": "aa798d4c040c27ab8c399eb53bf947cd88a75fdcf0e2ba21f8b637da80bf84ee"
+    },
+    {
+      "path": "word/media/image16.png",
+      "size": 55303,
+      "sha256": "eaaaba39bdc9b12eb04d55fbae39c6274a42f2673efd4d02cdc58456ecb60638"
+    },
+    {
+      "path": "word/media/image17.png",
+      "size": 20875,
+      "sha256": "ebfa8ea7b6b4679249cc24d3e1efa66a7e29958cf2b77486723382107426093d"
+    },
+    {
+      "path": "word/media/image18.png",
+      "size": 26114,
+      "sha256": "25205fdc13dc97ec78f1cd8c3464f97c1f87a8ee29f238fe0a873ac4b25fe097"
+    },
+    {
+      "path": "word/media/image19.png",
+      "size": 21263,
+      "sha256": "0162f8b4cd57ffa66c8ba967bb65a07ba9f0784d845815b4999e8489c46d7bbc"
+    },
+    {
+      "path": "word/media/image20.png",
+      "size": 20472,
+      "sha256": "a5604eae827e4a3649be7d8ef413b40a3469c03333ac1127d993c582564b5be6"
+    },
+    {
+      "path": "word/media/image21.png",
+      "size": 18097,
+      "sha256": "4d4a238ad2c17dffe1d24e66aa0e27e8c3300edb1321a34226e5f07ae2baa64f"
+    },
+    {
+      "path": "word/media/image22.png",
+      "size": 14096,
+      "sha256": "b64c44cb26c79f0b0d8b324e3fb33541d0fb62032ec131076fc67f3497bc31b0"
+    },
+    {
+      "path": "word/media/image23.png",
+      "size": 6876,
+      "sha256": "0d06b23097d4a92cccf73eaed68b6019f2035bbd8a9f1bdf25dffcb70cd48c4c"
+    },
+    {
+      "path": "word/media/image24.png",
+      "size": 16871,
+      "sha256": "7c64c6f31c4da00d28ecf88f25b4263facc889f5221738cbd5cb5db516bfd133"
+    },
+    {
+      "path": "word/media/image25.png",
+      "size": 35237,
+      "sha256": "ea5433f355785cfea067275f66c07069490d36bf93007e9ec6fcd2662df15963"
+    },
+    {
+      "path": "word/media/image26.png",
+      "size": 24097,
+      "sha256": "9b1f443c27f916766df39e6af184057a11cb6fcd450d88403ca6d7ce0b08754d"
+    },
+    {
+      "path": "word/media/image27.png",
+      "size": 18998,
+      "sha256": "dcd1d7a697d817ac93dcac5ca2fcb06dbd906f066f515c8ae9ca07c1e9f3f67a"
+    },
+    {
+      "path": "word/media/image28.png",
+      "size": 20099,
+      "sha256": "4bd0440cd35e1989431474a4c729e420ce87f8b2b9d800983f8585f838107bb0"
+    },
+    {
+      "path": "word/media/image29.png",
+      "size": 9497,
+      "sha256": "d938ce36f8b2e0cb44327046374c296cf215706e2970656bfdb34ab993eba9bf"
+    },
+    {
+      "path": "word/media/image30.png",
+      "size": 58840,
+      "sha256": "8cc4011b60fd31bde2a77f7f57ef1ea0930954b238befd85cc0c5200dc9ee0b1"
+    },
+    {
+      "path": "word/media/image31.png",
+      "size": 186652,
+      "sha256": "9d035d6c68f5fd5d1bc704d1bc85f4ed99a9603b07b3fa5d4e03e78d3d8c24d4"
+    },
+    {
+      "path": "word/media/image33.png",
+      "size": 452160,
+      "sha256": "139850ccf743f0c370da525fc3de9313413be85808dfe4cdbae5fb3d59baba36"
+    },
+    {
+      "path": "word/media/image34.png",
+      "size": 35502,
+      "sha256": "0edc71d833561e79896fa29ed3ee640e81b869e9e2088af6e2dc1d61187a24f5"
+    },
+    {
+      "path": "word/media/image35.png",
+      "size": 51680,
+      "sha256": "efdf0ef0f72bc52ec7d6d6ef1636fd77a9f83af172b22de5609a2ea1ef2022f0"
+    },
+    {
+      "path": "word/media/image32.png",
+      "size": 191652,
+      "sha256": "39a35ccc274f8e5bc51b2bb52b0f1e091aeff2324241300c1d1f3ad0d38e9948"
+    },
+    {
+      "path": "word/theme/theme1.xml",
+      "size": 8115,
+      "sha256": "938ef462261cb6bdbfc3255d222c3de5bda8632043244a14fb986871990b4e8b"
+    },
+    {
+      "path": "word/media/image1.png",
+      "size": 8864,
+      "sha256": "5e7c3dad962ee836b0de504baf4d13244284b24d418090abf40bb756c32fa284"
+    },
+    {
+      "path": "word/settings.xml",
+      "size": 3194,
+      "sha256": "abc338d4f85de41aedc903980eba79bece3eebdf8011f3e19e45bb3ef28c6d57"
+    },
+    {
+      "path": "word/webSettings.xml",
+      "size": 843,
+      "sha256": "c99d68045ebe2a916a8ff7997daa87efa2526650089c91c0e7529b73b2ea33c7"
+    },
+    {
+      "path": "docProps/core.xml",
+      "size": 647,
+      "sha256": "1bc24e7fbc58a3940391732c4db4fe0a0d7fb89ba40b9acb743c433586864179"
+    },
+    {
+      "path": "docProps/app.xml",
+      "size": 1081,
+      "sha256": "69f908da51b3036d6038a7d6d4c0df5baa1932789c228b7c244c96f8501799f1"
+    },
+    {
+      "path": "word/numbering.xml",
+      "size": 7397,
+      "sha256": "e29549f79d01dae1915e95eee309e3e3efca85ba537b0381deca82081c6a6754"
+    },
+    {
+      "path": "word/styles.xml",
+      "size": 33303,
+      "sha256": "55377fa473db4dd28bd3b9dfafda09b9ad6a1dd96ed1cbc27fa77c59c7ce8028"
+    },
+    {
+      "path": "word/fontTable.xml",
+      "size": 1926,
+      "sha256": "5519fceaa0e08f6ee66b7f26f624f7d2945575c426461d929f5a30cd855d2159"
+    }
+  ]
+}

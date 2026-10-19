@@ -1,0 +1,13 @@
+.venv/
+node_modules/
+frontend/dist/
+__pycache__/
+.pytest_cache/
+*.pyc
+.coverage
+work/
+.env
+report/render/
+report/reference.docx
+report/reference.pdf
+report/*.tmp
