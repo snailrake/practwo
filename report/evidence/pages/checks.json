@@ -1,0 +1,135 @@
+{
+  "url": "http://127.0.0.1:8002/pages-dist/",
+  "checks": [
+    {
+      "name": "Static site starts a real Python computation",
+      "passed": true
+    },
+    {
+      "name": "Scenario 1 matches native Python on the full grid",
+      "passed": true
+    },
+    {
+      "name": "Scenario 2 matches native Python on the full grid",
+      "passed": true
+    },
+    {
+      "name": "Scenario 3 matches native Python on the full grid",
+      "passed": true
+    },
+    {
+      "name": "Scenario 4 matches native Python on the full grid",
+      "passed": true
+    },
+    {
+      "name": "Eleven state charts are available",
+      "passed": true
+    },
+    {
+      "name": "Seven factor equations and charts are available",
+      "passed": true
+    },
+    {
+      "name": "Twenty-two editable functions and eleven rendered equations",
+      "passed": true
+    },
+    {
+      "name": "Four quarter radars are computed",
+      "passed": true
+    },
+    {
+      "name": "All five numerical checks run in browser Python",
+      "passed": true
+    },
+    {
+      "name": "Arbitrary imported equations are actually integrated",
+      "passed": true
+    },
+    {
+      "name": "Unsafe expressions are refused by the browser Python model",
+      "passed": true
+    },
+    {
+      "name": "Zero denominator is refused without hidden epsilon",
+      "passed": true
+    },
+    {
+      "name": "Published docx is exactly the final report",
+      "passed": true
+    },
+    {
+      "name": "Published pdf is exactly the final report",
+      "passed": true
+    },
+    {
+      "name": "Published Python source matches repository: __init__.py",
+      "passed": true
+    },
+    {
+      "name": "Published Python source matches repository: defaults.py",
+      "passed": true
+    },
+    {
+      "name": "Published Python source matches repository: expressions.py",
+      "passed": true
+    },
+    {
+      "name": "Published Python source matches repository: notation.py",
+      "passed": true
+    },
+    {
+      "name": "Published Python source matches repository: model.py",
+      "passed": true
+    },
+    {
+      "name": "Published Python source matches repository: verification.py",
+      "passed": true
+    },
+    {
+      "name": "Published Python source matches repository: browser.py",
+      "passed": true
+    },
+    {
+      "name": "Actual WebAssembly interpreter and SciPy are present",
+      "passed": true
+    },
+    {
+      "name": "CSV includes full output grid and all 19 columns",
+      "passed": true
+    },
+    {
+      "name": "Page fits width 1280",
+      "passed": true
+    },
+    {
+      "name": "Page fits width 800",
+      "passed": true
+    },
+    {
+      "name": "Page fits width 390",
+      "passed": true
+    },
+    {
+      "name": "No API server is used",
+      "passed": true
+    },
+    {
+      "name": "All browser assets are self-hosted",
+      "passed": true
+    },
+    {
+      "name": "No uncaught JavaScript errors",
+      "passed": true
+    }
+  ],
+  "errors": [],
+  "environment": {
+    "python": "3.14.2",
+    "numpy": "2.4.6",
+    "scipy": "1.18.0",
+    "platform": "emscripten",
+    "engine": "WebAssembly"
+  },
+  "load_ms": 9157.733,
+  "max_scaled_difference": 1.8554545494496828e-16
+}

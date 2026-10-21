@@ -96,8 +96,16 @@
       "production_source": "X11: plus=375.1*X10*F7/F6; minus=-0.0018/F5"
     }
   ],
-  "backend_tests": 52,
+  "backend_tests": 58,
   "browser_checks": 34,
+  "browser_pages_checks": 30,
+  "pages_runtime": {
+    "python": "3.14.2",
+    "numpy": "2.4.6",
+    "scipy": "1.18.0",
+    "platform": "emscripten",
+    "engine": "WebAssembly"
+  },
   "sections": [
     {
       "width_cm": 21.00086111111111,

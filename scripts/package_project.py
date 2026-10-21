@@ -7,7 +7,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 import argparse
 
 ROOT = Path(__file__).resolve().parent.parent
-SKIP = {'.git','.venv','node_modules','__pycache__','.pytest_cache','render'}
+SKIP = {'.git','.venv','node_modules','__pycache__','.pytest_cache','render','pages-dist','public-pages','work'}
 
 
 def package(destination):

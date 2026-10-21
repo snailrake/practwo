@@ -1,6 +1,8 @@
 .venv/
 node_modules/
 frontend/dist/
+frontend/pages-dist/
+frontend/public-pages/
 __pycache__/
 .pytest_cache/
 *.pyc

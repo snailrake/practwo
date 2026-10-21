@@ -67,4 +67,6 @@ Full backend tests, TypeScript/build, browser workflow, mobile width, exports,
 independent analytic and cross-solver checks. Full DOCX render and all-page
 PNG inspection, with formula, table, caption, TOC and number cross checks.
 Verify GitHub publication after push. Do not claim the source's 13% empirical
-error as our result. Do not claim GitHub Pages can execute the Python backend.
+error as our result. GitHub Pages hosts the self-contained WebAssembly build;
+the same Python modules run in a browser worker, not on a Pages Python server.
+Keep the native model and browser model identical and verify numerical parity.

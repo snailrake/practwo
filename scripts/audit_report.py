@@ -64,6 +64,7 @@ def check_report():
     check('Every TOC page agrees with exported PDF', all(1 <= n <= len(pages) and normalize(label) in normalize(pages[n-1]) for label,n in toc))
     check('13 captions survive PDF export', all(f'Рисунок {i} ' in '\n'.join(pages) for i in range(1,14)))
     check('Browser QA passed', all(c['passed'] for c in json.loads((REPORT/'evidence/browser-checks.json').read_text('utf8'))['checks']))
+    check('Pages Python QA passed', all(c['passed'] for c in json.loads((REPORT/'evidence/pages/checks.json').read_text('utf8'))['checks']))
     result = {'checks':checks, 'pages':len(pages), 'passed':True,
               'files':{p.name:{'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in [docx,pdf]},
               'visual_review':'Each final rendered page separately reviewed; no clipping or detached captions accepted.'}

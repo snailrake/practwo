@@ -79,18 +79,22 @@
     {
       "name": "Browser QA passed",
       "passed": true
+    },
+    {
+      "name": "Pages Python QA passed",
+      "passed": true
     }
   ],
   "pages": 32,
   "passed": true,
   "files": {
     "Практическая_работа_2_Химический_выброс.docx": {
-      "bytes": 1532201,
-      "sha256": "27dc0de545187d23e9bc2675047053fc14b7b76658c5dc7acea658b04ac8e0d6"
+      "bytes": 1532689,
+      "sha256": "70fd892e7676253f724ed9379b86a515713f056770105b3a64311c92a93c3e17"
     },
     "Практическая_работа_2_Химический_выброс.pdf": {
-      "bytes": 1712905,
-      "sha256": "2d48c5de8477a8276505a54eb7362689876b329a2d9bc5502b43799e00babffa"
+      "bytes": 1714682,
+      "sha256": "f4414ae072c3912112d66ca951bb4378f24dd13002bd0378fe14baab865878bc"
     }
   },
   "visual_review": "Each final rendered page separately reviewed; no clipping or detached captions accepted."

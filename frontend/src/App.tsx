@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Chart, DependencyGraph, QuarterRadars, fmt, lineOption, short } from './Charts';
 import { MathFormula } from './Math';
 import type { Config, Result, Verification } from './types';
+import { browserPython, call, onRuntimeProgress, reportURL } from './compute';
 
 const tabs = ['Динамика', 'Все графики', 'Внешние факторы', 'Срезы', 'Модель', 'Проверка'];
 const clone = <T,>(value: T): T => structuredClone(value);
@@ -13,15 +14,6 @@ function download(name: string, value: string, type = 'application/json') {
   const a = document.createElement('a');
   a.href = url; a.download = name; a.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-async function post<T>(url: string, config: Config): Promise<T> {
-  const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config) });
-  const data = await response.json();
-  if (!response.ok) {
-    const message = typeof data.detail === 'string' ? data.detail : 'Проверьте значения параметров и полноту конфигурации.';
-    throw new Error(message);
-  }
-  return data;
 }
 function validate(c: Config) {
   for (let i = 0; i < 11; i++) {
@@ -47,6 +39,7 @@ export function App() {
   const [verification, setVerification] = useState<Verification | null>(null);
   const [checking, setChecking] = useState(false);
   const [initialOpen, setInitialOpen] = useState(() => window.matchMedia('(min-width: 801px)').matches);
+  const [runtimeProgress, setRuntimeProgress] = useState('Загрузка Python в браузер…');
   const fileInput = useRef<HTMLInputElement>(null);
   const loaded = useRef(false);
   const dirty = !!result && JSON.stringify(config) !== JSON.stringify(result.config);
@@ -56,7 +49,7 @@ export function App() {
     setPlaying(false); setError(''); setBusy(true);
     try {
       validate(c);
-      const next = await post<Result>('/api/simulate', c);
+      const next = await call<Result>('/api/simulate', c);
       setResult(next); setFrame(next.t.length - 1); setVerification(null);
       if (imported) setConfig(next.config);
     } catch (e) { setError((e as Error).message); }
@@ -65,13 +58,12 @@ export function App() {
   useEffect(() => {
     if (loaded.current) return;
     loaded.current = true;
-    fetch('/api/presets').then(async r => {
-      if (!r.ok) throw new Error('Не удалось соединиться с Python-сервером.');
-      return r.json();
-    }).then(data => {
+    const unsubscribe = onRuntimeProgress(setRuntimeProgress);
+    call<{ presets: Config[]; state_names: string[]; factor_names: string[] }>('/api/presets').then(data => {
       setPresets(data.presets); setNames(data.state_names); setFactorNames(data.factor_names);
       setConfig(clone(data.presets[0])); void run(data.presets[0]);
     }).catch(e => setError(e.message));
+    return unsubscribe;
   }, []);
   useEffect(() => {
     if (!playing || !result) return;
@@ -113,7 +105,7 @@ export function App() {
   async function check() {
     if (!result) return;
     setChecking(true); setError('');
-    try { setVerification(await post<Verification>('/api/verify', result.config)); }
+    try { setVerification(await call<Verification>('/api/verify', result.config)); }
     catch (e) { setError((e as Error).message); }
     finally { setChecking(false); }
   }
@@ -123,7 +115,7 @@ export function App() {
     const rows = result.t.map((t, i) => [t, ...result.y[i], ...result.factors[i]].map(v => v.toPrecision(12)).join(';'));
     download('chemical-release-results.csv', '\ufeff' + headers.join(';') + '\n' + rows.join('\n'), 'text/csv;charset=utf-8');
   }
-  if (!config) return <div className="app"><h1>Моделирование химического выброса</h1><p>{error || 'Соединение с Python-сервером…'}</p></div>;
+  if (!config) return <div className="app loading"><h1>Моделирование химического выброса</h1><p role={error ? 'alert' : 'status'}>{error || (browserPython ? runtimeProgress : 'Соединение с Python-сервером…')}</p>{browserPython && <p className="note">Первый запуск загружает Python и научные библиотеки. Ничего устанавливать на компьютер не нужно.</p>}{error && <button onClick={() => window.location.reload()}>Повторить загрузку</button>}</div>;
 
   const cursor = result?.t[Math.min(frame, result.t.length - 1)] ?? 0;
   const values = result?.y[Math.min(frame, result.y.length - 1)] ?? config.initial;
@@ -136,8 +128,8 @@ export function App() {
 
   return <div className="app">
     <header className="header">
-      <div><h1>Моделирование химического выброса</h1><p className="subtitle">Системная динамика · 11 характеристик · Python / SciPy</p></div>
-      <div className="header-links"><a href="/api/report/docx">Отчёт DOCX ↓</a><a href="/api/report/pdf">PDF ↓</a><a href="https://github.com/snailrake/practwo" target="_blank" rel="noreferrer">Код ↗</a></div>
+      <div><h1>Моделирование химического выброса</h1><p className="subtitle">Системная динамика · 11 характеристик · Python / SciPy{browserPython ? ' · В браузере' : ''}</p></div>
+      <div className="header-links"><a href={reportURL('docx')}>Отчёт DOCX ↓</a><a href={reportURL('pdf')}>PDF ↓</a><a href="https://github.com/snailrake/practwo" target="_blank" rel="noreferrer">Код ↗</a></div>
     </header>
     <div className="workbench">
       <aside className="sidebar">
