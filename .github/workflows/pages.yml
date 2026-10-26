@@ -29,8 +29,13 @@ jobs:
       - run: python scripts/build_pages.py
       - run: npm ci && npm run build -- --mode pages
         working-directory: frontend
-      - run: npx playwright install --with-deps chromium
-        working-directory: frontend
+      - name: Use the runner's preinstalled Chrome
+        shell: bash
+        run: |
+          task_chrome_path="$(command -v google-chrome)"
+          test -x "$task_chrome_path"
+          "$task_chrome_path" --version
+          echo "CHROME_PATH=$task_chrome_path" >> "$GITHUB_ENV"
       - name: Verify the serverless build and numerical parity
         shell: bash
         run: |

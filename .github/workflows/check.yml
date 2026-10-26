@@ -21,8 +21,13 @@ jobs:
       - run: npm ci && npm run build
         working-directory: frontend
       - run: python scripts/reproduce.py
-      - run: npx playwright install --with-deps chromium
-        working-directory: frontend
+      - name: Use the runner's preinstalled Chrome
+        shell: bash
+        run: |
+          task_chrome_path="$(command -v google-chrome)"
+          test -x "$task_chrome_path"
+          "$task_chrome_path" --version
+          echo "CHROME_PATH=$task_chrome_path" >> "$GITHUB_ENV"
       - name: Check browser workflows
         shell: bash
         run: |
