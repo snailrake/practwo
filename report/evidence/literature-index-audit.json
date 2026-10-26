@@ -1,0 +1,208 @@
+{
+  "provider": "Elsevier Scopus",
+  "edition": "September 2026",
+  "checked": "2026-10-26",
+  "source_page": "https://www.elsevier.com/en-gb/products/scopus/content",
+  "download_url": "https://downloads.ctfassets.net/o78em1y1w4i4/7xtaTxNiNcWRTeZkV86eNy/e6b17b29beaf8d18175591a4e8dee0bf/ext_list_Sep_2026.xlsx",
+  "sha256": "1e2eea11dd6b02609efaf78fb23efe888b47d55a3d1e20dffcd0ec87c56d892b",
+  "journal_matches": [
+    {
+      "journal": "Journal of Chemical Health and Safety",
+      "list_row": 259,
+      "Sourcerecord ID": "4000148108",
+      "Source Title": "ACS Chemical Health and Safety",
+      "ISSN": "18715532",
+      "EISSN": "18780504",
+      "Active or Inactive": "Active",
+      "Coverage": "2006-2026",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "Applied Sciences",
+      "list_row": 3714,
+      "Sourcerecord ID": "21100829268",
+      "Source Title": "Applied Sciences (Switzerland)",
+      "ISSN": "",
+      "EISSN": "20763417",
+      "Active or Inactive": "Active",
+      "Coverage": "2011-2026",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "Atmosphere",
+      "list_row": 4889,
+      "Sourcerecord ID": "15838",
+      "Source Title": "Atmosphere",
+      "ISSN": "15983560",
+      "EISSN": "20734433",
+      "Active or Inactive": "Active",
+      "Coverage": "2010-2026",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "Atmospheric Chemistry and Physics",
+      "list_row": 4893,
+      "Sourcerecord ID": "12091",
+      "Source Title": "Atmospheric Chemistry and Physics",
+      "ISSN": "16807316",
+      "EISSN": "16807324",
+      "Active or Inactive": "Active",
+      "Coverage": "2001-2026; 1999",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "Atmospheric Environment",
+      "list_row": 4894,
+      "Sourcerecord ID": "23357",
+      "Source Title": "Atmospheric Environment",
+      "ISSN": "13522310",
+      "EISSN": "18732844",
+      "Active or Inactive": "Active",
+      "Coverage": "1994-2026; 1986-1987; 1983; 1972-1981",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "Atmospheric Environment: X",
+      "list_row": 4898,
+      "Sourcerecord ID": "21100894508",
+      "Source Title": "Atmospheric Environment: X",
+      "ISSN": "",
+      "EISSN": "25901621",
+      "Active or Inactive": "Active",
+      "Coverage": "2019-2026",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "Chemical Engineering Transactions",
+      "list_row": 8268,
+      "Sourcerecord ID": "19600161818",
+      "Source Title": "Chemical Engineering Transactions",
+      "ISSN": "",
+      "EISSN": "22839216",
+      "Active or Inactive": "Active",
+      "Coverage": "2009-2026",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "Energies",
+      "list_row": 13430,
+      "Sourcerecord ID": "62932",
+      "Source Title": "Energies",
+      "ISSN": "",
+      "EISSN": "19961073",
+      "Active or Inactive": "Active",
+      "Coverage": "2008-2026",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "Geoscientific Model Development",
+      "list_row": 16800,
+      "Sourcerecord ID": "21100197121",
+      "Source Title": "Geoscientific Model Development",
+      "ISSN": "1991959X",
+      "EISSN": "19919603",
+      "Active or Inactive": "Active",
+      "Coverage": "2008-2026",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "International Journal of Environmental Research and Public Health",
+      "list_row": 21109,
+      "Sourcerecord ID": "144989",
+      "Source Title": "International Journal of Environmental Research and Public Health",
+      "ISSN": "16617827",
+      "EISSN": "16604601",
+      "Active or Inactive": "Active",
+      "Coverage": "2004-2026",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "Journal of Loss Prevention in the Process Industries",
+      "list_row": 27098,
+      "Sourcerecord ID": "13559",
+      "Source Title": "Journal of Loss Prevention in the Process Industries",
+      "ISSN": "09504230",
+      "EISSN": "",
+      "Active or Inactive": "Active",
+      "Coverage": "1988-2027",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "Mathematics of Computation",
+      "list_row": 32242,
+      "Sourcerecord ID": "25092",
+      "Source Title": "Mathematics of Computation",
+      "ISSN": "00255718",
+      "EISSN": "10886842",
+      "Active or Inactive": "Active",
+      "Coverage": "1943-2026; 1926; 1864",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "Nature",
+      "list_row": 34160,
+      "Sourcerecord ID": "21206",
+      "Source Title": "Nature",
+      "ISSN": "00280836",
+      "EISSN": "14764687",
+      "Active or Inactive": "Active",
+      "Coverage": "1869-2026",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "Nature Methods",
+      "list_row": 34202,
+      "Sourcerecord ID": "21100778827",
+      "Source Title": "Nature Methods",
+      "ISSN": "15487091",
+      "EISSN": "15487105",
+      "Active or Inactive": "Active",
+      "Coverage": "2004-2026",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "PLoS Computational Biology",
+      "list_row": 37769,
+      "Sourcerecord ID": "4000151810",
+      "Source Title": "PLOS Computational Biology",
+      "ISSN": "1553734X",
+      "EISSN": "15537358",
+      "Active or Inactive": "Active",
+      "Coverage": "2005-2026",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "Process Safety and Environmental Protection",
+      "list_row": 38719,
+      "Sourcerecord ID": "13754",
+      "Source Title": "Process Safety and Environmental Protection",
+      "ISSN": "09575820",
+      "EISSN": "17443598",
+      "Active or Inactive": "Active",
+      "Coverage": "1990-2026",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "Processes",
+      "list_row": 38725,
+      "Sourcerecord ID": "21100838131",
+      "Source Title": "Processes",
+      "ISSN": "",
+      "EISSN": "22279717",
+      "Active or Inactive": "Active",
+      "Coverage": "2013-2026",
+      "Source Type": "Journal"
+    },
+    {
+      "journal": "Sustainability",
+      "list_row": 45038,
+      "Sourcerecord ID": "21100240100",
+      "Source Title": "Sustainability (Switzerland)",
+      "ISSN": "",
+      "EISSN": "20711050",
+      "Active or Inactive": "Active",
+      "Coverage": "2009-2026",
+      "Source Type": "Journal"
+    }
+  ]
+}

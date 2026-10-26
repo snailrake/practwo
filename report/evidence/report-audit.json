@@ -33,6 +33,26 @@
       "passed": true
     },
     {
+      "name": "Exactly 30 unique scientific references",
+      "passed": true
+    },
+    {
+      "name": "Bibliography matches verified metadata",
+      "passed": true
+    },
+    {
+      "name": "Every bibliography item cited in the body",
+      "passed": true
+    },
+    {
+      "name": "Every reference has verified Scopus journal and coverage",
+      "passed": true
+    },
+    {
+      "name": "30 bibliography links point to full texts",
+      "passed": true
+    },
+    {
       "name": "Centered illustrations",
       "passed": true
     },
@@ -85,16 +105,16 @@
       "passed": true
     }
   ],
-  "pages": 32,
+  "pages": 37,
   "passed": true,
   "files": {
     "Практическая_работа_2_Химический_выброс.docx": {
-      "bytes": 1532689,
-      "sha256": "70fd892e7676253f724ed9379b86a515713f056770105b3a64311c92a93c3e17"
+      "bytes": 1539867,
+      "sha256": "d2e4942bf34307fa390f875362e7d164fde6df69e7a7f618b79ac39976aad328"
     },
     "Практическая_работа_2_Химический_выброс.pdf": {
-      "bytes": 1714682,
-      "sha256": "f4414ae072c3912112d66ca951bb4378f24dd13002bd0378fe14baab865878bc"
+      "bytes": 1745982,
+      "sha256": "5c1ae305d05240dbd02a913fa7d7ce0dc58065373c4ab4d7f4e6efcfcfe73f58"
     }
   },
   "visual_review": "Each final rendered page separately reviewed; no clipping or detached captions accepted."

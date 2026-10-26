@@ -40,6 +40,32 @@ def check_report():
     check('Every figure referenced in prose', all(f'рисунком {i}.' in text for i in range(1, 14)))
     check('Every table referenced in prose', all(f'таблице {i}.' in text for i in range(1, 9)))
     check('No em dashes or unfinished placeholders', '—' not in text and not any(w in text for w in ['TODO', 'TBD', 'Оглавление обновляется', 'Перегрин']))
+    literature=json.loads((REPORT/'literature.json').read_text('utf8'))
+    bib_heading=next(i for i,p in enumerate(paragraphs) if p=='Список использованных источников')
+    references=[p for p in paragraphs[bib_heading+1:] if re.match(r'^\d+\. ',p)]
+    check('Exactly 30 unique scientific references', len(literature)==len(references)==30 and len({s['doi'].lower() for s in literature})==30)
+    check('Bibliography matches verified metadata', all(p.startswith(f'{s["number"]}. {s["citation"]}') for s,p in zip(literature,references)))
+    citation_ids=set()
+    for m in re.finditer(r'\[([\d,; –-]+)\]', '\n'.join(paragraphs[:bib_heading])):
+        for part in re.split('[,;]',m.group(1)):
+            bounds=[int(x) for x in re.split('[–-]',part.strip())]
+            citation_ids.update(range(bounds[0],bounds[-1]+1))
+    check('Every bibliography item cited in the body', citation_ids==set(range(1,31)))
+    index_evidence=json.loads((REPORT/'evidence/literature-index-audit.json').read_text('utf8'))
+    indexed_journals={j['Sourcerecord ID']:j for j in index_evidence['journal_matches']}
+
+    def covered_reference(source):
+        journal=indexed_journals.get(source['scopus_source_id'])
+        if not journal or journal['Source Type']!='Journal':
+            return False
+        issns={journal['ISSN'].replace('-',''),journal['EISSN'].replace('-','')}
+        ranges=re.findall(r'(\d{4})(?:-(\d{4}))?',journal['Coverage'])
+        covered_year=any(int(start)<=source['year']<=int(end or start) for start,end in ranges)
+        return source['issn'].replace('-','') in issns and covered_year and source['verified_date']==index_evidence['checked']
+
+    check('Every reference has verified Scopus journal and coverage', all(covered_reference(s) for s in literature))
+    hyperlinks=[r.target_ref for r in d.part.rels.values() if r.reltype.endswith('/hyperlink')]
+    check('30 bibliography links point to full texts', all(s['pdf_url'] in hyperlinks for s in literature))
     check('Centered illustrations', all(p.xpath('./w:pPr/w:jc/@w:val') == ['center'] for p in d._element.body.xpath('.//w:p[w:r/w:drawing]')))
     check('Right aligned table numbers', all(p.xpath('./w:pPr/w:jc/@w:val') == ['right'] for p in d._element.body.xpath('./w:p') if re.fullmatch(r'Таблица \d+', ''.join(p.xpath('.//w:t/text()')))))
     data = json.loads((REPORT/'evidence/experiments.json').read_text('utf8'))
