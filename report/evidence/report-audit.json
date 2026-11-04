@@ -109,12 +109,12 @@
   "passed": true,
   "files": {
     "Практическая_работа_2_Химический_выброс.docx": {
-      "bytes": 1539867,
-      "sha256": "d2e4942bf34307fa390f875362e7d164fde6df69e7a7f618b79ac39976aad328"
+      "bytes": 1356501,
+      "sha256": "b4b71ca792cc1d079e9f338a4199e065fd9a5a737648e4f8ebf2834e6b3240e6"
     },
     "Практическая_работа_2_Химический_выброс.pdf": {
-      "bytes": 1745982,
-      "sha256": "5c1ae305d05240dbd02a913fa7d7ce0dc58065373c4ab4d7f4e6efcfcfe73f58"
+      "bytes": 1619512,
+      "sha256": "adc6f0a964e58587a3e8661aed318068a15cc16952c82ccbc228eb0414e1ce96"
     }
   },
   "visual_review": "Each final rendered page separately reviewed; no clipping or detached captions accepted."

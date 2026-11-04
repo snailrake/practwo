@@ -1,0 +1,266 @@
+{
+  "url": "http://127.0.0.1:8012/pages-dist/",
+  "checks": [
+    {
+      "name": "First screen is the inline cubic editor without an extra click",
+      "passed": true
+    },
+    {
+      "name": "All four editable fields are physically inside the formula",
+      "passed": true
+    },
+    {
+      "name": "One reset replaces the old mode and example buttons",
+      "passed": true
+    },
+    {
+      "name": "Default coefficients are clearly identified as an investigative scenario",
+      "passed": true
+    },
+    {
+      "name": "Zero coefficients do not invent false singularities",
+      "passed": true
+    },
+    {
+      "name": "Large cancelling terms obey the solver intermediate-value limit",
+      "passed": true
+    },
+    {
+      "name": "Inline coefficients reach the integrated expression",
+      "passed": true
+    },
+    {
+      "name": "Editing the cubic changes actual system results",
+      "passed": true
+    },
+    {
+      "name": "Inline inputs accept a decimal comma",
+      "passed": true
+    },
+    {
+      "name": "Incomplete inline input pauses computation and stale export",
+      "passed": true
+    },
+    {
+      "name": "Reset clears a draft and returns to the default cubic",
+      "passed": true
+    },
+    {
+      "name": "Quadratic form has exactly three inline coefficients",
+      "passed": true
+    },
+    {
+      "name": "Linear form has exactly two inline coefficients",
+      "passed": true
+    },
+    {
+      "name": "Constant form has one inline coefficient",
+      "passed": true
+    },
+    {
+      "name": "Zero polynomial is labelled constant without hiding the current four slots",
+      "passed": true
+    },
+    {
+      "name": "a=b=0 is honestly labelled linear",
+      "passed": true
+    },
+    {
+      "name": "One compact slider edits the coefficient selected in the formula",
+      "passed": true
+    },
+    {
+      "name": "The curve visibly redraws when an inline value changes",
+      "passed": true
+    },
+    {
+      "name": "Changing the argument changes the real solver formula",
+      "passed": true
+    },
+    {
+      "name": "Reset restores both the expression and its original argument",
+      "passed": true
+    },
+    {
+      "name": "Original assignment stays available with its exact linear function",
+      "passed": true
+    },
+    {
+      "name": "Reset uses the current scenario rather than silently restoring another model",
+      "passed": true
+    },
+    {
+      "name": "plus X1 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "plus X2 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "plus X3 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "plus X4 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "plus X5 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "plus X6 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "plus X7 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "plus X8 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "plus X9 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "plus X10 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "plus X11 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "minus X1 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "minus X2 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "minus X3 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "minus X4 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "minus X5 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "minus X6 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "minus X7 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "minus X8 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "minus X9 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "minus X10 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "minus X11 opens its exact original expression",
+      "passed": true
+    },
+    {
+      "name": "Inline editing of a multivariable product preserves its other arguments",
+      "passed": true
+    },
+    {
+      "name": "Editing a superscript changes the actual exponent",
+      "passed": true
+    },
+    {
+      "name": "Repeated literal edits keep stable positions and the other edited value",
+      "passed": true
+    },
+    {
+      "name": "Partial literal edit blocks export without corrupting the last formula",
+      "passed": true
+    },
+    {
+      "name": "Reset recovers an incomplete literal in an analytic formula",
+      "passed": true
+    },
+    {
+      "name": "A square root retains its mathematical layout with inline numeric input",
+      "passed": true
+    },
+    {
+      "name": "Singular analytic functions start on a readable positive interval",
+      "passed": true
+    },
+    {
+      "name": "Division and exponents render as mathematics with editable literals",
+      "passed": true
+    },
+    {
+      "name": "F1 uses its own number of fields and time argument",
+      "passed": true
+    },
+    {
+      "name": "F2 uses its own number of fields and time argument",
+      "passed": true
+    },
+    {
+      "name": "F3 uses its own number of fields and time argument",
+      "passed": true
+    },
+    {
+      "name": "F4 uses its own number of fields and time argument",
+      "passed": true
+    },
+    {
+      "name": "F5 uses its own number of fields and time argument",
+      "passed": true
+    },
+    {
+      "name": "F6 uses its own number of fields and time argument",
+      "passed": true
+    },
+    {
+      "name": "F7 uses its own number of fields and time argument",
+      "passed": true
+    },
+    {
+      "name": "External cubic really changes the computed trajectory",
+      "passed": true
+    },
+    {
+      "name": "Inline formula and page fit width 1280",
+      "passed": true
+    },
+    {
+      "name": "Inline formula and page fit width 800",
+      "passed": true
+    },
+    {
+      "name": "Inline formula and page fit width 390",
+      "passed": true
+    },
+    {
+      "name": "Inline editing works on a phone",
+      "passed": true
+    },
+    {
+      "name": "No KaTeX errors or uncaught JavaScript errors",
+      "passed": true
+    }
+  ],
+  "errors": []
+}

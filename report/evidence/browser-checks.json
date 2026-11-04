@@ -5,6 +5,14 @@
       "passed": true
     },
     {
+      "name": "Four task-focused navigation sections",
+      "passed": true
+    },
+    {
+      "name": "Technical controls are collapsed initially",
+      "passed": true
+    },
+    {
       "name": "All eleven initial values accessible",
       "passed": true
     },
@@ -21,7 +29,7 @@
       "passed": true
     },
     {
-      "name": "Playback advances cursor",
+      "name": "Playback buttons are removed",
       "passed": true
     },
     {

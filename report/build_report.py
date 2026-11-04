@@ -533,6 +533,8 @@ def main():
     # Remove title-rule residue in the inherited style while preserving the reference's page system.
     for node in d.styles['Title'].element.xpath('.//w:pBdr'):node.getparent().remove(node)
     target=out/'Практическая_работа_2_Химический_выброс.docx'
+    from update_ui_report import apply_ui_revision
+    ui_revision = apply_ui_revision(d)
     d.save(target)
     audit={'reference':str(R.template.resolve()),'reference_sha256':hashlib.sha256(R.template.read_bytes()).hexdigest(),
            'reference_pages':36,'report':target.name,'substantive_tables':R.tables,'figures':R.figures,
@@ -540,6 +542,9 @@ def main():
            'headings':R.headings,'production_equations':R.equation_records,
            'backend_tests':test_count,'browser_checks':len(ui['checks']),
            'browser_pages_checks':len(pages['checks']),'pages_runtime':pages['environment'],
+           'editor_checks':ui_revision['facts']['editor'],
+           'browser_pages_editor_checks':ui_revision['facts']['pages_editor'],
+           'ui_revision':ui_revision['version'],
            'sections':[{'width_cm':s.page_width.cm,'height_cm':s.page_height.cm,
                'margins_cm':[s.top_margin.cm,s.right_margin.cm,s.bottom_margin.cm,s.left_margin.cm]} for s in d.sections]}
     with ZipFile(R.template) as z:

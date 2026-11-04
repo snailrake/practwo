@@ -1,5 +1,5 @@
 {
-  "url": "http://127.0.0.1:8002/pages-dist/",
+  "url": "http://127.0.0.1:8012/pages-dist/",
   "checks": [
     {
       "name": "Static site starts a real Python computation",
@@ -19,6 +19,14 @@
     },
     {
       "name": "Scenario 4 matches native Python on the full grid",
+      "passed": true
+    },
+    {
+      "name": "Four task-focused navigation sections",
+      "passed": true
+    },
+    {
+      "name": "Technical controls are collapsed initially",
       "passed": true
     },
     {
@@ -86,6 +94,10 @@
       "passed": true
     },
     {
+      "name": "Published Python source matches repository: preview.py",
+      "passed": true
+    },
+    {
       "name": "Published Python source matches repository: browser.py",
       "passed": true
     },
@@ -130,6 +142,6 @@
     "platform": "emscripten",
     "engine": "WebAssembly"
   },
-  "load_ms": 9157.733,
+  "load_ms": 11174.243699999999,
   "max_scaled_difference": 1.8554545494496828e-16
 }

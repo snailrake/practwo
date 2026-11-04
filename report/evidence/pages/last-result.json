@@ -25178,7 +25178,7 @@
     "njev": 0,
     "samples": 401,
     "max_step": 0.01,
-    "elapsed_ms": 289.30000000000075,
+    "elapsed_ms": 353.20000000000107,
     "scipy_success": true
   }
 }

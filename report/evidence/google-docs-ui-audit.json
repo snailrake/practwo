@@ -1,0 +1,63 @@
+{
+  "document_url": "https://docs.google.com/document/d/1mqkp0Qys3dujOgj9oaLBPpMwzImKzH7svVY6Mc9NVmw",
+  "date": "2026-11-05",
+  "pages": 37,
+  "checks": [
+    {
+      "name": "All scoped text replacements are present",
+      "passed": true
+    },
+    {
+      "name": "Seventeen native equations retained",
+      "passed": true
+    },
+    {
+      "name": "Fifteen tables retained",
+      "passed": true
+    },
+    {
+      "name": "Thirteen inline figures retained",
+      "passed": true
+    },
+    {
+      "name": "Page setup preserved",
+      "passed": true
+    },
+    {
+      "name": "Named styles preserved",
+      "passed": true
+    },
+    {
+      "name": "Heading text and anchors preserved",
+      "passed": true
+    },
+    {
+      "name": "Thirty reference entries preserved",
+      "passed": true
+    },
+    {
+      "name": "Thirty full-text reference links preserved",
+      "passed": true
+    },
+    {
+      "name": "Eight unaffected figures preserved",
+      "passed": true
+    },
+    {
+      "name": "No long em dashes",
+      "passed": true
+    },
+    {
+      "name": "Thirty-seven readable PDF pages",
+      "passed": true
+    },
+    {
+      "name": "All forty-one contents entries match actual pages",
+      "passed": true
+    },
+    {
+      "name": "All figure captions exported",
+      "passed": true
+    }
+  ]
+}
