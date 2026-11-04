@@ -39,6 +39,7 @@ jobs:
           node scripts/qa_browser.mjs
           node scripts/qa_editor.mjs
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: chemical-release-verified-build
           path: |

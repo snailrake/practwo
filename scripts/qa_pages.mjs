@@ -40,7 +40,9 @@ try{
  const baseline=browserResults[0];await importConfig(baseline.config);
  check('Four task-focused navigation sections',JSON.stringify(await page.locator('.tabs button').allTextContents())===JSON.stringify(['Результаты','Зависимости','Внешние факторы','Лепестковые диаграммы']));
  check('Technical controls are collapsed initially',!(await page.getByLabel('rtol',{exact:true}).isVisible())&&!(await page.getByRole('button',{name:'Проверить расчёт',exact:true}).isVisible()));
- await page.getByRole('button',{name:'Все 11 графиков',exact:true}).click();check('Eleven state charts are available',await page.locator('canvas').count()===11);
+ await page.getByRole('button',{name:'Все 11 графиков',exact:true}).click();
+ await page.waitForFunction(()=>document.querySelectorAll('.plot-grid canvas').length===11);
+ check('Eleven state charts are available',await page.locator('canvas').count()===11);
  await tab('Внешние факторы');await page.getByText('Все внешние факторы',{exact:true}).click();check('Seven factor equations and charts are available',await page.locator('.all-factors canvas').count()===7&&await page.getByLabel(/Формула F/).count()===7);
  await tab('Зависимости');await page.getByText('Все уравнения',{exact:true}).click();check('Twenty-two editable functions and eleven rendered equations',await page.getByLabel(/Функция (плюс|минус) X/).count()===22&&await page.locator('.equation .katex').count()===11&&await page.locator('.katex-error').count()===0);
  await tab('Лепестковые диаграммы');check('Four quarter radars are computed',await page.locator('canvas').count()===4&&baseline.quarters.every((q,i)=>q.t===(i+1)/4));

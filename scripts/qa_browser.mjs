@@ -36,7 +36,9 @@ try{
  await page.getByRole('button',{name:'0,5',exact:true}).click();
  check('Exact half-time snapshot',(await page.locator('output').innerText()).includes('0,5'));
  await page.getByRole('button',{name:'1',exact:true}).click();
- await page.getByRole('button',{name:'Все 11 графиков',exact:true}).click();check('All eleven characteristic graphs',await page.locator('canvas').count()===11);
+ await page.getByRole('button',{name:'Все 11 графиков',exact:true}).click();
+ await page.waitForFunction(()=>document.querySelectorAll('.plot-grid canvas').length===11);
+ check('All eleven characteristic graphs',await page.locator('canvas').count()===11);
  await capture('ui-all-states.png');
  await selectTab('Внешние факторы');
  await page.getByText('Все внешние факторы',{exact:true}).click();
