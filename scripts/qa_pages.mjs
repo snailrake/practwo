@@ -38,12 +38,14 @@ try{
   check('Scenario '+(i+1)+' matches native Python on the full grid',sameGrid&&error<1e-9&&result.fingerprint===native[i].fingerprint);
  }
  const baseline=browserResults[0];await importConfig(baseline.config);
- await tab('Все графики');check('Eleven state charts are available',await page.locator('canvas').count()===11);
+ check('Four task-focused navigation sections',JSON.stringify(await page.locator('.tabs button').allTextContents())===JSON.stringify(['Результаты','Зависимости','Внешние факторы','Лепестковые диаграммы']));
+ check('Technical controls are collapsed initially',!(await page.getByLabel('rtol',{exact:true}).isVisible())&&!(await page.getByRole('button',{name:'Проверить расчёт',exact:true}).isVisible()));
+ await page.getByRole('button',{name:'Все 11 графиков',exact:true}).click();check('Eleven state charts are available',await page.locator('canvas').count()===11);
  await tab('Внешние факторы');check('Seven factor equations and charts are available',await page.locator('canvas').count()===7&&await page.getByLabel(/Формула F/).count()===7);
- await tab('Модель');check('Twenty-two editable functions and eleven rendered equations',await page.getByLabel(/Функция (плюс|минус) X/).count()===22&&await page.locator('.equation .katex').count()===11&&await page.locator('.katex-error').count()===0);
- await tab('Срезы');check('Four quarter radars are computed',await page.locator('canvas').count()===4&&baseline.quarters.every((q,i)=>q.t===(i+1)/4));
+ await tab('Зависимости');check('Twenty-two editable functions and eleven rendered equations',await page.getByLabel(/Функция (плюс|минус) X/).count()===22&&await page.locator('.equation .katex').count()===11&&await page.locator('.katex-error').count()===0);
+ await tab('Лепестковые диаграммы');check('Four quarter radars are computed',await page.locator('canvas').count()===4&&baseline.quarters.every((q,i)=>q.t===(i+1)/4));
  await page.screenshot({path:path.join(output,'pages-quarters.png')});
- await tab('Проверка');await page.getByRole('button',{name:'Проверить расчёт',exact:true}).click();
+ await tab('Результаты');await page.getByText('Проверка расчёта',{exact:true}).click();await page.getByRole('button',{name:'Проверить расчёт',exact:true}).click();
  await page.getByRole('heading',{name:'Все численные критерии выполнены',exact:true}).waitFor();
  check('All five numerical checks run in browser Python',await page.getByRole('cell',{name:'Пройдена',exact:true}).count()===5);
  await page.screenshot({path:path.join(output,'pages-verification.png')});
@@ -51,7 +53,7 @@ try{
  analytic.initial=Array(11).fill(1);analytic.scales=Array(11).fill(1);analytic.plus=Array(11).fill('0');analytic.minus=Array(11).fill('0');analytic.minus[0]='0.7*X1';
  await importConfig(analytic);const computed=await exportResult();
  check('Arbitrary imported equations are actually integrated',Math.abs(computed.y.at(-1)[0]-Math.exp(-0.7))<1e-8&&computed.y.at(-1).slice(1).every(v=>v===1));
- await tab('Модель');await page.getByLabel('Функция плюс X1',{exact:true}).fill("__import__('os')");await run();
+ await tab('Зависимости');await page.getByLabel('Функция плюс X1',{exact:true}).fill("__import__('os')");await run();
  check('Unsafe expressions are refused by the browser Python model',await page.getByRole('alert').isVisible());
  await importConfig(baseline.config);await tab('Внешние факторы');await page.getByLabel('Формула F5',{exact:true}).fill('0');await run();
  check('Zero denominator is refused without hidden epsilon',await page.getByRole('alert').isVisible());
@@ -79,7 +81,7 @@ try{
   });}finally{worker.terminate();}
  },{workerURL,baseURL:new URL('.',url).href});
  check('Actual WebAssembly interpreter and SciPy are present',environment.platform==='emscripten'&&environment.scipy===manifest.packages.scipy);
- await tab('Динамика');
+ await tab('Результаты');await page.getByRole('button',{name:'Один график',exact:true}).click();
  const csvWait=page.waitForEvent('download');await page.getByRole('button',{name:'CSV ↓',exact:true}).click();
  const csv=await csvWait;await csv.saveAs(path.join(output,'pages-export.csv'));
  const csvText=await fs.readFile(path.join(output,'pages-export.csv'),'utf8');

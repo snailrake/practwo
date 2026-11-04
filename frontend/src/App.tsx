@@ -4,7 +4,7 @@ import { MathFormula } from './Math';
 import type { Config, Result, Verification } from './types';
 import { browserPython, call, onRuntimeProgress, reportURL } from './compute';
 
-const tabs = ['Динамика', 'Все графики', 'Внешние факторы', 'Срезы', 'Модель', 'Проверка'];
+const tabs = ['Результаты', 'Зависимости', 'Внешние факторы', 'Лепестковые диаграммы'];
 const clone = <T,>(value: T): T => structuredClone(value);
 const symbol = (prefix: string, i: number) => <>{prefix}<sub>{i + 1}</sub></>;
 const fieldNumber = (value: number) => Number.isFinite(value) ? value : '';
@@ -33,7 +33,7 @@ export function App() {
   const [tab, setTab] = useState(0);
   const [selected, setSelected] = useState(2);
   const [frame, setFrame] = useState(400);
-  const [playing, setPlaying] = useState(false);
+  const [allCharts, setAllCharts] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [verification, setVerification] = useState<Verification | null>(null);
@@ -46,7 +46,7 @@ export function App() {
   const comparison = reference && result && reference.config.t_end === result.config.t_end ? reference : null;
 
   async function run(c: Config, imported = false) {
-    setPlaying(false); setError(''); setBusy(true);
+    setError(''); setBusy(true);
     try {
       validate(c);
       const next = await call<Result>('/api/simulate', c);
@@ -65,18 +65,8 @@ export function App() {
     }).catch(e => setError(e.message));
     return unsubscribe;
   }, []);
-  useEffect(() => {
-    if (!playing || !result) return;
-    const timer = window.setInterval(() => setFrame(n => Math.min(n + 2, result.t.length - 1)), 40);
-    return () => window.clearInterval(timer);
-  }, [playing, result]);
-  useEffect(() => {
-    if (playing && result && frame >= result.t.length - 1) setPlaying(false);
-  }, [frame, result, playing]);
-
   function update<K extends keyof Config>(key: K, value: Config[K]) {
     setConfig(c => c ? { ...c, [key]: value, name: key === 'name' ? String(value) : 'Пользовательский сценарий' } : c);
-    setPlaying(false);
   }
   function array(key: 'initial' | 'scales' | 'factors' | 'plus' | 'minus', i: number, value: string | number) {
     setConfig(c => {
@@ -87,7 +77,6 @@ export function App() {
       next.name = 'Пользовательский сценарий';
       return next;
     });
-    setPlaying(false);
   }
   async function importScenario(file?: File) {
     if (!file) return;
@@ -123,20 +112,19 @@ export function App() {
   function moveTo(time: number) {
     if (!result) return;
     setFrame(result.t.reduce((best, t, i) => Math.abs(t - time) < Math.abs(result.t[best] - time) ? i : best, 0));
-    setPlaying(false);
   }
 
   return <div className="app">
     <header className="header">
       <div><h1>Моделирование химического выброса</h1><p className="subtitle">Системная динамика · 11 характеристик · Python / SciPy{browserPython ? ' · В браузере' : ''}</p></div>
-      <div className="header-links"><a href={reportURL('docx')}>Отчёт DOCX ↓</a><a href={reportURL('pdf')}>PDF ↓</a><a href="https://github.com/snailrake/practwo" target="_blank" rel="noreferrer">Код ↗</a></div>
+      <div className="header-links"><a href={reportURL('docx')}>Отчёт DOCX ↓</a><a href={reportURL('pdf')}>PDF ↓</a></div>
     </header>
     <div className="workbench">
       <aside className="sidebar">
         <section>
           <h2>Исходные данные</h2>
           <label className="field">Сценарий
-            <select aria-label="Модельный пример" value={presets.findIndex(p => p.name === config.name)} onChange={e => { const p = presets[+e.target.value]; if (p) { setConfig(clone(p)); setPlaying(false); } }}>
+            <select aria-label="Модельный пример" value={presets.findIndex(p => p.name === config.name)} onChange={e => { const p = presets[+e.target.value]; if (p) setConfig(clone(p)); }}>
               <option value={-1} disabled>Пользовательский сценарий</option>
               {presets.map((p, i) => <option key={p.name} value={i}>{p.name}</option>)}
             </select>
@@ -152,7 +140,8 @@ export function App() {
           <p className="note">Интервал 0…{fmt(config.t_end, 3)}. Значения в относительной шкале.</p>
         </section>
         <section>
-          <h2>Параметры расчёта</h2>
+          <details className="additional-settings">
+          <summary>Дополнительные настройки</summary>
           <details>
             <summary>Решатель и точность</summary>
             <label className="field">Метод
@@ -168,16 +157,9 @@ export function App() {
             <p className="note">Положительные делители правых частей. Не переводят модельные значения в физические единицы.</p>
             <div className="scale-inputs">{names.map((n, i) => <label key={n}>{symbol('S', i)}<input aria-label={'S' + (i + 1) + ' делитель'} type="number" min={1e-8} step="any" value={fieldNumber(config.scales[i])} onChange={e => array('scales', i, e.target.valueAsNumber)} /></label>)}</div>
           </details>
+          </details>
         </section>
-        <section>
-          <h2>Сохранение эксперимента</h2>
-          <div className="button-row"><button onClick={() => download('scenario.json', JSON.stringify(config, null, 2))}>Сохранить JSON</button><button onClick={() => fileInput.current?.click()}>Открыть JSON</button></div>
-          <input hidden ref={fileInput} type="file" accept=".json,application/json" onChange={e => void importScenario(e.target.files?.[0])} />
-          <p className="note">Для сравнения сохраните выполненный расчёт как эталон.</p>
-          <div className="button-row"><button disabled={!result} onClick={() => result && setReference(clone(result))}>Запомнить эталон</button>{reference && <button onClick={() => setReference(null)}>Убрать</button>}</div>
-          {reference && <p className="note">Эталон: {reference.config.name}</p>}
-        </section>
-        <p className="scope-note">Учебная модель последствий. Для прогноза реальной аварии необходима калибровка по данным объекта. <button className="link-button" onClick={() => setTab(4)}>Описание модели →</button></p>
+        <p className="scope-note">Учебная модель в относительной шкале. Для прогноза реальной аварии нужна калибровка по данным объекта.</p>
       </aside>
       <main>
         <nav className="tabs" aria-label="Разделы приложения">{tabs.map((name, i) => <button className={tab === i ? 'active' : ''} key={name} onClick={() => setTab(i)} aria-current={tab === i ? 'page' : undefined}>{name}</button>)}</nav>
@@ -186,27 +168,26 @@ export function App() {
         {result?.warnings.filter(w => w.startsWith('Есть отрицательные') || w.startsWith('X11 выходит')).map(w => <p className="message error" key={w}>{w}</p>)}
         {reference && result && !comparison && <p className="message">Сравнение недоступно: у эталона другой конец интервала. Задайте одинаковые интервалы.</p>}
         {result && <>
-          <div className="result-line"><span>{result.config.name}</span><span>{result.diagnostics.method} · {result.diagnostics.samples} точек</span></div>
+          <div className="result-line"><span>{result.config.name}</span><span>τ = 0…{fmt(result.config.t_end, 3)}</span></div>
           {tab === 0 && <>
             <section className="profile">
+              <div className="results-view" role="group" aria-label="Отображение результатов"><button aria-pressed={!allCharts} onClick={() => setAllCharts(false)}>Один график</button><button aria-pressed={allCharts} onClick={() => setAllCharts(true)}>Все 11 графиков</button></div>
+              {allCharts ? <><h2>Все 11 временных зависимостей</h2><div className="plot-grid">{names.map((n, i) => <div className="plot-cell" key={n}><h3>{symbol('X', i)} {short[i]}</h3><Chart label={'График X' + (i + 1)} height={240} option={lineOption(result, i, cursor, comparison)} /></div>)}</div></> : <>
               <div className="section-heading"><h2>Временной профиль</h2><select aria-label="Характеристика на основном графике" value={selected} onChange={e => setSelected(+e.target.value)}>{names.map((n, i) => <option key={n} value={i}>{'X' + (i + 1)} · {n}</option>)}</select></div>
               <h3 className="profile-title">{symbol('X', selected)} {names[selected]}</h3>
               <Chart label={'Временной профиль X' + (selected + 1)} height={360} option={lineOption(result, selected, cursor, comparison)} />
-              <div className="playback">
-                <button className="icon-button" aria-label="К началу" onClick={() => { setFrame(0); setPlaying(false); }}><span>↺</span><small>Сначала</small></button>
-                <button className="icon-button" aria-label="Шаг назад" disabled={frame === 0} onClick={() => { setFrame(n => Math.max(0, n - 1)); setPlaying(false); }}><span>⏮</span><small>Назад</small></button>
-                <button className="icon-button" aria-label={playing ? 'Пауза' : 'Воспроизвести'} onClick={() => { if (frame >= result.t.length - 1) setFrame(0); setPlaying(!playing); }}><span>{playing ? 'Ⅱ' : '▶'}</span><small>{playing ? 'Пауза' : 'Пуск'}</small></button>
-                <button className="icon-button" aria-label="Шаг вперёд" disabled={frame === result.t.length - 1} onClick={() => { setFrame(n => Math.min(result.t.length - 1, n + 1)); setPlaying(false); }}><span>⏭</span><small>Вперёд</small></button>
-                <input aria-label="Момент машинного времени" type="range" min={0} max={result.t.length - 1} value={Math.min(frame, result.t.length - 1)} onChange={e => { setFrame(+e.target.value); setPlaying(false); }} />
+              </>}
+              <div className="time-control">
+                <label htmlFor="model-time">Время τ</label>
+                <input id="model-time" aria-label="Момент машинного времени" type="range" min={0} max={result.t.length - 1} value={Math.min(frame, result.t.length - 1)} onChange={e => setFrame(+e.target.value)} />
                 <output>τ = {fmt(cursor, 3)}</output>
               </div>
               <div className="quarter-controls"><span>Четверти:</span>{snapshots.map(q => <button key={q.t} onClick={() => moveTo(q.t)}>{fmt(q.t, 3)}</button>)}</div>
               {comparison && <p className="note">Сплошная линия – текущий расчёт, пунктир – эталон.</p>}
             </section>
+            <details className="plain-details comparison-controls"><summary>Сравнение экспериментов</summary><p>Сохраните текущий результат, затем измените параметры и выполните новый расчёт.</p><div className="button-row"><button onClick={() => setReference(clone(result))}>Запомнить эталон</button>{reference && <button onClick={() => setReference(null)}>Убрать</button>}</div>{reference && <p>Эталон: {reference.config.name}</p>}</details>
             <section><h2>Характеристики при τ = {fmt(cursor, 3)}</h2><div className="metrics">{names.map((n, i) => <button title={n} className={selected === i ? 'metric active-metric' : 'metric'} key={n} onClick={() => setSelected(i)}><span>{symbol('X', i)} {short[i]}</span><strong>{fmt(values[i], 5)}</strong></button>)}</div></section>
-            <section><h2>Расчётная модель</h2><MathFormula block source="S_i\frac{dX_i}{d\tau}=f_i^+(X,F,\tau)-f_i^-(X,F,\tau),\quad i=1,\ldots,11" /><p className="note">Xᵢ – характеристики последствий; Fⱼ – семь внешних факторов; Sᵢ – положительные делители. Начальные значения, функции и численные параметры задаются в форме.</p></section>
           </>}
-          {tab === 1 && <section><div className="section-heading"><h2>Все 11 временных зависимостей</h2><span className="note">Единая сетка времени · отдельные шкалы</span></div><div className="plot-grid">{names.map((n, i) => <div className="plot-cell" key={n}><h3>{symbol('X', i)} {short[i]}</h3><Chart label={'График X' + (i + 1)} height={240} option={lineOption(result, i, undefined, comparison)} /></div>)}</div></section>}
           {tab === 2 && <section><h2>Внешние факторы Fⱼ(τ)</h2><p className="section-note">Измените функцию времени и нажмите «Рассчитать». Например: <code>0.8*(1+0.5*t)</code>. В формулах <code>t</code> обозначает машинное время τ.</p><div className="factor-grid">{factorNames.map((n, i) => <div className="factor-cell" key={n}>
             <h3>{symbol('F', i)} {n}</h3>
             <label className="formula-input"><span>F{i + 1}(t) =</span><input aria-label={'Формула F' + (i + 1)} maxLength={400} spellCheck={false} value={config.factors[i]} onChange={e => array('factors', i, e.target.value)} /></label>
@@ -218,7 +199,7 @@ export function App() {
             <section><h2>Численные значения срезов</h2><div className="table-scroll"><table><thead><tr><th>Характеристика</th>{snapshots.map(q => <th key={q.t}>τ = {fmt(q.t, 3)}</th>)}{comparison && <><th>Эталон, τ = {fmt(comparison.config.t_end)}</th><th>Разность</th></>}</tr></thead><tbody>{names.map((n, i) => <tr key={n}><th scope="row">{symbol('X', i)} {short[i]}</th>{snapshots.map(q => <td key={q.t}>{fmt(q.values[i], 6)}</td>)}{comparison && <><td>{fmt(comparison.y.at(-1)![i], 6)}</td><td>{fmt(result.y.at(-1)![i] - comparison.y.at(-1)![i], 6)}</td></>}</tr>)}</tbody></table></div></section>
             <details className="plain-details"><summary>Масштабы осей Rᵢ</summary><div className="scale-values">{result.radar_scales.map((r, i) => <span key={i}>R{i + 1} = {fmt(r, 6)}</span>)}</div></details>
           </>}
-          {tab === 4 && <>
+          {tab === 1 && <>
             <section><h2>Система уравнений</h2><MathFormula block source="\frac{dX_i}{d\tau}=\frac{f_i^+-f_i^-}{S_i},\qquad X_i(0)=X_i^0" /><p className="section-note">Формулы ниже соответствуют выполненному расчёту. Поля f⁺ и f⁻ редактируют следующий расчёт; исходные знаки сохраняются без преобразований.</p>
               <details className="plain-details"><summary>Синтаксис формул и исходные допущения</summary>
                 <p>Переменные: X1…X11, F1…F7, t; константы: pi, e. Операции: + − * / **. Функции: sqrt, exp, log, sin, cos, tanh, abs, min, max. Для внешних факторов допустимы только время и константы.</p>
@@ -232,7 +213,7 @@ export function App() {
             </section>
             <details className="plain-details"><summary>Граф зависимостей уравнений</summary><DependencyGraph r={result} /><p className="note">Связи получены из действующих выражений. Ребро означает наличие переменной в формуле, а не доказанный знак её влияния.</p></details>
           </>}
-          {tab === 5 && <>
+          {tab === 0 && <details className="plain-details verification-details"><summary>Проверка расчёта</summary>
             <section><h2>Проверка численного решения</h2><p>Сопоставление DOP853, RK45 и Radau с уточнённым решением; два независимых аналитических эталона. Проверяется численный алгоритм, не достоверность прогноза реальной аварии.</p>
               <button className="primary" disabled={checking || busy} onClick={() => void check()}>{checking ? 'Проверка…' : 'Проверить расчёт'}</button>
               {verification && <div className="verification-result">
@@ -242,13 +223,14 @@ export function App() {
                 <button onClick={() => download('verification.json', JSON.stringify({ config: result.config, fingerprint: result.fingerprint, ...verification }, null, 2))}>Сохранить протокол ↓</button>
               </div>}
             </section>
-            <section><h2>Протокол расчёта</h2><dl className="diagnostics">{Object.entries(result.diagnostics).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{typeof v === 'boolean' ? (v ? 'успех' : 'ошибка') : typeof v === 'number' ? fmt(v, 10) : v}</dd></div>)}</dl><p className="hash">SHA-256: {result.fingerprint}</p></section>
-            <section><h2>Область применимости</h2>{result.warnings.map(w => <p key={w}>{w}</p>)}<p>Не рассчитываются концентрации газа, токсическая доза и границы опасной зоны. Для эмпирической проверки нужны исходные наблюдения, которых в задании нет.</p></section>
-          </>}
-          <div className="result-actions"><span>Выполненный расчёт</span><button onClick={csv}>CSV ↓</button><button onClick={() => download('experiment.json', JSON.stringify(result, null, 2))}>Результат JSON ↓</button></div>
+            <details><summary>Технический протокол</summary><dl className="diagnostics">{Object.entries(result.diagnostics).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{typeof v === 'boolean' ? (v ? 'успех' : 'ошибка') : typeof v === 'number' ? fmt(v, 10) : v}</dd></div>)}</dl><p className="hash">SHA-256: {result.fingerprint}</p></details>
+            <details><summary>Область применимости</summary>{result.warnings.map(w => <p key={w}>{w}</p>)}<p>Не рассчитываются концентрации газа, токсическая доза и границы опасной зоны. Для эмпирической проверки нужны исходные наблюдения, которых в задании нет.</p></details>
+          </details>}
+          <div className="result-actions"><details className="scenario-files"><summary>Сценарий</summary><div className="button-row"><button onClick={() => download('scenario.json', JSON.stringify(config, null, 2))}>Сохранить JSON</button><button onClick={() => fileInput.current?.click()}>Открыть JSON</button></div></details><button onClick={csv}>CSV ↓</button><button onClick={() => download('experiment.json', JSON.stringify(result, null, 2))}>Результат JSON ↓</button></div>
+          <input hidden ref={fileInput} type="file" accept=".json,application/json" onChange={e => void importScenario(e.target.files?.[0])} />
         </>}
       </main>
     </div>
-    <footer>Практическая работа № 2 <span>Таблица 1 задания · SciPy solve_ivp · {result ? result.fingerprint.slice(0, 12) : ''}</span></footer>
+    <footer>Практическая работа № 2 <a href="https://github.com/snailrake/practwo" target="_blank" rel="noreferrer">Исходный код ↗</a></footer>
   </div>;
 }
