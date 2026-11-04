@@ -24,6 +24,9 @@ const importConfig=async c=>{
 };
 try{
  const start=performance.now();await page.goto(url);
+ await page.locator('.calculation-status[data-ready=true]').waitFor();
+ await tab('Результаты');
+ await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();
  await page.getByRole('heading',{name:'Временной профиль',exact:true}).waitFor();loadMs=performance.now()-start;
  check('Static site starts a real Python computation',await page.getByText('В браузере',{exact:false}).count()>0);
  await page.screenshot({path:path.join(output,'pages-dynamics.png')});

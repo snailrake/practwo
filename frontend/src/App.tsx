@@ -23,11 +23,12 @@ export function App() {
   const [names, setNames] = useState<string[]>([]);
   const [factorNames, setFactorNames] = useState<string[]>([]);
   const [config, setConfig] = useState<Config | null>(null);
+  const [scenarioDefaults, setScenarioDefaults] = useState<Config | null>(null);
   const [draftPending, setDraftPending] = useState(false);
   const [scenarioVersion, setScenarioVersion] = useState(0);
   const { result, busy, error, setError, retry } = useSimulation(config, draftPending);
   const [reference, setReference] = useState<Result | null>(null);
-  const [tab, setTab] = useState(0);
+  const [tab, setTab] = useState(1);
   const [selected, setSelected] = useState(2);
   const [frame, setFrame] = useState(400);
   const [allCharts, setAllCharts] = useState(false);
@@ -48,9 +49,9 @@ export function App() {
     if (loaded.current) return;
     loaded.current = true;
     const unsubscribe = onRuntimeProgress(setRuntimeProgress);
-    call<{ presets: Config[]; state_names: string[]; factor_names: string[] }>('/api/presets').then(data => {
-      setPresets(data.presets); setNames(data.state_names); setFactorNames(data.factor_names);
-      setConfig(clone(data.presets[0]));
+    call<{ presets: Config[]; startup: Config; state_names: string[]; factor_names: string[] }>('/api/presets').then(data => {
+      setPresets([...data.presets, data.startup]); setNames(data.state_names); setFactorNames(data.factor_names);
+      setScenarioDefaults(clone(data.startup)); setConfig(clone(data.startup));
     }).catch(e => setError(e.message));
     return unsubscribe;
   }, []);
@@ -76,7 +77,7 @@ export function App() {
       if (c.mode && c.mode !== 'literal') throw new Error('Этот старый файл использует изменённые уравнения. Выберите сценарий текущей модели.');
       delete c.mode;
       if (!['initial', 'scales', 'plus', 'minus'].every(k => Array.isArray(c[k]) && c[k].length === 11) || !Array.isArray(c.factors) || c.factors.length !== 7) throw new Error('Нужны 11 начальных значений, 11 делителей, 22 функции и 7 факторов.');
-      setDraftPending(false); setScenarioVersion(n => n + 1); setConfig(c);
+      setDraftPending(false); setScenarioVersion(n => n + 1); setScenarioDefaults(clone(c)); setConfig(c);
     } catch (e) { setError('Импорт: ' + (e as Error).message); }
     finally { if (fileInput.current) fileInput.current.value = ''; }
   }
@@ -117,9 +118,9 @@ export function App() {
         <section>
           <h2>Исходные данные</h2>
           <label className="field">Сценарий
-            <select aria-label="Модельный пример" value={presets.findIndex(p => p.name === config.name)} onChange={e => { const p = presets[+e.target.value]; if (p) { setDraftPending(false); setScenarioVersion(n => n + 1); setConfig(clone(p)); } }}>
+            <select aria-label="Модельный пример" value={presets.findIndex(p => p.name === config.name)} onChange={e => { const p = presets[+e.target.value]; if (p) { setDraftPending(false); setScenarioVersion(n => n + 1); setScenarioDefaults(clone(p)); setConfig(clone(p)); } }}>
               <option value={-1} disabled>Пользовательский сценарий</option>
-              {presets.map((p, i) => <option key={p.name} value={i}>{p.name}</option>)}
+              {presets.map((p, i) => <option key={p.name} value={i}>{p.name}{i === 0 ? ' · таблица задания' : ''}</option>)}
             </select>
           </label>
           <details className="initial-details" open={initialOpen} onToggle={e => setInitialOpen(e.currentTarget.open)}>
@@ -131,6 +132,7 @@ export function App() {
           </details>
           <div className="calculation-status" role="status" aria-live="polite" data-ready={!!result && !dirty && !busy && !draftPending && !error} data-busy={!error && (busy || dirty || draftPending)}><span />{draftPending ? 'Допишите коэффициент' : error ? 'Проверьте параметры' : busy || dirty || !result ? 'Пересчитываем…' : 'Расчёт обновлён'}</div>
           <p className="note">Интервал 0…{fmt(config.t_end, 3)}. Значения в относительной шкале.</p>
+          {JSON.stringify(scenarioDefaults) === JSON.stringify(presets.at(-1)) && <p className="scenario-note">Начальный сценарий: кубическая связь X₁ → X₄. Коэффициенты выбраны для исследования; остальные исходные функции – из таблицы задания.</p>}
         </section>
         <section>
           <details className="additional-settings">
@@ -181,7 +183,7 @@ export function App() {
             <details className="plain-details comparison-controls"><summary>Сравнение экспериментов</summary><p>Сохраните текущий результат, затем измените параметры. Новый расчёт появится автоматически.</p><div className="button-row"><button disabled={dirty || busy || draftPending} onClick={() => setReference(clone(result))}>Запомнить эталон</button>{reference && <button onClick={() => setReference(null)}>Убрать</button>}</div>{reference && <p>Эталон: {reference.config.name}</p>}</details>
             <section><h2>Характеристики при τ = {fmt(cursor, 3)}</h2><div className="metrics">{names.map((n, i) => <button title={n} className={selected === i ? 'metric active-metric' : 'metric'} key={n} onClick={() => setSelected(i)}><span>{symbol('X', i)} {short[i]}</span><strong>{fmt(values[i], 5)}</strong></button>)}</div></section>
           </>}
-          {tab === 2 && <><FunctionEditor key={'factors-' + scenarioVersion} external config={config} baseline={presets[0]} names={names} factors={factorNames} onChange={array} onDraft={setDraftPending} /><details className="plain-details all-factors"><summary>Все внешние факторы</summary><section><h2>Внешние факторы Fⱼ(τ)</h2><p className="section-note">В формулах <code>t</code> обозначает машинное время τ. Расчёт обновляется автоматически.</p><div className="factor-grid">{factorNames.map((n, i) => <div className="factor-cell" key={n}>
+          {tab === 2 && <><FunctionEditor key={'factors-' + scenarioVersion} external config={config} baseline={scenarioDefaults ?? presets[0]} names={names} factors={factorNames} onChange={array} onDraft={setDraftPending} /><details className="plain-details all-factors"><summary>Все внешние факторы</summary><section><h2>Внешние факторы Fⱼ(τ)</h2><p className="section-note">В формулах <code>t</code> обозначает машинное время τ. Расчёт обновляется автоматически.</p><div className="factor-grid">{factorNames.map((n, i) => <div className="factor-cell" key={n}>
             <h3>{symbol('F', i)} {n}</h3>
             <label className="formula-input"><span>F{i + 1}(t) =</span><input aria-label={'Формула F' + (i + 1)} maxLength={400} spellCheck={false} value={config.factors[i]} onChange={e => array('factors', i, e.target.value)} /></label>
             <div className="factor-math"><MathFormula source={'F_{' + (i + 1) + '}(\\tau)=' + result.factors_tex[i]} /></div>
@@ -193,7 +195,7 @@ export function App() {
             <details className="plain-details"><summary>Масштабы осей Rᵢ</summary><div className="scale-values">{result.radar_scales.map((r, i) => <span key={i}>R{i + 1} = {fmt(r, 6)}</span>)}</div></details>
           </>}
           {tab === 1 && <>
-            <FunctionEditor key={'model-' + scenarioVersion} config={config} baseline={presets[0]} names={names} factors={factorNames} onChange={array} onDraft={setDraftPending} />
+            <FunctionEditor key={'model-' + scenarioVersion} config={config} baseline={scenarioDefaults ?? presets[0]} names={names} factors={factorNames} onChange={array} onDraft={setDraftPending} />
             <details className="plain-details all-equations"><summary>Все уравнения</summary><section><h2>Система уравнений</h2><MathFormula block source="\frac{dX_i}{d\tau}=\frac{f_i^+-f_i^-}{S_i},\qquad X_i(0)=X_i^0" /><p className="section-note">Формулы ниже соответствуют выполненному расчёту. Изменения в полях автоматически запускают новый расчёт.</p>
               <details className="plain-details"><summary>Синтаксис формул и исходные допущения</summary>
                 <p>Переменные: X1…X11, F1…F7, t; константы: pi, e. Операции: + − * / **. Функции: sqrt, exp, log, sin, cos, tanh, abs, min, max. Для внешних факторов допустимы только время и константы.</p>

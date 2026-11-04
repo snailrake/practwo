@@ -20,6 +20,9 @@ const importConfig=async(config)=>{
 };
 try{
  await page.goto(baseUrl);
+ await page.locator('.calculation-status[data-ready=true]').waitFor();
+ await selectTab('Результаты');
+ await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();
  await page.getByRole('heading',{name:'Временной профиль',exact:true}).waitFor();
  await page.waitForTimeout(250);
  check('Desktop first render with real Python results',await page.locator('canvas').count()===1);

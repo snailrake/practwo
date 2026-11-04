@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .defaults import STATE_NAMES, FACTOR_NAMES, presets
+from .defaults import STATE_NAMES, FACTOR_NAMES, presets, startup
 from .expressions import ModelError
 from .model import SimulationConfig, simulate
 from .verification import verify
@@ -22,7 +22,7 @@ def health():
 
 @app.get("/api/presets")
 def get_presets():
-    return {"presets": presets(), "state_names": STATE_NAMES, "factor_names": FACTOR_NAMES}
+    return {"presets": presets(), "startup": startup(), "state_names": STATE_NAMES, "factor_names": FACTOR_NAMES}
 
 
 def calculate(config, operation):

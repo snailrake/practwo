@@ -47,3 +47,15 @@ def presets():
     volume.update(name="Больший объём выброса")
     volume["factors"][0] = "1.2"
     return [baseline, wind, alarm, volume]
+
+
+def startup():
+    """Editable cubic scenario; illustrative coefficients, not field measurements.
+
+    P4(0.7)=0.63 agrees with the assignment example at its initial state.
+    The remaining 21 algebraic parts and all external factors stay unchanged.
+    """
+    config = deepcopy(BASE)
+    config['name'] = 'Кубическая связь X1 → X4'
+    config['plus'][3] = '1.8*X1**3+0.0126'
+    return config

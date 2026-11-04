@@ -7,7 +7,7 @@ import numpy
 import scipy
 from pydantic import ValidationError
 
-from .defaults import STATE_NAMES, FACTOR_NAMES, presets
+from .defaults import STATE_NAMES, FACTOR_NAMES, presets, startup
 from .expressions import ModelError
 from .model import SimulationConfig, simulate
 from .verification import verify
@@ -17,7 +17,7 @@ from .preview import PreviewConfig, preview
 def dispatch(operation: str, payload: str = '{}') -> str:
     try:
         if operation == 'presets':
-            result = {'presets': presets(), 'state_names': STATE_NAMES, 'factor_names': FACTOR_NAMES}
+            result = {'presets': presets(), 'startup': startup(), 'state_names': STATE_NAMES, 'factor_names': FACTOR_NAMES}
         elif operation == 'environment':
             result = {'python': platform.python_version(), 'numpy': numpy.__version__,
                       'scipy': scipy.__version__, 'platform': sys.platform,

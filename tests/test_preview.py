@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from backend.app import app
 from backend.browser import dispatch
-from backend.defaults import BASE
+from backend.defaults import BASE, startup
 from backend.expressions import ModelError
 from backend.model import Dynamics, SimulationConfig, simulate
 from backend.preview import PreviewConfig, preview
@@ -88,3 +88,40 @@ def test_preview_refuses_executable_code():
     config = deepcopy(BASE); config['plus'][3] = "__import__('os')"
     response = TestClient(app).post('/api/preview', json={'config': config, 'kind': 'plus', 'index': 3, 'argument': 'X1'})
     assert response.status_code == 422
+
+
+def test_startup_cubic_preserves_the_initial_value_and_all_other_functions():
+    config = startup()
+    assert config['plus'][3] == '1.8*X1**3+0.0126'
+    assert all(config['plus'][i] == BASE['plus'][i] for i in range(11) if i != 3)
+    assert config['minus'] == BASE['minus'] and config['factors'] == BASE['factors']
+    graph = preview(PreviewConfig(config=config, kind='plus', index=3, argument='X1'))
+    assert graph['degree'] == 3
+    assert graph['reference_y'] == pytest.approx(.9*BASE['initial'][0])
+    assert graph['coefficients'] == [1.8, 0, 0, .0126]
+    for method in ['DOP853', 'RK45', 'Radau']:
+        computed = simulate(SimulationConfig(**{**config, 'method': method}))
+        assert computed['t'][-1] == 1 and np.isfinite(computed['y']).all()
+    assert TestClient(app).get('/api/presets').json()['startup'] == config
+    assert json.loads(dispatch('presets'))['result']['startup'] == config
+
+
+@pytest.mark.parametrize('source', [
+    '-3.58e-6*F1**0.8*F3*F4/X1**2.9',
+    '(0.1*X1 +\n 0.2) # комментарий',
+    'sqrt(0.5*X1)+2**3',
+])
+def test_inline_literal_ranges_preserve_the_exact_expression(source):
+    config = deepcopy(BASE); config['plus'][0] = source
+    result = preview(PreviewConfig(config=config, kind='plus', index=0, argument='X1'))
+    editable = result['editable']
+    encoded = source.encode('utf-16-le')
+    for literal in editable['literals']:
+        assert encoded[2*literal['start']:2*literal['end']].decode('utf-16-le') == literal['text']
+    # Replacing every literal with its own value must leave the evaluated function unchanged.
+    patched = source
+    for literal in reversed(editable['literals']):
+        patched = patched[:literal['start']] + '(' + literal['text'] + ')' + patched[literal['end']:]
+    config['plus'][0] = patched
+    other = preview(PreviewConfig(config=config, kind='plus', index=0, argument='X1'))
+    assert other['points'] == result['points']

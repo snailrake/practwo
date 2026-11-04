@@ -12,6 +12,36 @@ from .notation import to_tex
 NAMES = {'t'} | {f'X{i}' for i in range(1, 12)} | {f'F{i}' for i in range(1, 8)}
 
 
+def editable_tree(expression):
+    """Validated expression as native mathematical layout, with literal ranges.
+
+    Offsets are UTF-16, matching JS slicing even with newlines/non-ASCII spacing.
+    The frontend replaces only these literals; no new executable syntax is parsed.
+    """
+    source = expression.source
+    lines = source.splitlines(keepends=True)
+    literals = []
+
+    def offset(line, column):
+        prefix = ''.join(lines[:line-1]) + lines[line-1].encode('utf8')[:column].decode('utf8')
+        return len(prefix.encode('utf-16-le')) // 2
+
+    def visit(node):
+        if isinstance(node, ast.Constant):
+            index = len(literals)
+            start, end = offset(node.lineno, node.col_offset), offset(node.end_lineno, node.end_col_offset)
+            literals.append({'start': start, 'end': end, 'text': ast.get_source_segment(source, node)})
+            return {'kind': 'number', 'index': index}
+        if isinstance(node, ast.Name): return {'kind': 'name', 'name': node.id}
+        if isinstance(node, ast.UnaryOp): return {'kind': 'unary', 'op': '-' if isinstance(node.op, ast.USub) else '+', 'child': visit(node.operand)}
+        if isinstance(node, ast.BinOp):
+            symbol = {ast.Add: '+', ast.Sub: '-', ast.Mult: '*', ast.Div: '/', ast.Pow: '**'}[type(node.op)]
+            return {'kind': 'binary', 'op': symbol, 'left': visit(node.left), 'right': visit(node.right)}
+        return {'kind': 'call', 'name': node.func.id, 'args': [visit(n) for n in node.args]}
+
+    return {'tree': visit(expression.tree), 'literals': literals}
+
+
 class PreviewConfig(BaseModel):
     model_config = ConfigDict(extra='forbid', allow_inf_nan=False)
     config: SimulationConfig
@@ -99,7 +129,7 @@ def preview(request: PreviewConfig):
         anchor = expression(values)
     except ModelError:
         anchor = None
-    return {'source': source, 'tex': to_tex(source), 'dependencies': expression.dependencies,
+    return {'source': source, 'tex': to_tex(source), 'editable': editable_tree(expression), 'dependencies': expression.dependencies,
             'argument': request.argument, 'points': points, 'fixed': fixed,
             'reference_x': values.get(request.argument, 0.), 'reference_y': anchor,
             'coefficients': coefficients, 'degree': degree, 'invalid_points': invalid}
