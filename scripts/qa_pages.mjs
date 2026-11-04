@@ -13,14 +13,14 @@ const checks=[],errors=[],requests=[];let environment={},loadMs=0,largestDiffere
 page.on('pageerror',e=>errors.push(e.message));context.on('request',r=>requests.push(r.url()));
 const check=(name,condition)=>{checks.push({name,passed:!!condition});if(!condition)throw Error(name);};
 const tab=async name=>{await page.getByRole('button',{name,exact:true}).click();await page.waitForTimeout(150);};
-const run=async()=>{await page.getByRole('button',{name:'Рассчитать',exact:true}).click();await page.locator('button.calculate:not([disabled])').waitFor();};
+const run=async()=>{await page.waitForFunction(()=>document.querySelector('.calculation-status')?.dataset.ready==='true'||!!document.querySelector('main [role=alert]'));};
 const exportResult=async()=>{
  const wait=page.waitForEvent('download');await page.getByRole('button',{name:'Результат JSON ↓',exact:true}).click();
  const file=await wait;const filePath=path.join(output,'last-result.json');await file.saveAs(filePath);return JSON.parse(await fs.readFile(filePath,'utf8'));
 };
 const importConfig=async c=>{
  await page.locator('input[type=file]').setInputFiles({name:'scenario.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(c))});
- await page.locator('.result-line').filter({hasText:c.name}).waitFor();await page.locator('button.calculate:not([disabled])').waitFor();
+ await page.waitForTimeout(100);await run();await page.locator('.result-line').filter({hasText:c.name}).waitFor();
 };
 try{
  const start=performance.now();await page.goto(url);
@@ -41,8 +41,8 @@ try{
  check('Four task-focused navigation sections',JSON.stringify(await page.locator('.tabs button').allTextContents())===JSON.stringify(['Результаты','Зависимости','Внешние факторы','Лепестковые диаграммы']));
  check('Technical controls are collapsed initially',!(await page.getByLabel('rtol',{exact:true}).isVisible())&&!(await page.getByRole('button',{name:'Проверить расчёт',exact:true}).isVisible()));
  await page.getByRole('button',{name:'Все 11 графиков',exact:true}).click();check('Eleven state charts are available',await page.locator('canvas').count()===11);
- await tab('Внешние факторы');check('Seven factor equations and charts are available',await page.locator('canvas').count()===7&&await page.getByLabel(/Формула F/).count()===7);
- await tab('Зависимости');check('Twenty-two editable functions and eleven rendered equations',await page.getByLabel(/Функция (плюс|минус) X/).count()===22&&await page.locator('.equation .katex').count()===11&&await page.locator('.katex-error').count()===0);
+ await tab('Внешние факторы');await page.getByText('Все внешние факторы',{exact:true}).click();check('Seven factor equations and charts are available',await page.locator('.all-factors canvas').count()===7&&await page.getByLabel(/Формула F/).count()===7);
+ await tab('Зависимости');await page.getByText('Все уравнения',{exact:true}).click();check('Twenty-two editable functions and eleven rendered equations',await page.getByLabel(/Функция (плюс|минус) X/).count()===22&&await page.locator('.equation .katex').count()===11&&await page.locator('.katex-error').count()===0);
  await tab('Лепестковые диаграммы');check('Four quarter radars are computed',await page.locator('canvas').count()===4&&baseline.quarters.every((q,i)=>q.t===(i+1)/4));
  await page.screenshot({path:path.join(output,'pages-quarters.png')});
  await tab('Результаты');await page.getByText('Проверка расчёта',{exact:true}).click();await page.getByRole('button',{name:'Проверить расчёт',exact:true}).click();
@@ -53,9 +53,9 @@ try{
  analytic.initial=Array(11).fill(1);analytic.scales=Array(11).fill(1);analytic.plus=Array(11).fill('0');analytic.minus=Array(11).fill('0');analytic.minus[0]='0.7*X1';
  await importConfig(analytic);const computed=await exportResult();
  check('Arbitrary imported equations are actually integrated',Math.abs(computed.y.at(-1)[0]-Math.exp(-0.7))<1e-8&&computed.y.at(-1).slice(1).every(v=>v===1));
- await tab('Зависимости');await page.getByLabel('Функция плюс X1',{exact:true}).fill("__import__('os')");await run();
+ await tab('Зависимости');await page.getByText('Все уравнения',{exact:true}).click();await page.getByLabel('Функция плюс X1',{exact:true}).fill("__import__('os')");await run();
  check('Unsafe expressions are refused by the browser Python model',await page.getByRole('alert').isVisible());
- await importConfig(baseline.config);await tab('Внешние факторы');await page.getByLabel('Формула F5',{exact:true}).fill('0');await run();
+ await importConfig(baseline.config);await tab('Внешние факторы');await page.getByText('Все внешние факторы',{exact:true}).click();await page.getByLabel('Формула F5',{exact:true}).fill('0');await run();
  check('Zero denominator is refused without hidden epsilon',await page.getByRole('alert').isVisible());
  await importConfig(baseline.config);
  for(const kind of ['docx','pdf']){

@@ -9,6 +9,7 @@ from .defaults import STATE_NAMES, FACTOR_NAMES, presets
 from .expressions import ModelError
 from .model import SimulationConfig, simulate
 from .verification import verify
+from .preview import PreviewConfig, preview
 
 app = FastAPI(title="Моделирование химического выброса", version="2.0.0")
 workers = threading.BoundedSemaphore(2)
@@ -43,6 +44,11 @@ def simulate_endpoint(config: SimulationConfig):
 @app.post("/api/verify")
 def verify_endpoint(config: SimulationConfig):
     return calculate(config, verify)
+
+
+@app.post('/api/preview')
+def preview_endpoint(config: PreviewConfig):
+    return calculate(config, preview)
 
 
 @app.get('/api/report/{kind}')

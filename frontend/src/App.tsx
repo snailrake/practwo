@@ -3,6 +3,8 @@ import { Chart, DependencyGraph, QuarterRadars, fmt, lineOption, short } from '.
 import { MathFormula } from './Math';
 import type { Config, Result, Verification } from './types';
 import { browserPython, call, onRuntimeProgress, reportURL } from './compute';
+import { FunctionEditor } from './FunctionEditor';
+import { useSimulation } from './useSimulation';
 
 const tabs = ['Результаты', 'Зависимости', 'Внешние факторы', 'Лепестковые диаграммы'];
 const clone = <T,>(value: T): T => structuredClone(value);
@@ -15,53 +17,40 @@ function download(name: string, value: string, type = 'application/json') {
   a.href = url; a.download = name; a.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
-function validate(c: Config) {
-  for (let i = 0; i < 11; i++) {
-    if (!Number.isFinite(c.initial[i]) || c.initial[i] < 0) throw new Error('Введите неотрицательное начальное значение X' + (i + 1) + '.');
-    if (!Number.isFinite(c.scales[i]) || c.scales[i] <= 0) throw new Error('Делитель S' + (i + 1) + ' должен быть положительным числом.');
-  }
-  if (![c.rtol, c.atol, c.samples, c.t_end].every(Number.isFinite)) throw new Error('Заполните численные параметры решателя.');
-}
 
 export function App() {
   const [presets, setPresets] = useState<Config[]>([]);
   const [names, setNames] = useState<string[]>([]);
   const [factorNames, setFactorNames] = useState<string[]>([]);
   const [config, setConfig] = useState<Config | null>(null);
-  const [result, setResult] = useState<Result | null>(null);
+  const [draftPending, setDraftPending] = useState(false);
+  const [scenarioVersion, setScenarioVersion] = useState(0);
+  const { result, busy, error, setError, retry } = useSimulation(config, draftPending);
   const [reference, setReference] = useState<Result | null>(null);
   const [tab, setTab] = useState(0);
   const [selected, setSelected] = useState(2);
   const [frame, setFrame] = useState(400);
   const [allCharts, setAllCharts] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
   const [verification, setVerification] = useState<Verification | null>(null);
   const [checking, setChecking] = useState(false);
   const [initialOpen, setInitialOpen] = useState(() => window.matchMedia('(min-width: 801px)').matches);
   const [runtimeProgress, setRuntimeProgress] = useState('Загрузка Python в браузер…');
   const fileInput = useRef<HTMLInputElement>(null);
   const loaded = useRef(false);
+  const latestConfig = useRef(config);
+  latestConfig.current = config;
   const dirty = !!result && JSON.stringify(config) !== JSON.stringify(result.config);
   const comparison = reference && result && reference.config.t_end === result.config.t_end ? reference : null;
 
-  async function run(c: Config, imported = false) {
-    setError(''); setBusy(true);
-    try {
-      validate(c);
-      const next = await call<Result>('/api/simulate', c);
-      setResult(next); setFrame(next.t.length - 1); setVerification(null);
-      if (imported) setConfig(next.config);
-    } catch (e) { setError((e as Error).message); }
-    finally { setBusy(false); }
-  }
+  useEffect(() => { if (result) setFrame(result.t.length - 1); }, [result]);
+  useEffect(() => { setVerification(null); }, [config]);
   useEffect(() => {
     if (loaded.current) return;
     loaded.current = true;
     const unsubscribe = onRuntimeProgress(setRuntimeProgress);
     call<{ presets: Config[]; state_names: string[]; factor_names: string[] }>('/api/presets').then(data => {
       setPresets(data.presets); setNames(data.state_names); setFactorNames(data.factor_names);
-      setConfig(clone(data.presets[0])); void run(data.presets[0]);
+      setConfig(clone(data.presets[0]));
     }).catch(e => setError(e.message));
     return unsubscribe;
   }, []);
@@ -87,15 +76,19 @@ export function App() {
       if (c.mode && c.mode !== 'literal') throw new Error('Этот старый файл использует изменённые уравнения. Выберите сценарий текущей модели.');
       delete c.mode;
       if (!['initial', 'scales', 'plus', 'minus'].every(k => Array.isArray(c[k]) && c[k].length === 11) || !Array.isArray(c.factors) || c.factors.length !== 7) throw new Error('Нужны 11 начальных значений, 11 делителей, 22 функции и 7 факторов.');
-      await run(c, true);
+      setDraftPending(false); setScenarioVersion(n => n + 1); setConfig(c);
     } catch (e) { setError('Импорт: ' + (e as Error).message); }
     finally { if (fileInput.current) fileInput.current.value = ''; }
   }
   async function check() {
     if (!result) return;
+    const key = JSON.stringify(result.config);
     setChecking(true); setError('');
-    try { setVerification(await call<Verification>('/api/verify', result.config)); }
-    catch (e) { setError((e as Error).message); }
+    try {
+      const next = await call<Verification>('/api/verify', result.config);
+      if (JSON.stringify(latestConfig.current) === key) setVerification(next);
+    }
+    catch (e) { if (JSON.stringify(latestConfig.current) === key) setError((e as Error).message); }
     finally { setChecking(false); }
   }
   function csv() {
@@ -124,7 +117,7 @@ export function App() {
         <section>
           <h2>Исходные данные</h2>
           <label className="field">Сценарий
-            <select aria-label="Модельный пример" value={presets.findIndex(p => p.name === config.name)} onChange={e => { const p = presets[+e.target.value]; if (p) setConfig(clone(p)); }}>
+            <select aria-label="Модельный пример" value={presets.findIndex(p => p.name === config.name)} onChange={e => { const p = presets[+e.target.value]; if (p) { setDraftPending(false); setScenarioVersion(n => n + 1); setConfig(clone(p)); } }}>
               <option value={-1} disabled>Пользовательский сценарий</option>
               {presets.map((p, i) => <option key={p.name} value={i}>{p.name}</option>)}
             </select>
@@ -136,7 +129,7 @@ export function App() {
               <input aria-label={'X' + (i + 1) + ' начальное условие'} type="number" step="any" min={0} value={fieldNumber(config.initial[i])} onFocus={() => setSelected(i)} onChange={e => array('initial', i, e.target.valueAsNumber)} />
             </label>)}</div>
           </details>
-          <button className="primary calculate" disabled={busy} onClick={() => void run(config)}>{busy ? 'Расчёт…' : 'Рассчитать'}</button>
+          <div className="calculation-status" role="status" aria-live="polite" data-ready={!!result && !dirty && !busy && !draftPending && !error} data-busy={!error && (busy || dirty || draftPending)}><span />{draftPending ? 'Допишите коэффициент' : error ? 'Проверьте параметры' : busy || dirty || !result ? 'Пересчитываем…' : 'Расчёт обновлён'}</div>
           <p className="note">Интервал 0…{fmt(config.t_end, 3)}. Значения в относительной шкале.</p>
         </section>
         <section>
@@ -163,8 +156,8 @@ export function App() {
       </aside>
       <main>
         <nav className="tabs" aria-label="Разделы приложения">{tabs.map((name, i) => <button className={tab === i ? 'active' : ''} key={name} onClick={() => setTab(i)} aria-current={tab === i ? 'page' : undefined}>{name}</button>)}</nav>
-        {error && <div className="message error" role="alert"><span>{error}</span><button onClick={() => setError('')} aria-label="Закрыть ошибку">×</button></div>}
-        {dirty && <p className="message" role="status">Параметры изменены. Графики показывают предыдущий расчёт. Нажмите «Рассчитать».</p>}
+        {error && <div className="message error" role="alert"><span>{error}</span><button onClick={retry}>Повторить расчёт</button></div>}
+        {(dirty || draftPending) && result && <p className="message" role="status">{draftPending ? 'Допишите коэффициент.' : error ? 'Исправьте параметры.' : 'Обновляем результаты автоматически.'} Пока показан последний корректный расчёт.</p>}
         {result?.warnings.filter(w => w.startsWith('Есть отрицательные') || w.startsWith('X11 выходит')).map(w => <p className="message error" key={w}>{w}</p>)}
         {reference && result && !comparison && <p className="message">Сравнение недоступно: у эталона другой конец интервала. Задайте одинаковые интервалы.</p>}
         {result && <>
@@ -185,22 +178,23 @@ export function App() {
               <div className="quarter-controls"><span>Четверти:</span>{snapshots.map(q => <button key={q.t} onClick={() => moveTo(q.t)}>{fmt(q.t, 3)}</button>)}</div>
               {comparison && <p className="note">Сплошная линия – текущий расчёт, пунктир – эталон.</p>}
             </section>
-            <details className="plain-details comparison-controls"><summary>Сравнение экспериментов</summary><p>Сохраните текущий результат, затем измените параметры и выполните новый расчёт.</p><div className="button-row"><button onClick={() => setReference(clone(result))}>Запомнить эталон</button>{reference && <button onClick={() => setReference(null)}>Убрать</button>}</div>{reference && <p>Эталон: {reference.config.name}</p>}</details>
+            <details className="plain-details comparison-controls"><summary>Сравнение экспериментов</summary><p>Сохраните текущий результат, затем измените параметры. Новый расчёт появится автоматически.</p><div className="button-row"><button disabled={dirty || busy || draftPending} onClick={() => setReference(clone(result))}>Запомнить эталон</button>{reference && <button onClick={() => setReference(null)}>Убрать</button>}</div>{reference && <p>Эталон: {reference.config.name}</p>}</details>
             <section><h2>Характеристики при τ = {fmt(cursor, 3)}</h2><div className="metrics">{names.map((n, i) => <button title={n} className={selected === i ? 'metric active-metric' : 'metric'} key={n} onClick={() => setSelected(i)}><span>{symbol('X', i)} {short[i]}</span><strong>{fmt(values[i], 5)}</strong></button>)}</div></section>
           </>}
-          {tab === 2 && <section><h2>Внешние факторы Fⱼ(τ)</h2><p className="section-note">Измените функцию времени и нажмите «Рассчитать». Например: <code>0.8*(1+0.5*t)</code>. В формулах <code>t</code> обозначает машинное время τ.</p><div className="factor-grid">{factorNames.map((n, i) => <div className="factor-cell" key={n}>
+          {tab === 2 && <><FunctionEditor key={'factors-' + scenarioVersion} external config={config} baseline={presets[0]} names={names} factors={factorNames} onChange={array} onDraft={setDraftPending} /><details className="plain-details all-factors"><summary>Все внешние факторы</summary><section><h2>Внешние факторы Fⱼ(τ)</h2><p className="section-note">В формулах <code>t</code> обозначает машинное время τ. Расчёт обновляется автоматически.</p><div className="factor-grid">{factorNames.map((n, i) => <div className="factor-cell" key={n}>
             <h3>{symbol('F', i)} {n}</h3>
             <label className="formula-input"><span>F{i + 1}(t) =</span><input aria-label={'Формула F' + (i + 1)} maxLength={400} spellCheck={false} value={config.factors[i]} onChange={e => array('factors', i, e.target.value)} /></label>
             <div className="factor-math"><MathFormula source={'F_{' + (i + 1) + '}(\\tau)=' + result.factors_tex[i]} /></div>
             <Chart label={'Внешний фактор F' + (i + 1)} height={220} option={lineOption(result, i, undefined, comparison, 'factors')} />
-          </div>)}</div></section>}
+          </div>)}</div></section></details></>}
           {tab === 3 && <>
             <section><h2>Четыре четверти интервала</h2><p className="section-note">Для каждой характеристики масштаб Rᵢ один на всём интервале. Радиус – Xᵢ/Rᵢ. Сравнивайте одноимённые оси; площадь многоугольника не является общей оценкой риска.</p><QuarterRadars r={result} /></section>
             <section><h2>Численные значения срезов</h2><div className="table-scroll"><table><thead><tr><th>Характеристика</th>{snapshots.map(q => <th key={q.t}>τ = {fmt(q.t, 3)}</th>)}{comparison && <><th>Эталон, τ = {fmt(comparison.config.t_end)}</th><th>Разность</th></>}</tr></thead><tbody>{names.map((n, i) => <tr key={n}><th scope="row">{symbol('X', i)} {short[i]}</th>{snapshots.map(q => <td key={q.t}>{fmt(q.values[i], 6)}</td>)}{comparison && <><td>{fmt(comparison.y.at(-1)![i], 6)}</td><td>{fmt(result.y.at(-1)![i] - comparison.y.at(-1)![i], 6)}</td></>}</tr>)}</tbody></table></div></section>
             <details className="plain-details"><summary>Масштабы осей Rᵢ</summary><div className="scale-values">{result.radar_scales.map((r, i) => <span key={i}>R{i + 1} = {fmt(r, 6)}</span>)}</div></details>
           </>}
           {tab === 1 && <>
-            <section><h2>Система уравнений</h2><MathFormula block source="\frac{dX_i}{d\tau}=\frac{f_i^+-f_i^-}{S_i},\qquad X_i(0)=X_i^0" /><p className="section-note">Формулы ниже соответствуют выполненному расчёту. Поля f⁺ и f⁻ редактируют следующий расчёт; исходные знаки сохраняются без преобразований.</p>
+            <FunctionEditor key={'model-' + scenarioVersion} config={config} baseline={presets[0]} names={names} factors={factorNames} onChange={array} onDraft={setDraftPending} />
+            <details className="plain-details all-equations"><summary>Все уравнения</summary><section><h2>Система уравнений</h2><MathFormula block source="\frac{dX_i}{d\tau}=\frac{f_i^+-f_i^-}{S_i},\qquad X_i(0)=X_i^0" /><p className="section-note">Формулы ниже соответствуют выполненному расчёту. Изменения в полях автоматически запускают новый расчёт.</p>
               <details className="plain-details"><summary>Синтаксис формул и исходные допущения</summary>
                 <p>Переменные: X1…X11, F1…F7, t; константы: pi, e. Операции: + − * / **. Функции: sqrt, exp, log, sin, cos, tanh, abs, min, max. Для внешних факторов допустимы только время и константы.</p>
                 <p>Реализована таблица 1 задания: 11 характеристик. В изображении системы (4) имеются X12 и X13, не определённые в перечне и таблице. Начальные уровни и делители готовых сценариев – условия вычислительного эксперимента, не измерения на предприятии.</p>
@@ -210,12 +204,12 @@ export function App() {
                 <label className="formula-input"><span>f⁺ =</span><input aria-label={'Функция плюс X' + (i + 1)} maxLength={400} spellCheck={false} value={config.plus[i]} onChange={e => array('plus', i, e.target.value)} /></label>
                 <label className="formula-input"><span>f⁻ =</span><input aria-label={'Функция минус X' + (i + 1)} maxLength={400} spellCheck={false} value={config.minus[i]} onChange={e => array('minus', i, e.target.value)} /></label>
               </div>)}</div>
-            </section>
+            </section></details>
             <details className="plain-details"><summary>Граф зависимостей уравнений</summary><DependencyGraph r={result} /><p className="note">Связи получены из действующих выражений. Ребро означает наличие переменной в формуле, а не доказанный знак её влияния.</p></details>
           </>}
           {tab === 0 && <details className="plain-details verification-details"><summary>Проверка расчёта</summary>
             <section><h2>Проверка численного решения</h2><p>Сопоставление DOP853, RK45 и Radau с уточнённым решением; два независимых аналитических эталона. Проверяется численный алгоритм, не достоверность прогноза реальной аварии.</p>
-              <button className="primary" disabled={checking || busy} onClick={() => void check()}>{checking ? 'Проверка…' : 'Проверить расчёт'}</button>
+              <button className="primary" disabled={checking || busy || dirty || draftPending} onClick={() => void check()}>{checking ? 'Проверка…' : 'Проверить расчёт'}</button>
               {verification && <div className="verification-result">
                 <h3>{verification.passed ? 'Все численные критерии выполнены' : 'Есть численные расхождения'}</h3>
                 <div className="table-scroll"><table><thead><tr><th>Проверка</th><th>Ошибка</th><th>Порог</th><th>Результат</th></tr></thead><tbody>{verification.checks.map(c => <tr key={c.name}><td>{c.name}</td><td>{c.error.toExponential(3)}</td><td>{c.limit.toExponential(0)}</td><td>{c.passed ? 'Пройдена' : 'Не пройдена'}</td></tr>)}</tbody></table></div>
@@ -226,7 +220,7 @@ export function App() {
             <details><summary>Технический протокол</summary><dl className="diagnostics">{Object.entries(result.diagnostics).map(([k, v]) => <div key={k}><dt>{k}</dt><dd>{typeof v === 'boolean' ? (v ? 'успех' : 'ошибка') : typeof v === 'number' ? fmt(v, 10) : v}</dd></div>)}</dl><p className="hash">SHA-256: {result.fingerprint}</p></details>
             <details><summary>Область применимости</summary>{result.warnings.map(w => <p key={w}>{w}</p>)}<p>Не рассчитываются концентрации газа, токсическая доза и границы опасной зоны. Для эмпирической проверки нужны исходные наблюдения, которых в задании нет.</p></details>
           </details>}
-          <div className="result-actions"><details className="scenario-files"><summary>Сценарий</summary><div className="button-row"><button onClick={() => download('scenario.json', JSON.stringify(config, null, 2))}>Сохранить JSON</button><button onClick={() => fileInput.current?.click()}>Открыть JSON</button></div></details><button onClick={csv}>CSV ↓</button><button onClick={() => download('experiment.json', JSON.stringify(result, null, 2))}>Результат JSON ↓</button></div>
+          <div className="result-actions"><details className="scenario-files"><summary>Сценарий</summary><div className="button-row"><button onClick={() => download('scenario.json', JSON.stringify(config, null, 2))}>Сохранить JSON</button><button onClick={() => fileInput.current?.click()}>Открыть JSON</button></div></details><button disabled={dirty || busy || draftPending} onClick={csv}>CSV ↓</button><button disabled={dirty || busy || draftPending} onClick={() => download('experiment.json', JSON.stringify(result, null, 2))}>Результат JSON ↓</button></div>
           <input hidden ref={fileInput} type="file" accept=".json,application/json" onChange={e => void importScenario(e.target.files?.[0])} />
         </>}
       </main>

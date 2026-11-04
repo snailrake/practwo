@@ -15,7 +15,7 @@ export const fmt = (x: number, digits = 4) => {
 };
 const mono = 'Consolas, "Courier New", monospace';
 
-export function Chart({ option, height = 300, label }: { option: EChartsCoreOption; height?: number; label: string }) {
+export function Chart({ option, height = 300, label, animate = true }: { option: EChartsCoreOption; height?: number; label: string; animate?: boolean }) {
   const host = useRef<HTMLDivElement>(null);
   const instance = useRef<echarts.EChartsType | null>(null);
   useEffect(() => {
@@ -26,8 +26,11 @@ export function Chart({ option, height = 300, label }: { option: EChartsCoreOpti
     return () => { observer.disconnect(); instance.current?.dispose(); };
   }, []);
   useEffect(() => {
-    instance.current?.setOption({ animation: false, textStyle: { fontFamily: mono, color: '#111', fontSize: 11 }, ...option }, true);
-  }, [option]);
+    const motion = animate && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    instance.current?.setOption({ textStyle: { fontFamily: mono, color: '#111', fontSize: 11 }, ...option,
+      animation: motion, animationDuration: 0, animationDurationUpdate: 180, animationEasingUpdate: 'cubicOut' },
+      { notMerge: !animate, replaceMerge: animate ? ['series'] : undefined, lazyUpdate: true });
+  }, [option, animate]);
   return <div className="chart">
     <div ref={host} role="img" aria-label={label} style={{ height, width: '100%' }} />
     <button className="chart-download" aria-label={'Скачать ' + label} title="Сохранить график PNG" onClick={() => {
@@ -44,14 +47,14 @@ export function lineOption(r: Result, index: number, cursor?: number, comparison
   const points = (data: Result) => data.t.map((t, i) => [t, data[type][i][index]]);
   const symbol = (type === 'factors' ? 'F' : 'X') + (index + 1);
   const series: object[] = [{
-    type: 'line', name: symbol, data: points(r), showSymbol: false,
+    id: symbol, type: 'line', name: symbol, data: points(r), showSymbol: false,
     lineStyle: { color: '#111', width: 2 },
     markLine: cursor === undefined ? undefined : {
       symbol: 'none', silent: true, label: { show: false },
       lineStyle: { color: '#888', type: 'dashed', width: 1 }, data: [{ xAxis: cursor }],
     },
   }];
-  if (comparison) series.push({ name: 'Эталон', type: 'line', showSymbol: false, data: points(comparison), lineStyle: { color: '#777', type: 'dashed', width: 1.6 } });
+  if (comparison) series.push({ id: 'reference-' + symbol, name: 'Эталон', type: 'line', showSymbol: false, data: points(comparison), lineStyle: { color: '#777', type: 'dashed', width: 1.6 } });
   return {
     aria: { enabled: true },
     grid: { left: 14, right: 24, top: 32, bottom: 28, containLabel: true },
@@ -82,7 +85,7 @@ export function QuarterRadars({ r }: { r: Result }) {
         splitArea: { show: false }, splitLine: { lineStyle: { color: '#ccc' } },
         axisLine: { lineStyle: { color: '#ddd' } },
       },
-      series: [{ type: 'radar', symbolSize: 3, lineStyle: { color: '#111', width: 1.8 },
+      series: [{ id: 'quarter-' + i, type: 'radar', symbolSize: 3, lineStyle: { color: '#111', width: 1.8 },
         data: [{ name: 'τ = ' + fmt(q.t), value: q.normalized, itemStyle: { color: '#111' }, areaStyle: { color: '#111', opacity: .035 } }],
       }],
     };
@@ -95,7 +98,7 @@ export function DependencyGraph({ r }: { r: Result }) {
     ...Array.from({ length: 7 }, (_, i) => ({ name: 'F' + (i + 1), x: 0, y: i * 75, symbol: 'rect', symbolSize: [42, 27], itemStyle: { color: '#fff', borderColor: '#777', borderWidth: 1 }, label: { color: '#111' } })),
     ...short.map((_, i) => ({ name: 'X' + (i + 1), x: 180 + (i % 3) * 180, y: Math.floor(i / 3) * 145, symbolSize: 43, itemStyle: { color: '#111' }, label: { color: '#fff' } })),
   ];
-  return <Chart label="Граф зависимостей модели" height={450} option={{
+  return <Chart animate={false} label="Граф зависимостей модели" height={450} option={{
     tooltip: { confine: true, formatter: (p: any) => p.dataType === 'node' ? p.name + ' ' + (p.name.startsWith('X') ? r.state_names[+p.name.slice(1) - 1] : r.factor_names[+p.name.slice(1) - 1]) : p.data.source + ' → ' + p.data.target },
     series: [{ type: 'graph', layout: 'none', data: nodes,
       links: r.dependencies.flatMap(d => d.sources.filter(s => s !== 't').map(s => ({ source: s, target: d.target }))),

@@ -18,7 +18,7 @@ CDN = PIN['base_url']
 CACHE = ROOT/'work'/('pyodide-'+VERSION)
 OUT = ROOT/'frontend/public-pages'
 CORE = ['pyodide.mjs', 'pyodide.asm.mjs', 'pyodide.asm.wasm', 'python_stdlib.zip', 'pyodide-lock.json']
-MODULES = ['__init__.py', 'defaults.py', 'expressions.py', 'notation.py', 'model.py', 'verification.py', 'browser.py']
+MODULES = ['__init__.py', 'defaults.py', 'expressions.py', 'notation.py', 'model.py', 'verification.py', 'preview.py', 'browser.py']
 
 
 def download(name, expected=None, url=None):

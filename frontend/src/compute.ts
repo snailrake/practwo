@@ -1,4 +1,3 @@
-import type { Config } from './types';
 
 export const browserPython = __BROWSER_PYTHON__;
 const baseURL = new URL(import.meta.env.BASE_URL, window.location.href).href;
@@ -16,7 +15,7 @@ function failAll(message: string) {
   for (const task of pending.values()) { clearTimeout(task.timer); task.reject(new Error(message)); }
   pending.clear();
 }
-function request<T>(operation: string, payload?: Config): Promise<T> {
+function request<T>(operation: string, payload?: unknown): Promise<T> {
   if (!worker) {
     worker = new Worker(new URL('./python.worker.ts', import.meta.url), { type: 'module' });
     worker.onmessage = ({ data }) => {
@@ -34,7 +33,7 @@ function request<T>(operation: string, payload?: Config): Promise<T> {
     worker!.postMessage({ id, operation, payload: JSON.stringify(payload ?? {}), baseURL });
   });
 }
-export async function call<T>(url: string, config?: Config): Promise<T> {
+export async function call<T>(url: string, config?: unknown): Promise<T> {
   if (browserPython) return request<T>(url.split('/').at(-1)!, config);
   const response = await fetch(url, config ? {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(config),

@@ -4,23 +4,19 @@ import {pathToFileURL} from 'node:url';
 import {createRequire} from 'node:module';
 const {chromium}=process.env.PLAYWRIGHT_MODULE?await import(pathToFileURL(process.env.PLAYWRIGHT_MODULE).href):createRequire(path.resolve('frontend/package.json'))('playwright');
 const output=path.resolve(process.env.UI_EVIDENCE||'report/evidence');await fs.mkdir(output,{recursive:true});
-const baseUrl=process.env.APP_URL||'http://127.0.0.1:8000';
+const baseUrl=(process.env.APP_URL||'http://127.0.0.1:8000').replace(/\/+$/, '');
 const browser=await chromium.launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
 const page=await browser.newPage({viewport:{width:1512,height:1100},deviceScaleFactor:1});
 const checks=[],errors=[];page.on('pageerror',e=>errors.push(e.message));
 const check=(name,condition)=>{checks.push({name,passed:!!condition});if(!condition)throw Error(name);};
 const selectTab=async name=>{await page.getByRole('button',{name,exact:true}).click();await page.waitForTimeout(120);};
 const run=async()=>{
- const response=page.waitForResponse(r=>r.url().endsWith('/api/simulate')&&r.request().method()==='POST');
- await page.getByRole('button',{name:'Рассчитать',exact:true}).click();await response;
- await page.getByRole('button',{name:'Рассчитать',exact:true}).waitFor();
- await page.waitForTimeout(100);
+ await page.waitForFunction(()=>document.querySelector('.calculation-status')?.dataset.ready==='true'||!!document.querySelector('main [role=alert]'));
 };
 const capture=async name=>{await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:path.join(output,name)});};
 const importConfig=async(config)=>{
- const response=page.waitForResponse(r=>r.url().endsWith('/api/simulate')&&r.request().method()==='POST');
  await page.locator('input[type=file]').setInputFiles({name:'scenario.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(config))});
- await response;await page.waitForTimeout(150);
+ await page.waitForTimeout(100);await run();
 };
 try{
  await page.goto(baseUrl);
@@ -43,7 +39,8 @@ try{
  await page.getByRole('button',{name:'Все 11 графиков',exact:true}).click();check('All eleven characteristic graphs',await page.locator('canvas').count()===11);
  await capture('ui-all-states.png');
  await selectTab('Внешние факторы');
- check('Seven factor equations and plots',await page.getByLabel(/Формула F/).count()===7&&await page.locator('canvas').count()===7);
+ await page.getByText('Все внешние факторы',{exact:true}).click();
+ check('Seven factor equations and plots',await page.getByLabel(/Формула F/).count()===7&&await page.locator('.all-factors canvas').count()===7);
  check('Factor equations use rendered mathematics',await page.locator('.factor-math .katex').count()===7&&await page.locator('.katex-error').count()===0);
  await capture('ui-factors.png');
  await selectTab('Лепестковые диаграммы');
@@ -57,13 +54,14 @@ try{
  check('Comparison table includes differences',await page.getByRole('columnheader',{name:'Разность',exact:true}).isVisible());
  await capture('ui-comparison.png');
  await selectTab('Зависимости');
+ await page.getByText('Все уравнения',{exact:true}).click();
  check('All 22 model functions editable',await page.getByLabel(/Функция (плюс|минус) X/).count()===22);
  check('All eleven equations correctly rendered',await page.locator('.equation .katex').count()===11&&await page.locator('.katex-error').count()===0);
  await capture('ui-equations.png');
  await page.getByLabel('Функция плюс X1',{exact:true}).fill("__import__('os')");await run();
  check('Unsafe expression rejected visibly',await page.getByRole('alert').isVisible());
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();
- await selectTab('Внешние факторы');await page.getByLabel('Формула F5',{exact:true}).fill('0');await run();
+ await selectTab('Внешние факторы');await page.getByText('Все внешние факторы',{exact:true}).click();await page.getByLabel('Формула F5',{exact:true}).fill('0');await run();
  check('Zero divisor rejected',await page.getByRole('alert').isVisible());
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();
  await selectTab('Результаты');await page.getByRole('button',{name:'Один график',exact:true}).click();await page.getByText('Проверка расчёта',{exact:true}).click();await page.getByRole('button',{name:'Проверить расчёт',exact:true}).click();
@@ -105,7 +103,7 @@ try{
  check('Negative radar refused, values preserved',await page.getByText('Лепестковые диаграммы не строятся для отрицательных характеристик.',{exact:false}).isVisible());
  await page.getByText('Начальные условия Xᵢ(0)',{exact:true}).click();
  await page.getByLabel('X1 начальное условие',{exact:true}).fill('');
- await page.getByRole('button',{name:'Рассчитать',exact:true}).click();
+ await run();
  check('Empty numeric field rejected without crash',await page.getByRole('alert').isVisible());
  check('No uncaught JavaScript errors',errors.length===0);
 }catch(e){await page.screenshot({path:path.join(output,'ui-failure.png'),fullPage:true});throw e;}

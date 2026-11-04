@@ -11,6 +11,7 @@ from .defaults import STATE_NAMES, FACTOR_NAMES, presets
 from .expressions import ModelError
 from .model import SimulationConfig, simulate
 from .verification import verify
+from .preview import PreviewConfig, preview
 
 
 def dispatch(operation: str, payload: str = '{}') -> str:
@@ -21,6 +22,8 @@ def dispatch(operation: str, payload: str = '{}') -> str:
             result = {'python': platform.python_version(), 'numpy': numpy.__version__,
                       'scipy': scipy.__version__, 'platform': sys.platform,
                       'engine': 'WebAssembly' if sys.platform == 'emscripten' else 'native'}
+        elif operation == 'preview':
+            result = preview(PreviewConfig(**json.loads(payload)))
         elif operation in {'simulate', 'verify'}:
             config = SimulationConfig(**json.loads(payload))
             result = simulate(config) if operation == 'simulate' else verify(config)

@@ -37,6 +37,7 @@ jobs:
             sleep 1
           done
           node scripts/qa_browser.mjs
+          node scripts/qa_editor.mjs
       - uses: actions/upload-artifact@v4
         with:
           name: chemical-release-verified-build
@@ -47,3 +48,4 @@ jobs:
             report/evidence/summary.json
             report/evidence/browser-checks.json
             report/evidence/ui-*.png
+            report/evidence/editor/
