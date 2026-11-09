@@ -21,12 +21,15 @@ const importConfig=async(config)=>{
 try{
  await page.goto(baseUrl);
  await page.locator('.calculation-status[data-ready=true]').waitFor();
- await selectTab('Результаты');
+ await selectTab('Все результаты');
+ await page.waitForFunction(()=>document.querySelectorAll('.plot-grid canvas').length===11);
+ check('All results starts with the eleven plots',await page.locator('.plot-grid canvas').count()===11);
+ await page.getByRole('button',{name:'Один график',exact:true}).click();
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();
  await page.getByRole('heading',{name:'Временной профиль',exact:true}).waitFor();
  await page.waitForTimeout(250);
  check('Desktop first render with real Python results',await page.locator('canvas').count()===1);
- check('Four task-focused navigation sections',JSON.stringify(await page.locator('.tabs button').allTextContents())===JSON.stringify(['Результаты','Зависимости','Внешние факторы','Лепестковые диаграммы']));
+ check('Four task-focused navigation sections',JSON.stringify(await page.locator('.tabs button').allTextContents())===JSON.stringify(['Все результаты','Зависимости','Внешние факторы','Лепестковые диаграммы']));
  check('Technical controls are collapsed initially',!(await page.getByLabel('rtol',{exact:true}).isVisible())&&!(await page.getByRole('button',{name:'Проверить расчёт',exact:true}).isVisible()));
  check('All eleven initial values accessible',await page.getByLabel(/X\d+ начальное условие/).count()===11);
  check('No extra sign convention selector',(await page.getByText('Соглашение о знаках',{exact:true}).count())===0);
@@ -52,7 +55,7 @@ try{
  check('Four separate quarter radars',await page.locator('canvas').count()===4);
  check('Quarter table includes all eleven rows',await page.locator('tbody tr').count()===11);
  await capture('ui-quarters.png');
- await selectTab('Результаты');await page.getByText('Сравнение экспериментов',{exact:true}).click();await page.getByRole('button',{name:'Запомнить эталон',exact:true}).click();await selectTab('Лепестковые диаграммы');
+ await selectTab('Все результаты');await page.getByText('Сравнение экспериментов',{exact:true}).click();await page.getByRole('button',{name:'Запомнить эталон',exact:true}).click();await selectTab('Лепестковые диаграммы');
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('1');
  check('Changed configuration visibly marked stale',await page.locator('.message[role=status]').isVisible());
  await run();check('New scenario calculated',!(await page.locator('.message[role=status]').count()));
@@ -69,7 +72,7 @@ try{
  await selectTab('Внешние факторы');await page.getByText('Все внешние факторы',{exact:true}).click();await page.getByLabel('Формула F5',{exact:true}).fill('0');await run();
  check('Zero divisor rejected',await page.getByRole('alert').isVisible());
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();
- await selectTab('Результаты');await page.getByRole('button',{name:'Один график',exact:true}).click();await page.getByText('Проверка расчёта',{exact:true}).click();await page.getByRole('button',{name:'Проверить расчёт',exact:true}).click();
+ await selectTab('Все результаты');await page.getByRole('button',{name:'Один график',exact:true}).click();await page.getByText('Проверка расчёта',{exact:true}).click();await page.getByRole('button',{name:'Проверить расчёт',exact:true}).click();
  await page.getByRole('heading',{name:'Все численные критерии выполнены'}).waitFor({timeout:120000});
  check('Live five-check numerical verification passes',await page.getByRole('cell',{name:'Пройдена',exact:true}).count()===5);
  await capture('ui-verification.png');
@@ -80,7 +83,7 @@ try{
  const jsonPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Результат JSON ↓',exact:true}).click();
  const json=await jsonPromise;await json.saveAs(path.join(output,'ui-export.json'));
  check('JSON contains actual solver result',JSON.parse(await fs.readFile(path.join(output,'ui-export.json'),'utf8')).y.length===401);
- await selectTab('Результаты');const pngPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Скачать Временной профиль X3',exact:true}).click();
+ await selectTab('Все результаты');const pngPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Скачать Временной профиль X3',exact:true}).click();
  const png=await pngPromise;await png.saveAs(path.join(output,'ui-chart-export.png'));
  check('Graph PNG export has bytes',(await fs.stat(path.join(output,'ui-chart-export.png'))).size>10000);
  await page.getByLabel('X1 начальное условие',{exact:true}).fill('0.75');await run();

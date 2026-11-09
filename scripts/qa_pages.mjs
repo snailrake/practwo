@@ -20,12 +20,16 @@ const exportResult=async()=>{
 };
 const importConfig=async c=>{
  await page.locator('input[type=file]').setInputFiles({name:'scenario.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(c))});
- await page.waitForTimeout(100);await run();await page.locator('.result-line').filter({hasText:c.name}).waitFor();
+ await page.waitForTimeout(100);await run();
+ if ((await exportResult()).config.name !== c.name) throw Error('Imported scenario did not become current');
 };
 try{
  const start=performance.now();await page.goto(url);
  await page.locator('.calculation-status[data-ready=true]').waitFor();
- await tab('Результаты');
+ await tab('Все результаты');
+ await page.waitForFunction(()=>document.querySelectorAll('.plot-grid canvas').length===11);
+ check('All results starts with the eleven plots',await page.locator('.plot-grid canvas').count()===11);
+ await page.getByRole('button',{name:'Один график',exact:true}).click();
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();
  await page.getByRole('heading',{name:'Временной профиль',exact:true}).waitFor();loadMs=performance.now()-start;
  check('Static site starts a real Python computation',await page.getByText('В браузере',{exact:false}).count()>0);
@@ -41,7 +45,7 @@ try{
   check('Scenario '+(i+1)+' matches native Python on the full grid',sameGrid&&error<1e-9&&result.fingerprint===native[i].fingerprint);
  }
  const baseline=browserResults[0];await importConfig(baseline.config);
- check('Four task-focused navigation sections',JSON.stringify(await page.locator('.tabs button').allTextContents())===JSON.stringify(['Результаты','Зависимости','Внешние факторы','Лепестковые диаграммы']));
+ check('Four task-focused navigation sections',JSON.stringify(await page.locator('.tabs button').allTextContents())===JSON.stringify(['Все результаты','Зависимости','Внешние факторы','Лепестковые диаграммы']));
  check('Technical controls are collapsed initially',!(await page.getByLabel('rtol',{exact:true}).isVisible())&&!(await page.getByRole('button',{name:'Проверить расчёт',exact:true}).isVisible()));
  await page.getByRole('button',{name:'Все 11 графиков',exact:true}).click();
  await page.waitForFunction(()=>document.querySelectorAll('.plot-grid canvas').length===11);
@@ -50,7 +54,7 @@ try{
  await tab('Зависимости');await page.getByText('Все уравнения',{exact:true}).click();check('Twenty-two editable functions and eleven rendered equations',await page.getByLabel(/Функция (плюс|минус) X/).count()===22&&await page.locator('.equation .katex').count()===11&&await page.locator('.katex-error').count()===0);
  await tab('Лепестковые диаграммы');check('Four quarter radars are computed',await page.locator('canvas').count()===4&&baseline.quarters.every((q,i)=>q.t===(i+1)/4));
  await page.screenshot({path:path.join(output,'pages-quarters.png')});
- await tab('Результаты');await page.getByText('Проверка расчёта',{exact:true}).click();await page.getByRole('button',{name:'Проверить расчёт',exact:true}).click();
+ await tab('Все результаты');await page.getByText('Проверка расчёта',{exact:true}).click();await page.getByRole('button',{name:'Проверить расчёт',exact:true}).click();
  await page.getByRole('heading',{name:'Все численные критерии выполнены',exact:true}).waitFor();
  check('All five numerical checks run in browser Python',await page.getByRole('cell',{name:'Пройдена',exact:true}).count()===5);
  await page.screenshot({path:path.join(output,'pages-verification.png')});
@@ -86,7 +90,7 @@ try{
   });}finally{worker.terminate();}
  },{workerURL,baseURL:new URL('.',url).href});
  check('Actual WebAssembly interpreter and SciPy are present',environment.platform==='emscripten'&&environment.scipy===manifest.packages.scipy);
- await tab('Результаты');await page.getByRole('button',{name:'Один график',exact:true}).click();
+ await tab('Все результаты');await page.getByRole('button',{name:'Один график',exact:true}).click();
  const csvWait=page.waitForEvent('download');await page.getByRole('button',{name:'CSV ↓',exact:true}).click();
  const csv=await csvWait;await csv.saveAs(path.join(output,'pages-export.csv'));
  const csvText=await fs.readFile(path.join(output,'pages-export.csv'),'utf8');

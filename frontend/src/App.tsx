@@ -6,7 +6,7 @@ import { browserPython, call, onRuntimeProgress, reportURL } from './compute';
 import { FunctionEditor } from './FunctionEditor';
 import { useSimulation } from './useSimulation';
 
-const tabs = ['Результаты', 'Зависимости', 'Внешние факторы', 'Лепестковые диаграммы'];
+const tabs = ['Все результаты', 'Зависимости', 'Внешние факторы', 'Лепестковые диаграммы'];
 const clone = <T,>(value: T): T => structuredClone(value);
 const symbol = (prefix: string, i: number) => <>{prefix}<sub>{i + 1}</sub></>;
 const fieldNumber = (value: number) => Number.isFinite(value) ? value : '';
@@ -31,7 +31,7 @@ export function App() {
   const [tab, setTab] = useState(1);
   const [selected, setSelected] = useState(2);
   const [frame, setFrame] = useState(400);
-  const [allCharts, setAllCharts] = useState(false);
+  const [allCharts, setAllCharts] = useState(true);
   const [verification, setVerification] = useState<Verification | null>(null);
   const [checking, setChecking] = useState(false);
   const [initialOpen, setInitialOpen] = useState(() => window.matchMedia('(min-width: 801px)').matches);
@@ -68,6 +68,22 @@ export function App() {
       return next;
     });
   }
+  function resetEditor(index: number, external: boolean) {
+    const baseline = scenarioDefaults ?? presets[0];
+    setConfig(current => {
+      if (!current || !baseline) return current;
+      const next = clone(current);
+      if (external) next.factors[index] = baseline.factors[index];
+      else {
+        next.plus[index] = baseline.plus[index];
+        next.minus[index] = baseline.minus[index];
+      }
+      next.name = baseline.name;
+      if (JSON.stringify(next) !== JSON.stringify(baseline)) next.name = 'Пользовательский сценарий';
+      return next;
+    });
+    setDraftPending(false);
+  }
   async function importScenario(file?: File) {
     if (!file) return;
     try {
@@ -103,12 +119,14 @@ export function App() {
   const cursor = result?.t[Math.min(frame, result.t.length - 1)] ?? 0;
   const values = result?.y[Math.min(frame, result.y.length - 1)] ?? config.initial;
   const snapshots = result?.quarters ?? [];
+  const formulaView = tab === 1 || tab === 2;
+  const resultStatus = draftPending ? 'draft' : error ? 'error' : dirty || busy ? 'pending' : 'current';
   function moveTo(time: number) {
     if (!result) return;
     setFrame(result.t.reduce((best, t, i) => Math.abs(t - time) < Math.abs(result.t[best] - time) ? i : best, 0));
   }
 
-  return <div className="app">
+  return <div className={formulaView ? 'app formula-view' : 'app'}>
     <header className="header">
       <div><h1>Моделирование химического выброса</h1><p className="subtitle">Системная динамика · 11 характеристик · Python / SciPy{browserPython ? ' · В браузере' : ''}</p></div>
       <div className="header-links"><a href={reportURL('docx')}>Отчёт DOCX ↓</a><a href={reportURL('pdf')}>PDF ↓</a></div>
@@ -159,11 +177,11 @@ export function App() {
       <main>
         <nav className="tabs" aria-label="Разделы приложения">{tabs.map((name, i) => <button className={tab === i ? 'active' : ''} key={name} onClick={() => setTab(i)} aria-current={tab === i ? 'page' : undefined}>{name}</button>)}</nav>
         {error && <div className="message error" role="alert"><span>{error}</span><button onClick={retry}>Повторить расчёт</button></div>}
-        {(dirty || draftPending) && result && <p className="message" role="status">{draftPending ? 'Допишите коэффициент.' : error ? 'Исправьте параметры.' : 'Обновляем результаты автоматически.'} Пока показан последний корректный расчёт.</p>}
+        {(dirty || draftPending) && result && !formulaView && <p className="message" role="status">{draftPending ? 'Допишите коэффициент.' : error ? 'Исправьте параметры.' : 'Обновляем результаты автоматически.'} Пока показан последний корректный расчёт.</p>}
         {result?.warnings.filter(w => w.startsWith('Есть отрицательные') || w.startsWith('X11 выходит')).map(w => <p className="message error" key={w}>{w}</p>)}
         {reference && result && !comparison && <p className="message">Сравнение недоступно: у эталона другой конец интервала. Задайте одинаковые интервалы.</p>}
         {result && <>
-          <div className="result-line"><span>{result.config.name}</span><span>τ = 0…{fmt(result.config.t_end, 3)}</span></div>
+          {!formulaView && <div className="result-line"><span>{result.config.name}</span><span>τ = 0…{fmt(result.config.t_end, 3)}</span></div>}
           {tab === 0 && <>
             <section className="profile">
               <div className="results-view" role="group" aria-label="Отображение результатов"><button aria-pressed={!allCharts} onClick={() => setAllCharts(false)}>Один график</button><button aria-pressed={allCharts} onClick={() => setAllCharts(true)}>Все 11 графиков</button></div>
@@ -183,20 +201,23 @@ export function App() {
             <details className="plain-details comparison-controls"><summary>Сравнение экспериментов</summary><p>Сохраните текущий результат, затем измените параметры. Новый расчёт появится автоматически.</p><div className="button-row"><button disabled={dirty || busy || draftPending} onClick={() => setReference(clone(result))}>Запомнить эталон</button>{reference && <button onClick={() => setReference(null)}>Убрать</button>}</div>{reference && <p>Эталон: {reference.config.name}</p>}</details>
             <section><h2>Характеристики при τ = {fmt(cursor, 3)}</h2><div className="metrics">{names.map((n, i) => <button title={n} className={selected === i ? 'metric active-metric' : 'metric'} key={n} onClick={() => setSelected(i)}><span>{symbol('X', i)} {short[i]}</span><strong>{fmt(values[i], 5)}</strong></button>)}</div></section>
           </>}
-          {tab === 2 && <><FunctionEditor key={'factors-' + scenarioVersion} external config={config} baseline={scenarioDefaults ?? presets[0]} names={names} factors={factorNames} onChange={array} onDraft={setDraftPending} /><details className="plain-details all-factors"><summary>Все внешние факторы</summary><section><h2>Внешние факторы Fⱼ(τ)</h2><p className="section-note">В формулах <code>t</code> обозначает машинное время τ. Расчёт обновляется автоматически.</p><div className="factor-grid">{factorNames.map((n, i) => <div className="factor-cell" key={n}>
+          {tab === 2 && <><FunctionEditor key={'factors-' + scenarioVersion} external config={config} names={names} factors={factorNames}
+            result={result} status={resultStatus} onChange={array} onDraft={setDraftPending} onReset={resetEditor} />
+            <details className="plain-details all-factors"><summary>Все внешние факторы</summary><section><h2>Внешние факторы Fⱼ(τ)</h2><p className="section-note">В формулах <code>t</code> обозначает машинное время τ. Расчёт обновляется автоматически.{(dirty || draftPending) && ' Пока показан последний корректный расчёт.'}</p><div className="factor-grid">{factorNames.map((n, i) => <div className="factor-cell" key={n}>
             <h3>{symbol('F', i)} {n}</h3>
             <label className="formula-input"><span>F{i + 1}(t) =</span><input aria-label={'Формула F' + (i + 1)} maxLength={400} spellCheck={false} value={config.factors[i]} onChange={e => array('factors', i, e.target.value)} /></label>
             <div className="factor-math"><MathFormula source={'F_{' + (i + 1) + '}(\\tau)=' + result.factors_tex[i]} /></div>
             <Chart label={'Внешний фактор F' + (i + 1)} height={220} option={lineOption(result, i, undefined, comparison, 'factors')} />
           </div>)}</div></section></details></>}
           {tab === 3 && <>
-            <section><h2>Четыре четверти интервала</h2><p className="section-note">Для каждой характеристики масштаб Rᵢ один на всём интервале. Радиус – Xᵢ/Rᵢ. Сравнивайте одноимённые оси; площадь многоугольника не является общей оценкой риска.</p><QuarterRadars r={result} /></section>
+            <section><h2>Четыре снимка расчёта</h2><p className="section-note radar-explanation">Каждая диаграмма показывает 11 показателей в конце одной четверти. Сравнивайте один и тот же луч на разных снимках. Край луча соответствует максимуму его показателя за весь расчёт.</p><QuarterRadars r={result} /></section>
             <section><h2>Численные значения срезов</h2><div className="table-scroll"><table><thead><tr><th>Характеристика</th>{snapshots.map(q => <th key={q.t}>τ = {fmt(q.t, 3)}</th>)}{comparison && <><th>Эталон, τ = {fmt(comparison.config.t_end)}</th><th>Разность</th></>}</tr></thead><tbody>{names.map((n, i) => <tr key={n}><th scope="row">{symbol('X', i)} {short[i]}</th>{snapshots.map(q => <td key={q.t}>{fmt(q.values[i], 6)}</td>)}{comparison && <><td>{fmt(comparison.y.at(-1)![i], 6)}</td><td>{fmt(result.y.at(-1)![i] - comparison.y.at(-1)![i], 6)}</td></>}</tr>)}</tbody></table></div></section>
-            <details className="plain-details"><summary>Масштабы осей Rᵢ</summary><div className="scale-values">{result.radar_scales.map((r, i) => <span key={i}>R{i + 1} = {fmt(r, 6)}</span>)}</div></details>
+            <details className="plain-details"><summary>Как устроена шкала лучей</summary><p>Длина луча – доля от максимума того же показателя за весь расчёт. Площадь фигуры не показывает уровень опасности.</p><div className="scale-values">{result.radar_scales.map((r, i) => <span key={i}>{symbol('X', i)} {short[i]} · максимум {fmt(r, 6)}</span>)}</div></details>
           </>}
           {tab === 1 && <>
-            <FunctionEditor key={'model-' + scenarioVersion} config={config} baseline={scenarioDefaults ?? presets[0]} names={names} factors={factorNames} onChange={array} onDraft={setDraftPending} />
-            <details className="plain-details all-equations"><summary>Все уравнения</summary><section><h2>Система уравнений</h2><MathFormula block source="\frac{dX_i}{d\tau}=\frac{f_i^+-f_i^-}{S_i},\qquad X_i(0)=X_i^0" /><p className="section-note">Формулы ниже соответствуют выполненному расчёту. Изменения в полях автоматически запускают новый расчёт.</p>
+            <FunctionEditor key={'model-' + scenarioVersion} config={config} names={names} factors={factorNames}
+              result={result} status={resultStatus} onChange={array} onDraft={setDraftPending} onReset={resetEditor} />
+            <details className="plain-details all-equations"><summary>Все уравнения</summary><section><h2>Система уравнений</h2><MathFormula block source="\frac{dX_i}{d\tau}=\frac{f_i^+-f_i^-}{S_i},\qquad X_i(0)=X_i^0" /><p className="section-note">{dirty || draftPending ? 'Математическая запись показывает предыдущий расчёт.' : 'Формулы ниже соответствуют выполненному расчёту.'} Изменения в полях автоматически запускают новый расчёт.</p>
               <details className="plain-details"><summary>Синтаксис формул и исходные допущения</summary>
                 <p>Переменные: X1…X11, F1…F7, t; константы: pi, e. Операции: + − * / **. Функции: sqrt, exp, log, sin, cos, tanh, abs, min, max. Для внешних факторов допустимы только время и константы.</p>
                 <p>Реализована таблица 1 задания: 11 характеристик. В изображении системы (4) имеются X12 и X13, не определённые в перечне и таблице. Начальные уровни и делители готовых сценариев – условия вычислительного эксперимента, не измерения на предприятии.</p>

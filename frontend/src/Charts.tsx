@@ -15,7 +15,7 @@ export const fmt = (x: number, digits = 4) => {
 };
 const mono = 'Consolas, "Courier New", monospace';
 
-export function Chart({ option, height = 300, label, animate = true }: { option: EChartsCoreOption; height?: number; label: string; animate?: boolean }) {
+export function Chart({ option, height = 300, label, animate = true }: { option: EChartsCoreOption; height?: number | string; label: string; animate?: boolean }) {
   const host = useRef<HTMLDivElement>(null);
   const instance = useRef<echarts.EChartsType | null>(null);
   useEffect(() => {
@@ -77,7 +77,8 @@ export function QuarterRadars({ r }: { r: Result }) {
   if (r.quarters.some(q => q.values.some(v => v < 0))) return <p className="warning">Лепестковые диаграммы не строятся для отрицательных характеристик. Значения сохранены в таблице и временных графиках без обрезания.</p>;
   return <div className="radar-grid">{r.quarters.map((q, i) => {
     const option: EChartsCoreOption = {
-      tooltip: { trigger: 'item', confine: true },
+      tooltip: { trigger: 'item', confine: true, renderMode: 'richText',
+        formatter: () => ['Значения в момент τ = ' + fmt(q.t), ...q.values.map((v, j) => 'X' + (j + 1) + ' · ' + short[j] + '  ' + fmt(v, 5))].join('\n') },
       radar: {
         radius: '68%', center: ['50%', '50%'], splitNumber: 4,
         indicator: short.map((_, j) => ({ name: 'X' + (j + 1), min: 0, max: 1 })),
