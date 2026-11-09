@@ -97,8 +97,8 @@
     }
   ],
   "backend_tests": 83,
-  "browser_checks": 36,
-  "browser_pages_checks": 33,
+  "browser_checks": 37,
+  "browser_pages_checks": 34,
   "pages_runtime": {
     "python": "3.14.2",
     "numpy": "2.4.6",
@@ -375,7 +375,7 @@
       "sha256": "5519fceaa0e08f6ee66b7f26f624f7d2945575c426461d929f5a30cd855d2159"
     }
   ],
-  "editor_checks": 71,
-  "browser_pages_editor_checks": 65,
-  "ui_revision": "071b3fa"
+  "editor_checks": 78,
+  "browser_pages_editor_checks": 72,
+  "ui_revision": "bea901b"
 }

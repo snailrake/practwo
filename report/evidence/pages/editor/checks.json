@@ -1,5 +1,5 @@
 {
-  "url": "http://127.0.0.1:8012/pages-dist/",
+  "url": "http://127.0.0.1:8013/pages-dist/",
   "checks": [
     {
       "name": "First screen is the inline cubic editor without an extra click",
@@ -10,11 +10,39 @@
       "passed": true
     },
     {
-      "name": "One reset replaces the old mode and example buttons",
+      "name": "Both parts are visible together with subtraction and the divisor",
+      "passed": true
+    },
+    {
+      "name": "One reset and no separate equation-part selector",
       "passed": true
     },
     {
       "name": "Default coefficients are clearly identified as an investigative scenario",
+      "passed": true
+    },
+    {
+      "name": "Formula and both plots visible at 1366×768",
+      "passed": true
+    },
+    {
+      "name": "Formula and both plots visible at 1280×650",
+      "passed": true
+    },
+    {
+      "name": "Time graph redraws with the solver result from the same inline edit",
+      "passed": true
+    },
+    {
+      "name": "Editing the second part selects it and updates that actual solver term",
+      "passed": true
+    },
+    {
+      "name": "An incomplete draft in either part keeps the time result marked old",
+      "passed": true
+    },
+    {
+      "name": "One reset restores the exact selected scenario in both displayed parts",
       "passed": true
     },
     {

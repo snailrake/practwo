@@ -1,6 +1,10 @@
 {
-  "url": "http://127.0.0.1:8012/pages-dist/",
+  "url": "http://127.0.0.1:8013/pages-dist/",
   "checks": [
+    {
+      "name": "All results starts with the eleven plots",
+      "passed": true
+    },
     {
       "name": "Static site starts a real Python computation",
       "passed": true
@@ -142,6 +146,6 @@
     "platform": "emscripten",
     "engine": "WebAssembly"
   },
-  "load_ms": 11174.243699999999,
+  "load_ms": 14310.141599999999,
   "max_scaled_difference": 1.8554545494496828e-16
 }

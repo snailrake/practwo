@@ -1,10 +1,10 @@
 {
   "document_url": "https://docs.google.com/document/d/1mqkp0Qys3dujOgj9oaLBPpMwzImKzH7svVY6Mc9NVmw",
-  "date": "2026-11-05",
+  "date": "2026-11-10",
   "pages": 37,
   "checks": [
     {
-      "name": "All scoped text replacements are present",
+      "name": "All scoped text replacements and five current images",
       "passed": true
     },
     {
@@ -16,31 +16,19 @@
       "passed": true
     },
     {
-      "name": "Thirteen inline figures retained",
+      "name": "Eight other figures retained",
       "passed": true
     },
     {
-      "name": "Page setup preserved",
+      "name": "Heading text and anchors retained",
       "passed": true
     },
     {
-      "name": "Named styles preserved",
+      "name": "Named styles and page setup retained",
       "passed": true
     },
     {
-      "name": "Heading text and anchors preserved",
-      "passed": true
-    },
-    {
-      "name": "Thirty reference entries preserved",
-      "passed": true
-    },
-    {
-      "name": "Thirty full-text reference links preserved",
-      "passed": true
-    },
-    {
-      "name": "Eight unaffected figures preserved",
+      "name": "Thirty source entries and links retained",
       "passed": true
     },
     {
@@ -48,15 +36,11 @@
       "passed": true
     },
     {
-      "name": "Thirty-seven readable PDF pages",
+      "name": "PDF contains 37 pages and all 41 TOC page references agree",
       "passed": true
     },
     {
-      "name": "All forty-one contents entries match actual pages",
-      "passed": true
-    },
-    {
-      "name": "All figure captions exported",
+      "name": "Exported screenshot content matches each of the five figure captions",
       "passed": true
     }
   ]

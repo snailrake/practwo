@@ -1,6 +1,10 @@
 {
   "checks": [
     {
+      "name": "All results starts with the eleven plots",
+      "passed": true
+    },
+    {
       "name": "Desktop first render with real Python results",
       "passed": true
     },
