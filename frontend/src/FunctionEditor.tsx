@@ -27,6 +27,8 @@ const variables = ['t', ...Array.from({ length: 11 }, (_, i) => 'X' + (i + 1)), 
 const forms = ['Постоянная', 'Линейная', 'Квадратичная', 'Кубическая'];
 const letters = ['a', 'b', 'c', 'd'];
 const chartHeight = 'var(--editor-chart-height, 320px)';
+const plotGrid = { left: 9, right: 34, top: 30, bottom: 20, containLabel: true };
+const axisText = { fontSize: 14, color: '#333' };
 
 function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Props['onChange'], enabled = true) {
   const external = kind === 'factors';
@@ -231,15 +233,16 @@ function FormulaPlot({ part, variableName, index }: { part: Part; variableName: 
       <span className="function-type">{part.type}</span></div>
       <p>По горизонтали {variableName}</p></div>
     <Chart label="График выбранной зависимости" height={chartHeight} option={{
-      aria: { enabled: true }, grid: { left: 9, right: 24, top: 27, bottom: 20, containLabel: true },
+      aria: { enabled: true }, grid: plotGrid,
       tooltip: { trigger: 'axis', confine: true, valueFormatter: (v: unknown) => fmt(Number(v), 7) },
       xAxis: {
         type: 'value', name: xName, min: part.domainValid ? part.start : 0, max: part.domainValid ? part.end : 1,
-        nameGap: 7, axisLine: { onZero: false }, axisLabel: { formatter: (v: number) => fmt(v, 3), hideOverlap: true }, splitLine: { show: false },
+        nameGap: 7, nameTextStyle: axisText, axisLine: { onZero: false },
+        axisLabel: { ...axisText, formatter: (v: number) => fmt(v, 3), hideOverlap: true }, splitLine: { show: false },
       },
       yAxis: {
-        type: 'value', scale: true, name: yName, ...bounds,
-        axisLine: { onZero: false }, axisLabel: { formatter: (v: number) => fmt(v, 5), hideOverlap: true },
+        type: 'value', scale: true, name: yName, nameTextStyle: axisText, ...bounds,
+        axisLine: { onZero: false }, axisLabel: { ...axisText, formatter: (v: number) => fmt(v, 5), hideOverlap: true },
         splitLine: { lineStyle: { color: '#dedede', type: 'dotted' } },
       },
       series: [{ id: 'function', name: yName, type: 'line', data: part.points, connectNulls: false,
@@ -271,8 +274,9 @@ function ResultPlot({ result, status, index, title }: { result: Result; status: 
     <div className="plot-heading"><h3>Результат по времени</h3><p>{title}</p></div>
     <Chart label="Результат выбранного показателя по времени" height={chartHeight} option={{
       ...option,
-      grid: { left: 9, right: 24, top: 27, bottom: 20, containLabel: true },
-      yAxis: { ...(option.yAxis as Record<string, unknown>), ...bounds },
+      grid: plotGrid,
+      xAxis: { ...option.xAxis, nameTextStyle: axisText, axisLabel: { ...option.xAxis.axisLabel, ...axisText } },
+      yAxis: { ...option.yAxis, ...bounds, nameTextStyle: axisText, axisLabel: { ...option.yAxis.axisLabel, ...axisText } },
     }} />
     <p className="plot-status" role="status">{resultStatus[status]}</p>
   </div>;

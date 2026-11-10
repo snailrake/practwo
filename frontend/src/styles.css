@@ -24,7 +24,7 @@ h3 { font-size: 12px; line-height: 1.5; font-weight: 700; }
 p { margin: 10px 0; }
 code { font: inherit; background: #f2f2f2; padding: 1px 4px; overflow-wrap: anywhere; }
 sub { font-size: .75em; }
-.app { max-width: 1344px; padding: 30px 32px 0; margin: auto; }
+.app { max-width: 1480px; padding: 30px 32px 0; margin: auto; }
 .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding-bottom: 24px; border-bottom: 1px solid #111; }
 .subtitle { font-size: 11px; color: #666; margin: 8px 0 0; }
 .header-links { display: flex; flex-wrap: wrap; gap: 16px; font-size: 11px; padding-top: 4px; flex-shrink: 0; }
@@ -105,8 +105,8 @@ details[open] > summary { margin-bottom: 8px; }
 .editor-result-plot { min-width: 0; border-left: 1px solid #ddd; padding-left: 15px; }
 .plot-heading { margin-bottom: 4px; }
 .plot-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 3px 8px; }
-.plot-heading h3 { font-size: 12px; }
-.plot-heading p, .plot-status { font-size: 11px; color: #555; margin: 1px 0 0; }
+.plot-heading h3 { font-size: 14px; }
+.plot-heading p, .plot-status { font-size: 12px; color: #555; margin: 1px 0 0; }
 .editor-result-plot[data-current=true] .plot-status { color: #245e55; }
 .editor-plot { min-width: 0; }
 .editor-range { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 11px; }
@@ -250,13 +250,15 @@ footer { display: flex; justify-content: space-between; gap: 16px; padding: 24px
   .equation h3 span { float: none; display: block; margin: 5px 0 0; }
   .initial-list { grid-template-columns: 1fr; }
 }
+@media (min-width: 1001px) {
+  .function-editor { --editor-chart-height: clamp(190px, calc(100dvh - 440px), 420px); }
+}
 @media (min-width: 1001px) and (max-height: 1050px) {
   .formula-view { padding-top: 14px; }
   .formula-view .header { flex-direction: row; padding-bottom: 10px; }
   .formula-view .subtitle { margin-top: 4px; }
   .formula-view .workbench { padding-top: 12px; }
   .formula-view .tabs button { padding-bottom: 8px; }
-  .function-editor { --editor-chart-height: clamp(190px, calc(100dvh - 435px), 320px); }
   .formula-workspace { margin-bottom: 12px; }
 }
 @media(prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }

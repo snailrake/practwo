@@ -43,7 +43,7 @@ export function Chart({ option, height = 300, label, animate = true }: { option:
   </div>;
 }
 
-export function lineOption(r: Result, index: number, cursor?: number, comparison?: Result | null, type: 'y' | 'factors' = 'y'): EChartsCoreOption {
+export function lineOption(r: Result, index: number, cursor?: number, comparison?: Result | null, type: 'y' | 'factors' = 'y') {
   const points = (data: Result) => data.t.map((t, i) => [t, data[type][i][index]]);
   const symbol = (type === 'factors' ? 'F' : 'X') + (index + 1);
   const series: object[] = [{
@@ -70,7 +70,7 @@ export function lineOption(r: Result, index: number, cursor?: number, comparison
       splitLine: { lineStyle: { color: '#dedede', type: 'dotted' } },
     },
     series,
-  };
+  } satisfies EChartsCoreOption;
 }
 
 export function QuarterRadars({ r }: { r: Result }) {
