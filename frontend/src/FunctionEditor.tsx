@@ -9,10 +9,14 @@ import type { Config, Result } from './types';
 
 type Kind = 'plus' | 'minus' | 'factors';
 type Points = [number, number | null][];
+type PolynomialFactor = {
+  argument: string; source: string; tex: string; dependencies: string[]; value: number | null;
+  coefficients: number[]; reference_x: number;
+};
 type Preview = {
   source: string; editable: Editable; dependencies: string[]; argument: string;
   points: Points; fixed: Record<string, number>; reference_x: number;
-  reference_y: number | null; coefficients: number[] | null; degree: number | null;
+  reference_y: number | null; coefficients: number[] | null; degree: number | null; factor: PolynomialFactor | null;
 };
 type Form = 'formula' | 0 | 1 | 2 | 3;
 type Status = 'current' | 'pending' | 'draft' | 'error';
@@ -50,6 +54,7 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
   const start = numeric(domain[0]), end = numeric(domain[1]);
   const values = coefficients.map(numeric);
   const polynomial = typeof form === 'number';
+  const factor = preview?.factor;
   const valid = polynomial ? coefficients.every(validNumber) : literals.every(validNumber);
   const domainValid = Number.isFinite(start) && Number.isFinite(end) && start < end && Math.max(Math.abs(start), Math.abs(end)) <= 1e6;
   const sourceCurrent = preview?.source === source && preview?.argument === argument;
@@ -62,12 +67,14 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
       call<Preview>('/api/preview', { config, kind, index, argument, start, end }).then(data => {
         if (!current) return;
         setPreview(data); setPending(false);
-        if (form === null && data.dependencies.length && !data.dependencies.includes(argument) && !external) {
-          setArgument(data.dependencies[0]); return;
+        const preferredArgument = data.factor?.argument ?? (data.dependencies.includes(argument) ? argument : data.dependencies[0]);
+        if (form === null && preferredArgument && preferredArgument !== argument && !external) {
+          setArgument(preferredArgument); return;
         }
         if (ownSource.current !== source) {
           if (data.coefficients?.every(v => Number.isFinite(v) && Math.abs(v) <= 1e12)) {
-            loadCoefficients(data.coefficients, data.reference_y);
+            const anchor = data.factor ? polynomialValue(data.coefficients, data.factor.reference_x) : data.reference_y;
+            loadCoefficients(data.coefficients, anchor);
             setForm(data.degree as Form);
           } else {
             setTemplate({ source, editable: data.editable });
@@ -102,7 +109,7 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
   function editCoefficient(i: number, text: string) {
     const next = coefficients.map((value, j) => j === i ? text : value);
     setCoefficients(next);
-    if (next.every(validNumber)) write(polynomialSource(next.map(numeric), argument));
+    if (next.every(validNumber)) write(polynomialSource(next.map(numeric), argument, factor?.source));
   }
 
   function editLiteral(i: number, text: string) {
@@ -119,8 +126,11 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
       setForm(next);
       return;
     }
-    const c = polynomial ? [...values] : preview.coefficients ? [...preview.coefficients] : [0, 0, 0, preview.reference_y ?? 0];
-    const x = preview.reference_x, anchor = preview.reference_y ?? 0;
+    const variable = factor?.argument ?? argument;
+    const x = factor?.reference_x ?? preview.reference_x;
+    const original = factor?.coefficients ?? preview.coefficients;
+    const anchor = (factor ? polynomialValue(factor.coefficients, x) : preview.reference_y) ?? 0;
+    const c = polynomial ? [...values] : original ? [...original] : [0, 0, 0, anchor];
     for (let i = 0; i < 3 - next; i++) c[i] = 0;
     if (next > 0 && c[3 - next] === 0) c[3 - next] = .1;
     c[3] = next ? Number((anchor - c[0] * x ** 3 - c[1] * x ** 2 - c[2] * x).toPrecision(12)) : anchor;
@@ -130,12 +140,13 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
     }
     loadCoefficients(c, anchor);
     setForm(next);
-    write(polynomialSource(c, argument));
+    setArgument(variable);
+    write(polynomialSource(c, variable, factor?.source));
   }
 
   function changeArgument(next: string) {
     setArgument(next);
-    if (polynomial && valid) write(polynomialSource(values, next));
+    if (polynomial && valid) write(polynomialSource(values, next, factor?.source));
   }
 
   function editSource(next: string) {
@@ -146,23 +157,26 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
 
   const points: Points = useMemo(() => {
     if (!domainValid) return [];
-    if (!polynomial || !valid || source !== polynomialSource(values, argument)) {
+    const scale = factor ? factor.value : 1;
+    if (!polynomial || !valid || scale === null || source !== polynomialSource(values, argument, factor?.source)) {
       return sourceCurrent && preview ? preview.points : [];
     }
     return Array.from({ length: 201 }, (_, i) => {
       const x = start + (end - start) * i / 200;
-      return [x, polynomialValue(values, x)];
+      const value = polynomialValue(values, x);
+      const y = value === null ? null : value * scale;
+      return [x, y !== null && Math.abs(y) <= 1e12 ? y : null];
     });
-  }, [source, polynomial, coefficients, start, end, preview, argument, domainValid, sourceCurrent, valid]);
+  }, [source, polynomial, coefficients, start, end, preview, factor, argument, domainValid, sourceCurrent, valid]);
   const firstTerm = values.findIndex(v => v !== 0);
   const degree = polynomial && valid ? firstTerm < 0 ? 0 : 3 - firstTerm : sourceCurrent ? preview.degree : null;
   const type = degree === null ? 'Аналитическая' : forms[Math.min(degree, 3)];
   const active = Math.max(polynomial ? 3 - form : 0, activeCoefficient);
   const prefix = external ? 'F_{' + (index + 1) + '}' : 'f_{' + (index + 1) + '}^{' + (kind === 'plus' ? '+' : '-') + '}';
   return {
-    source, kind, prefix, form, coefficients, literals, template, valid, points, type, argument,
+    source, kind, prefix, form, coefficients, literals, template, factor, valid, points, type, argument,
     active, values, sliderLimit: limits[active], domain, start, end, domainValid, error, pending, sourceCurrent,
-    argumentsList: polynomial ? variables : preview?.dependencies.length ? preview.dependencies : variables,
+    argumentsList: polynomial ? variables.filter(name => !factor?.dependencies.includes(name)) : preview?.dependencies.length ? preview.dependencies : variables,
     fixed: sourceCurrent ? preview.fixed : {},
     changeForm, changeArgument, editCoefficient, editLiteral, editSource, setActiveCoefficient,
     finishCoefficient(i: number) {
@@ -186,14 +200,16 @@ function FormulaPart({ part, name, active, select }: { part: Part; name: string;
       ? <button type="button" className="part-label" aria-label={name} aria-pressed={active} onClick={select}>{heading}</button>
       : <div className="part-label">{heading}</div>}
     <div className="inline-formula" role="group" aria-label={'Числа в формуле — ' + name}>
-      {typeof form === 'number' ? <span className="polynomial-terms">
+      {typeof form === 'number' ? <><span className="polynomial-terms">
+        {part.factor && <span className="polynomial-paren">(</span>}
         {part.coefficients.map((text, i) => i < 3 - form ? null : <span className="polynomial-term" key={i}>
           {i > 3 - form && <span className="math-operator">+</span>}
           <NumberSlot label={'Коэффициент ' + letters[i]} symbol={letters[i]} value={text}
             onFocus={() => part.setActiveCoefficient(i)} onBlur={() => part.finishCoefficient(i)} onChange={value => part.editCoefficient(i, value)} />
           {i < 3 && <MathFormula source={variableTex(part.argument) + (i < 2 ? '^{' + (3 - i) + '}' : '')} />}
         </span>)}
-      </span> : part.template
+        {part.factor && <span className="polynomial-paren">)</span>}
+      </span>{part.factor && <span className="polynomial-factor"><MathFormula source={'\\cdot ' + part.factor.tex} /></span>}</> : part.template
         ? <InlineExpression node={part.template.editable.tree} values={part.literals} onChange={part.editLiteral} />
         : <span className="formula-loading">{part.error ? 'Откройте запись формулы' : 'Подготавливаем формулу…'}</span>}
     </div>
@@ -252,7 +268,7 @@ function FormulaPlot({ part, variableName, index }: { part: Part; variableName: 
     {part.error && <p className="editor-error" role="status">{part.error}</p>}
     {part.form === 'formula' && part.pending && <p className="note" role="status">Обновляем график…</p>}
     {invalidPoints > 0 && <p className="note">Пропуски на графике: {invalidPoints}. В этих точках формула не определена или выходит за численный диапазон.</p>}
-    {part.form === 'formula' && Object.keys(part.fixed).length > 0 && <details className="fixed-values">
+    {(part.form === 'formula' || part.factor) && Object.keys(part.fixed).length > 0 && <details className="fixed-values">
       <summary>Остальные значения взяты в начале расчёта</summary>
       <div>{Object.entries(part.fixed).map(([name, value]) => <span key={name}>{name} = {fmt(value, 6)}</span>)}</div>
     </details>}

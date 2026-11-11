@@ -101,6 +101,33 @@ def polynomial_coefficients(expression, argument):
         return None
 
 
+def polynomial_factor(expression, values):
+    """Recognize the explicit product (polynomial)*(remaining factors)."""
+    root = expression.tree
+    if not (expression.source.startswith('(') and isinstance(root, ast.BinOp) and isinstance(root.op, ast.Mult)):
+        return None
+    try:
+        first = Expression(ast.unparse(root.left), NAMES)
+        other = Expression(ast.unparse(root.right), NAMES)
+    except ModelError:
+        return None
+    if len(first.dependencies) != 1:
+        return None
+    argument = first.dependencies[0]
+    if argument in other.dependencies or not other.dependencies:
+        return None
+    coefficients = polynomial_coefficients(first, argument)
+    if coefficients is None:
+        return None
+    try:
+        value = other(values)
+    except ModelError:
+        value = None
+    return {'argument': argument, 'source': other.source, 'tex': to_tex(other.source),
+            'dependencies': other.dependencies, 'value': value, 'coefficients': coefficients,
+            'reference_x': values[argument]}
+
+
 def preview(request: PreviewConfig):
     if request.argument not in NAMES:
         raise ModelError('Выберите X1…X11, F1…F7 или время t')
@@ -123,7 +150,8 @@ def preview(request: PreviewConfig):
             y = None
             invalid += 1
         points.append([float(x), y])
-    coefficients = polynomial_coefficients(expression, request.argument)
+    factor = polynomial_factor(expression, values)
+    coefficients = factor['coefficients'] if factor and factor['argument'] == request.argument else polynomial_coefficients(expression, request.argument)
     degree = next((3-i for i, v in enumerate(coefficients) if v != 0), 0) if coefficients is not None else None
     try:
         anchor = expression(values)
@@ -132,4 +160,4 @@ def preview(request: PreviewConfig):
     return {'source': source, 'tex': to_tex(source), 'editable': editable_tree(expression), 'dependencies': expression.dependencies,
             'argument': request.argument, 'points': points, 'fixed': fixed,
             'reference_x': values.get(request.argument, 0.), 'reference_y': anchor,
-            'coefficients': coefficients, 'degree': degree, 'invalid_points': invalid}
+            'coefficients': coefficients, 'degree': degree, 'factor': factor, 'invalid_points': invalid}

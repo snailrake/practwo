@@ -38,16 +38,18 @@ try {
   await page.goto(url); await ready(); await settled();
   const startup = await exportResult();
   check('First screen is the inline cubic editor without an extra click', await page.getByRole('heading', { name: 'Редактор зависимостей', exact: true }).isVisible() && await page.getByLabel('Вид формулы', { exact: true }).inputValue() === '3');
-  check('All four editable fields are physically inside the formula', await activePart.locator('.inline-formula input').count() === 4 && await coefficient('a').inputValue() === '1.8' && await coefficient('d').inputValue() === '0.0126');
+  const startupA = await coefficient('a').inputValue();
+  check('All four editable fields are physically inside the formula', await activePart.locator('.inline-formula input').count() === 4 && Number(startupA) !== 0 && await coefficient('d').inputValue() === '0');
   const subtracted = page.locator('.formula-part[data-part=minus]');
   await subtracted.locator('input').first().waitFor();
   check('Both parts are visible together with subtraction and the divisor', await page.locator('.formula-part').count() === 2 && await page.locator('.equation-minus').innerText() === '−' && (await page.locator('.equation-divisor').innerText()).includes('2'));
   check('One reset and no separate equation-part selector', await page.locator('.editor-heading button').count() === 1 && await page.getByLabel('Часть уравнения', { exact: true }).count() === 0);
-  check('Default coefficients are clearly identified as an investigative scenario', await page.locator('.scenario-note').isVisible() && startup.config.plus[3] === '1.8*X1**3+0.0126');
+  check('Default coefficients are clearly identified as an investigative scenario', await page.locator('.scenario-note').isVisible() && startup.config.name === 'Кубические зависимости');
   await page.screenshot({ path: path.join(output, 'editor-default-desktop.png'), fullPage: true });
   await page.locator('.formula-workspace').screenshot({ path: path.join(output, 'inline-formula.png') });
   for (const [width, height] of [[1366,768], [1280,650]]) {
     await page.setViewportSize({ width, height });
+    await page.evaluate(() => scrollTo(0, 0));
     await page.waitForFunction(() => {
       const charts = [...document.querySelectorAll('.editor-charts canvas')];
       return charts.length === 2 && charts.every(c => c.getBoundingClientRect().bottom <= innerHeight);
@@ -62,11 +64,11 @@ try {
   await coefficient('a').fill('0.9');
   const changed = await exportResult();
   await page.waitForFunction(before => document.querySelector('.editor-result-plot canvas')?.toDataURL() !== before, initialTimeCurve);
-  check('Time graph redraws with the solver result from the same inline edit', Math.abs(changed.y.at(-1)[3] - .686797) < 1e-6 && await page.locator('.editor-result-plot').getAttribute('data-current') === 'true');
-  const subtractedField = subtracted.getByLabel('Число 1 в формуле', { exact: true });
-  await subtractedField.fill('0.04');
+  check('Time graph redraws with the solver result from the same inline edit', changed.config.plus[3].startsWith('(0.9)*X1**3') && Math.abs(changed.y.at(-1)[3] - startup.y.at(-1)[3]) > .01 && await page.locator('.editor-result-plot').getAttribute('data-current') === 'true');
+  const subtractedField = subtracted.getByLabel('Коэффициент a', { exact: true });
+  await subtractedField.fill('0.7');
   const bothEdited = await exportResult();
-  check('Editing the second part selects it and updates that actual solver term', await subtracted.getAttribute('data-active') === 'true' && bothEdited.config.plus[3] === changed.config.plus[3] && bothEdited.config.minus[3].includes('0.04'));
+  check('Editing the second cubic selects it and preserves its other factors in the solver', await subtracted.getAttribute('data-active') === 'true' && bothEdited.config.plus[3] === changed.config.plus[3] && bothEdited.config.minus[3].startsWith('((0.7)*F3**3') && bothEdited.config.minus[3].split(')*(').at(-1) === startup.config.minus[3].split(')*(').at(-1));
   await subtractedField.fill('-');
   await selectPart('plus');
   await coefficient('a').fill('1.2');
@@ -99,7 +101,7 @@ try {
   await coefficient('a').fill('-'); await page.waitForTimeout(650);
   check('Incomplete inline input pauses computation and stale export', await page.getByRole('button', { name: 'Результат JSON ↓', exact: true }).isDisabled() && requests === beforeDraft);
   await reset(); await ready(); await settled();
-  check('Reset clears a draft and returns to the default cubic', (await exportResult()).config.plus[3] === startup.config.plus[3] && await coefficient('a').inputValue() === '1.8');
+  check('Reset clears a draft and returns to the default cubic', (await exportResult()).config.plus[3] === startup.config.plus[3] && await coefficient('a').inputValue() === startupA);
   await form(2);
   check('Quadratic form has exactly three inline coefficients', await activePart.locator('.inline-formula input').count() === 3 && await coefficient('a').count() === 0);
   await form(1);
@@ -123,6 +125,15 @@ try {
   check('Changing the argument changes the real solver formula', (await exportResult()).config.plus[3].includes('X2**3'));
   await reset(); await ready(); await settled();
   check('Reset restores both the expression and its original argument', (await exportResult()).config.plus[3] === startup.config.plus[3] && await page.getByLabel('Подставляем в формулу', { exact: true }).inputValue() === 'X1');
+  for (let i = 0; i < 11; i++) {
+    await page.getByLabel('Что рассчитываем', { exact: true }).selectOption(String(i));
+    for (const side of ['plus', 'minus']) {
+      await selectPart(side); await settled();
+      const zero = startup.config[side][i] === '0';
+      check(`Startup ${side} X${i+1} shows its ${zero ? 'original zero' : 'editable cubic'}`, await activePart.locator('.inline-formula input').count() === (zero ? 1 : 4) && await page.getByLabel('Вид формулы', { exact: true }).inputValue() === (zero ? '0' : '3'));
+    }
+  }
+  await page.getByLabel('Что рассчитываем', { exact: true }).selectOption('3'); await selectPart('plus'); await settled();
   await page.getByLabel('Модельный пример', { exact: true }).selectOption('0'); await ready(); await settled();
   const baseline = await exportResult();
   check('Original assignment stays available with its exact linear function', baseline.config.plus[3] === '0.9*X1' && await activePart.locator('.inline-formula input').count() === 2);

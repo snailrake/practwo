@@ -1,5 +1,8 @@
 """Table 1 is transcribed from page 6 of the supplied assignment, not fitted data."""
+import ast
 from copy import deepcopy
+
+from .expressions import Expression
 
 STATE_NAMES = [
     "Время испарения", "Время ликвидации", "Площадь заражения",
@@ -34,6 +37,54 @@ BASE = {
     "samples": 401, "t_end": 1.0,
 }
 
+# Each selected input enters its original part as a separable power u**p.
+CUBIC_ARGUMENTS = {
+    'plus': [('X2', 1), ('X3', 1), ('F3', 1), ('X1', 1), ('F2', 1), ('X2', 1),
+             ('X10', 1), ('X3', 1), ('X3', .2), ('X3', .5), ('X10', 1)],
+    'minus': [('X9', 1), ('X9', 1), None, ('F3', 1), None, ('X4', 1), None,
+              ('X9', 1), None, None, ('F5', -1)],
+}
+
+
+class UnitArgument(ast.NodeTransformer):
+    def __init__(self, argument):
+        self.argument = argument
+
+    def visit_Name(self, node):
+        return ast.Constant(1) if node.id == self.argument else node
+
+    def visit_BinOp(self, node):
+        self.generic_visit(node)
+        if isinstance(node.op, (ast.Mult, ast.Div)) and isinstance(node.right, ast.Constant) and node.right.value == 1:
+            return node.left
+        if isinstance(node.op, ast.Mult) and isinstance(node.left, ast.Constant) and node.left.value == 1:
+            return node.right
+        return node
+
+
+def cubic_part(source, argument, power, reference, names):
+    """Replace the selected power with a cubic while retaining the other factors."""
+    # In z=u/reference, positive powers keep the zero, value and slope.
+    # The reciprocal uses its third-order Taylor polynomial at z=1.
+    curvature = 2 * reference ** 2 if power == 1 else .4
+    normalized = (-1, 4, -6, 4) if power == -1 else (
+        curvature, power - 1 - 2 * curvature, 2 - power + curvature, 0,
+    )
+    multiplier = ast.unparse(UnitArgument(argument).visit(ast.parse(source, mode='eval')))
+    rest = Expression(multiplier, names)
+    scale = reference ** power
+    if not rest.dependencies:
+        scale *= rest({})
+    terms = []
+    for degree, coefficient in zip((3, 2, 1, 0), normalized, strict=True):
+        if coefficient == 0:
+            continue
+        number = f'({scale * coefficient / reference ** degree:.8g})'
+        variable = f'*{argument}**{degree}' if degree > 1 else f'*{argument}' if degree == 1 else ''
+        terms.append(number + variable)
+    polynomial = '+'.join(terms)
+    return f'({polynomial})*({multiplier})' if rest.dependencies else polynomial
+
 
 def presets():
     baseline = deepcopy(BASE)
@@ -50,12 +101,14 @@ def presets():
 
 
 def startup():
-    """Editable cubic scenario; illustrative coefficients, not field measurements.
-
-    P4(0.7)=0.63 agrees with the assignment example at its initial state.
-    The remaining 21 algebraic parts and all external factors stay unchanged.
-    """
+    """Cubic sensitivity experiment at the tabular model's initial point."""
     config = deepcopy(BASE)
-    config['name'] = 'Кубическая связь X1 → X4'
-    config['plus'][3] = '1.8*X1**3+0.0126'
+    config['name'] = 'Кубические зависимости'
+    values = {f'X{i}': value for i, value in enumerate(config['initial'], 1)}
+    values.update({f'F{i}': float(source) for i, source in enumerate(config['factors'], 1)})
+    for kind, arguments in CUBIC_ARGUMENTS.items():
+        for index, selection in enumerate(arguments):
+            if selection is not None:
+                argument, power = selection
+                config[kind][index] = cubic_part(config[kind][index], argument, power, values[argument], set(values))
     return config

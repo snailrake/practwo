@@ -150,7 +150,7 @@ export function App() {
           </details>
           <div className="calculation-status" role="status" aria-live="polite" data-ready={!!result && !dirty && !busy && !draftPending && !error} data-busy={!error && (busy || dirty || draftPending)}><span />{draftPending ? 'Допишите коэффициент' : error ? 'Проверьте параметры' : busy || dirty || !result ? 'Пересчитываем…' : 'Расчёт обновлён'}</div>
           <p className="note">Интервал 0…{fmt(config.t_end, 3)}. Значения в относительной шкале.</p>
-          {JSON.stringify(scenarioDefaults) === JSON.stringify(presets.at(-1)) && <p className="scenario-note">Начальный сценарий: кубическая связь X₁ → X₄. Коэффициенты выбраны для исследования; остальные исходные функции – из таблицы задания.</p>}
+          {JSON.stringify(scenarioDefaults) === JSON.stringify(presets.at(-1)) && <p className="scenario-note">В каждой ненулевой части уравнения один из исходных аргументов входит кубически. Коэффициенты выбраны для учебного эксперимента.</p>}
         </section>
         <section>
           <details className="additional-settings">

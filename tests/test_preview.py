@@ -7,8 +7,8 @@ from fastapi.testclient import TestClient
 
 from backend.app import app
 from backend.browser import dispatch
-from backend.defaults import BASE, startup
-from backend.expressions import ModelError
+from backend.defaults import BASE, CUBIC_ARGUMENTS, startup
+from backend.expressions import Expression, ModelError
 from backend.model import Dynamics, SimulationConfig, simulate
 from backend.preview import PreviewConfig, preview
 
@@ -90,18 +90,36 @@ def test_preview_refuses_executable_code():
     assert response.status_code == 422
 
 
-def test_startup_cubic_preserves_the_initial_value_and_all_other_functions():
+def test_startup_cubic_preserves_arguments_and_initial_values():
     config = startup()
-    assert config['plus'][3] == '1.8*X1**3+0.0126'
-    assert all(config['plus'][i] == BASE['plus'][i] for i in range(11) if i != 3)
-    assert config['minus'] == BASE['minus'] and config['factors'] == BASE['factors']
-    graph = preview(PreviewConfig(config=config, kind='plus', index=3, argument='X1'))
-    assert graph['degree'] == 3
-    assert graph['reference_y'] == pytest.approx(.9*BASE['initial'][0])
-    assert graph['coefficients'] == [1.8, 0, 0, .0126]
+    assert config['factors'] == BASE['factors']
+    values = {f'X{i}': value for i, value in enumerate(BASE['initial'], 1)}
+    values.update({f'F{i}': float(value) for i, value in enumerate(BASE['factors'], 1)})
+    for kind, selections in CUBIC_ARGUMENTS.items():
+        for index, selection in enumerate(selections):
+            if selection is None:
+                assert config[kind][index] == BASE[kind][index] == '0'
+                continue
+            argument, _ = selection
+            original = Expression(BASE[kind][index], set(values))
+            cubic = Expression(config[kind][index], set(values))
+            assert cubic.dependencies == original.dependencies
+            graph = preview(PreviewConfig(config=config, kind=kind, index=index, argument=argument))
+            assert graph['degree'] == 3 and graph['coefficients'][0] != 0
+            assert graph['reference_y'] == pytest.approx(original(values), rel=1e-7)
+            other_values = {key: value if key == argument else value * 1.1 for key, value in values.items()}
+            assert cubic(other_values) == pytest.approx(original(other_values), rel=1e-7)
+            factor = graph['factor']['value'] if graph['factor'] else 1
+            assert all(y == pytest.approx(factor * np.polyval(graph['coefficients'], x)) for x, y in graph['points'])
+
+    reference = None
     for method in ['DOP853', 'RK45', 'Radau']:
         computed = simulate(SimulationConfig(**{**config, 'method': method}))
         assert computed['t'][-1] == 1 and np.isfinite(computed['y']).all()
+        if reference is None:
+            reference = computed['y']
+        else:
+            assert np.allclose(computed['y'], reference, rtol=1e-8, atol=1e-10)
     assert TestClient(app).get('/api/presets').json()['startup'] == config
     assert json.loads(dispatch('presets'))['result']['startup'] == config
 

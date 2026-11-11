@@ -38,7 +38,7 @@ try {
   await capture(page.locator('.verification-details'), 'ui-verification.png');
   await fs.writeFile(path.join(output, 'report-ui-capture.json'), JSON.stringify({
     source: process.env.APP_URL || 'http://127.0.0.1:8000/',
-    figures: { 'ui-equations.png': 'startup cubic X1 to X4', 'ui-factors.png': 'original increasing-wind scenario F3', 'ui-verification.png': 'baseline, five executed numerical checks' },
+    figures: { 'ui-equations.png': 'cubic scenario, both parts of X4', 'ui-factors.png': 'original increasing-wind scenario F3', 'ui-verification.png': 'baseline, five executed numerical checks' },
     viewport: { width: 1366, height: 820 },
     regions: { 'ui-equations.png': 'both equation parts, dependency curve and time result', 'ui-factors.png': 'factor formula and time profile', 'ui-verification.png': 'verification details' },
     passed: true,
