@@ -71,8 +71,16 @@ try{
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();
  await selectTab('Внешние факторы');await page.getByText('Все внешние факторы',{exact:true}).click();await page.getByLabel('Формула F5',{exact:true}).fill('0');await run();
  check('Zero divisor rejected',await page.getByRole('alert').isVisible());
- await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();
+ const restored = page.waitForResponse(response => response.url().endsWith('/api/simulate') &&
+   response.request().postDataJSON()?.name === 'Базовый модельный пример');
+ await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');
+ const restoredResponse = await restored;
+ if (!restoredResponse.ok()) throw Error(`Restoring the baseline returned HTTP ${restoredResponse.status()}`);
+ await page.locator('.calculation-status[data-ready=true]').waitFor();
+ const verified = page.waitForResponse(response => response.url().endsWith('/api/verify'), { timeout: 120000 });
  await selectTab('Все результаты');await page.getByRole('button',{name:'Один график',exact:true}).click();await page.getByText('Проверка расчёта',{exact:true}).click();await page.getByRole('button',{name:'Проверить расчёт',exact:true}).click();
+ const verifiedResponse = await verified;
+ if (!verifiedResponse.ok()) throw Error(`Numerical verification returned HTTP ${verifiedResponse.status()}`);
  await page.getByRole('heading',{name:'Все численные критерии выполнены'}).waitFor({timeout:120000});
  check('Live five-check numerical verification passes',await page.getByRole('cell',{name:'Пройдена',exact:true}).count()===5);
  await capture('ui-verification.png');
