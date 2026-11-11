@@ -146,6 +146,6 @@
     "platform": "emscripten",
     "engine": "WebAssembly"
   },
-  "load_ms": 14310.141599999999,
+  "load_ms": 13955.5646,
   "max_scaled_difference": 1.8554545494496828e-16
 }

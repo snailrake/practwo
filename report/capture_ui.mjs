@@ -12,8 +12,8 @@ const ready = () => page.locator('.calculation-status[data-ready=true]').waitFor
 const settled = () => page.waitForFunction(() => document.querySelector('[aria-label="Вид формулы"]')?.disabled === false);
 const tab = name => page.getByRole('button', { name, exact: true }).click();
 const capture = async (locator, name) => { await page.evaluate(() => document.fonts.ready); await locator.screenshot({ path: path.join(output, name) }); };
-const captureEditor = async name => {
-  await page.setViewportSize({ width: 1366, height: 820 });
+const captureEditor = async (name, viewport = { width: 1366, height: 820 }) => {
+  await page.setViewportSize(viewport);
   await page.evaluate(() => { window.scrollTo(0, 0); return document.fonts.ready; });
   await page.locator('.editor-charts canvas').first().waitFor();
   const top = await page.locator('.editor-heading').boundingBox();
@@ -24,7 +24,7 @@ try {
   await page.goto(process.env.APP_URL || 'http://127.0.0.1:8000/'); await ready(); await settled();
   await page.locator('.formula-part[data-part=minus] input').first().waitFor();
   await page.locator('.editor-result-plot canvas').waitFor();
-  await captureEditor('ui-equations.png');
+  await captureEditor('ui-equations.png', { width: 1344, height: 763 });
   await page.getByLabel('Модельный пример', { exact: true }).selectOption('1'); await ready();
   await tab('Внешние факторы'); await settled();
   await captureEditor('ui-factors.png');
@@ -40,6 +40,7 @@ try {
     source: process.env.APP_URL || 'http://127.0.0.1:8000/',
     figures: { 'ui-equations.png': 'cubic scenario, both parts of X4', 'ui-factors.png': 'original increasing-wind scenario F3', 'ui-verification.png': 'baseline, five executed numerical checks' },
     viewport: { width: 1366, height: 820 },
+    equation_viewport: { width: 1344, height: 763 },
     regions: { 'ui-equations.png': 'both equation parts, dependency curve and time result', 'ui-factors.png': 'factor formula and time profile', 'ui-verification.png': 'verification details' },
     passed: true,
   }, null, 2));

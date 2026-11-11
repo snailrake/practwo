@@ -34,7 +34,7 @@
       "passed": true
     },
     {
-      "name": "Editing the second part selects it and updates that actual solver term",
+      "name": "Editing the second cubic selects it and preserves its other factors in the solver",
       "passed": true
     },
     {
@@ -119,6 +119,94 @@
     },
     {
       "name": "Reset restores both the expression and its original argument",
+      "passed": true
+    },
+    {
+      "name": "Startup plus X1 shows its editable cubic",
+      "passed": true
+    },
+    {
+      "name": "Startup minus X1 shows its editable cubic",
+      "passed": true
+    },
+    {
+      "name": "Startup plus X2 shows its editable cubic",
+      "passed": true
+    },
+    {
+      "name": "Startup minus X2 shows its editable cubic",
+      "passed": true
+    },
+    {
+      "name": "Startup plus X3 shows its editable cubic",
+      "passed": true
+    },
+    {
+      "name": "Startup minus X3 shows its original zero",
+      "passed": true
+    },
+    {
+      "name": "Startup plus X4 shows its editable cubic",
+      "passed": true
+    },
+    {
+      "name": "Startup minus X4 shows its editable cubic",
+      "passed": true
+    },
+    {
+      "name": "Startup plus X5 shows its editable cubic",
+      "passed": true
+    },
+    {
+      "name": "Startup minus X5 shows its original zero",
+      "passed": true
+    },
+    {
+      "name": "Startup plus X6 shows its editable cubic",
+      "passed": true
+    },
+    {
+      "name": "Startup minus X6 shows its editable cubic",
+      "passed": true
+    },
+    {
+      "name": "Startup plus X7 shows its editable cubic",
+      "passed": true
+    },
+    {
+      "name": "Startup minus X7 shows its original zero",
+      "passed": true
+    },
+    {
+      "name": "Startup plus X8 shows its editable cubic",
+      "passed": true
+    },
+    {
+      "name": "Startup minus X8 shows its editable cubic",
+      "passed": true
+    },
+    {
+      "name": "Startup plus X9 shows its editable cubic",
+      "passed": true
+    },
+    {
+      "name": "Startup minus X9 shows its original zero",
+      "passed": true
+    },
+    {
+      "name": "Startup plus X10 shows its editable cubic",
+      "passed": true
+    },
+    {
+      "name": "Startup minus X10 shows its original zero",
+      "passed": true
+    },
+    {
+      "name": "Startup plus X11 shows its editable cubic",
+      "passed": true
+    },
+    {
+      "name": "Startup minus X11 shows its editable cubic",
       "passed": true
     },
     {

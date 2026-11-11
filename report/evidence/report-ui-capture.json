@@ -1,13 +1,17 @@
 {
   "source": "http://127.0.0.1:8014/",
   "figures": {
-    "ui-equations.png": "startup cubic X1 to X4",
+    "ui-equations.png": "cubic scenario, both parts of X4",
     "ui-factors.png": "original increasing-wind scenario F3",
     "ui-verification.png": "baseline, five executed numerical checks"
   },
   "viewport": {
     "width": 1366,
     "height": 820
+  },
+  "equation_viewport": {
+    "width": 1344,
+    "height": 763
   },
   "regions": {
     "ui-equations.png": "both equation parts, dependency curve and time result",
