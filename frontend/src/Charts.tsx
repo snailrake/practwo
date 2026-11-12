@@ -101,12 +101,22 @@ export function AllProfiles({ r, cursor, comparison }: { r: Result; cursor: numb
   const colors = ['#245e55', '#b34429', '#4169b1', '#773d8a', '#956600', '#0b748b',
     '#a32763', '#557219', '#394658', '#aa5819', '#383284'];
   const base = lineOption(r, 0, cursor);
+  const values = r.y.flat();
+  const span = Math.max(...values) - Math.min(...values);
+  const start = r.y[0];
+  const end = r.y.at(-1)!;
+  // Emphasize deviations large enough to see on the shared vertical scale.
+  const curved = short.map((_, index) => r.y.some((row, frame) => {
+    const chord = start[index] + (end[index] - start[index]) * r.t[frame] / r.config.t_end;
+    return Math.abs(row[index] - chord) > .03 * span;
+  }));
   const series = short.flatMap((name, index) => {
     const label = 'X' + (index + 1) + ' · ' + name;
     const [current, reference] = lineOption(r, index, index === 0 ? cursor : undefined, comparison).series;
     const color = colors[index];
     return [
-      { ...current, name: label, itemStyle: { color }, lineStyle: { color, width: 2 } },
+      { ...current, name: label, itemStyle: { color }, z: curved[index] ? 3 : 2,
+        lineStyle: { color, width: curved[index] ? 3 : 1.6, opacity: curved[index] ? 1 : .65 } },
       ...(reference ? [{ ...reference, name: label, itemStyle: { color }, lineStyle: { color, type: 'dashed', width: 1 } }] : []),
     ];
   });

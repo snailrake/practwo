@@ -88,8 +88,9 @@ def startup():
                 argument, power = selection
                 config[kind][index] = cubic_part(config[kind][index], argument, power, values)
     # Illustrative model-time profiles. Each begins at the tabular initial value.
+    config['scales'][0] = .14
     time_coefficients = [
-        (1.6, 0, -.7), (.15, -.45, 0), (.8, 0, 0), (-.15, .25, 0),
+        (2.2, 0, -1), (.15, -.45, 0), (1.4, 0, 0), (-.15, .25, 0),
         (0, 0, 0), (.1, -.45, 0), (-.15, .45, 0),
     ]
     config['factors'] = [

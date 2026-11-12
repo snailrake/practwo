@@ -117,6 +117,9 @@ def test_startup_cubic_matches_initial_values_on_one_variable_slices():
         assert computed['t'][-1] == 1 and np.isfinite(computed['y']).all()
         assert computed['radar_scales'] == config['radar_limits']
         assert all(0 <= v < 1 for q in computed['quarters'] for v in q['normalized'])
+        trajectories = np.array(computed['y'])[:, :3]
+        chord = trajectories[0] + np.array(computed['t'])[:, None] * (trajectories[-1] - trajectories[0])
+        assert np.all(np.max(np.abs(trajectories - chord), axis=0) > [.04, .03, .1])
         if reference is None:
             reference = computed['y']
         else:
