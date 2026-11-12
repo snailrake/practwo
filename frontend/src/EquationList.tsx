@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fmt } from './Charts';
+import { Chart, fmt, lineOption } from './Charts';
 import { InlineExpression, PolynomialFields, numeric, replaceLiterals, validNumber, variableTex } from './InlineFormula';
 import { MathFormula } from './Math';
 import { polynomialSource } from './polynomial';
@@ -8,18 +8,34 @@ import type { Config, EquationFields, Result } from './types';
 type Kind = keyof Result['equation_fields'];
 type Draft = { source: string; fields: EquationFields; values: string[] };
 type Props = {
-  config: Config; result: Result; randomizing: boolean; tableMode: boolean;
+  config: Config; result: Result; tableMode: boolean;
   onChange: (kind: Kind, index: number, source: string) => void;
   onDraft: (invalid: boolean) => void;
+} & ({
+  factorsOnly?: false;
+  randomizing: boolean;
   onRandomize: () => void;
   onUseTable: () => void;
-};
+} | {
+  factorsOnly: true;
+  comparison: Result | null;
+  onResetFactor: (index: number) => void;
+});
 
-export function EquationList({ config, result, randomizing, tableMode, onChange, onDraft, onRandomize, onUseTable }: Props) {
+export function EquationList(props: Props) {
+  const { config, result, tableMode, onChange, onDraft } = props;
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const invalid = Object.values(drafts).some(draft => !draft.values.every(validNumber));
   useEffect(() => onDraft(invalid), [invalid, onDraft]);
   useEffect(() => () => onDraft(false), [onDraft]);
+
+  function clearDraft(kind: Kind, index: number) {
+    setDrafts(previous => {
+      const next = { ...previous };
+      delete next[kind + index];
+      return next;
+    });
+  }
 
   function renderPart(kind: Kind, index: number) {
     const external = kind === 'factors';
@@ -57,13 +73,36 @@ export function EquationList({ config, result, randomizing, tableMode, onChange,
     </div>;
   }
 
+  if (props.factorsOnly) return <section className="all-factors" aria-label="Функции внешних факторов">
+    <h2>Функции внешних факторов</h2>
+    <p className="section-note">Меняйте коэффициенты прямо в формулах. Графики обновляются автоматически.</p>
+    {result.factor_names.map((name, index) => <div className="equation-row factor-equation-row" key={name}>
+      <div>
+        <div className="section-heading">
+          <h3>F{index + 1} · {name}</h3>
+          <button type="button" aria-label={'Сбросить F' + (index + 1)} onClick={() => {
+            clearDraft('factors', index);
+            props.onResetFactor(index);
+          }}>↺ Сброс</button>
+        </div>
+        {renderPart('factors', index)}
+        <details className="expression-details">
+          <summary>Запись формулы</summary>
+          <input aria-label={'Формула F' + (index + 1)} maxLength={400} spellCheck={false} value={config.factors[index]}
+            onChange={e => { clearDraft('factors', index); onChange('factors', index, e.target.value); }} />
+        </details>
+      </div>
+      <Chart label={'Внешний фактор F' + (index + 1)} height={200} option={lineOption(result, index, undefined, props.comparison, 'factors')} />
+    </div>)}
+  </section>;
+
   return <section className="equation-editor" aria-label="Редактор зависимостей">
     <div className="section-heading">
       <h2>Редактор зависимостей</h2>
       <div className="button-row">
-        <button type="button" onClick={onUseTable}>По таблице задания</button>
-        <button type="button" disabled={randomizing} onClick={onRandomize}>
-          {randomizing ? 'Подбираем значения…' : 'Заполнить случайными значениями'}
+        <button type="button" onClick={props.onUseTable}>По таблице задания</button>
+        <button type="button" disabled={props.randomizing} onClick={props.onRandomize}>
+          {props.randomizing ? 'Подбираем значения…' : 'Заполнить случайными значениями'}
         </button>
       </div>
     </div>

@@ -85,7 +85,7 @@ export function App() {
       if (JSON.stringify(next) !== JSON.stringify(baseline)) next.name = 'Пользовательский сценарий';
       return next;
     });
-    setDraftPending(false);
+    if (!external) setDraftPending(false);
   }
   function applyScenario(next: Config) {
     setDraftPending(false);
@@ -144,6 +144,7 @@ export function App() {
   const values = result?.y[Math.min(frame, result.y.length - 1)] ?? config.initial;
   const snapshots = result?.quarters ?? [];
   const formulaView = tab === 1 || tab === 2;
+  const tableMode = presets.slice(0, -1).some(p => p.name === scenarioDefaults?.name);
   const resultStatus = draftPending ? 'draft' : error ? 'error' : dirty || busy ? 'pending' : 'current';
   function moveTo(time: number) {
     if (!result) return;
@@ -222,20 +223,15 @@ export function App() {
               <div className="quarter-controls"><span>Четверти:</span>{snapshots.map(q => <button key={q.t} onClick={() => moveTo(q.t)}>{fmt(q.t, 3)}</button>)}</div>
               {comparison && <p className="note">Сплошная линия – текущий расчёт, пунктир – эталон.</p>}
               {allCharts && <EquationList key={'profiles-' + scenarioVersion} config={config} result={result} randomizing={randomizing}
-                tableMode={presets.slice(0, -1).some(p => p.name === scenarioDefaults?.name)}
+                tableMode={tableMode}
                 onChange={array} onDraft={setDraftPending} onRandomize={randomize} onUseTable={() => applyScenario(presets[0])} />}
             </section>
             <details className="plain-details comparison-controls"><summary>Сравнение экспериментов</summary><p>Сохраните текущий результат, затем измените параметры. Новый расчёт появится автоматически.</p><div className="button-row"><button disabled={dirty || busy || draftPending} onClick={() => setReference(clone(result))}>Запомнить эталон</button>{reference && <button onClick={() => setReference(null)}>Убрать</button>}</div>{reference && <p>Эталон: {reference.config.name}</p>}</details>
             <section><h2>Характеристики при τ = {fmt(cursor, 3)}</h2><div className="metrics">{names.map((n, i) => <button title={n} className={selected === i ? 'metric active-metric' : 'metric'} key={n} onClick={() => setSelected(i)}><span>{symbol('X', i)} {short[i]}</span><strong>{fmt(values[i], 5)}</strong></button>)}</div></section>
           </>}
-          {tab === 2 && <><FunctionEditor key={'factors-' + scenarioVersion} external config={config} names={names} factors={factorNames}
-            result={result} status={resultStatus} onChange={array} onDraft={setDraftPending} onReset={resetEditor} />
-            <details className="plain-details all-factors"><summary>Все внешние факторы</summary><section><h2>Внешние факторы Fⱼ(τ)</h2><p className="section-note">В формулах <code>t</code> обозначает машинное время τ. Расчёт обновляется автоматически.{(dirty || draftPending) && ' Пока показан последний корректный расчёт.'}</p><div className="factor-grid">{factorNames.map((n, i) => <div className="factor-cell" key={n}>
-            <h3>{symbol('F', i)} {n}</h3>
-            <label className="formula-input"><span>F{i + 1}(t) =</span><input aria-label={'Формула F' + (i + 1)} maxLength={400} spellCheck={false} value={config.factors[i]} onChange={e => array('factors', i, e.target.value)} /></label>
-            <div className="factor-math"><MathFormula source={'F_{' + (i + 1) + '}(\\tau)=' + result.factors_tex[i]} /></div>
-            <Chart label={'Внешний фактор F' + (i + 1)} height={220} option={lineOption(result, i, undefined, comparison, 'factors')} />
-          </div>)}</div></section></details></>}
+          {tab === 2 && <EquationList key={'factors-' + scenarioVersion} factorsOnly config={config} result={result}
+            tableMode={tableMode} comparison={comparison} onChange={array} onDraft={setDraftPending}
+            onResetFactor={index => resetEditor(index, true)} />}
           {tab === 3 && <>
             <section><h2>Четыре снимка расчёта</h2><p className="section-note radar-explanation">На всех четырёх снимках у каждого показателя одна шкала. Число под названием луча — его верхний предел в относительных единицах.</p><QuarterRadars r={result} /></section>
             <section><h2>Численные значения срезов</h2><div className="table-scroll"><table><thead><tr><th>Характеристика</th>{snapshots.map(q => <th key={q.t}>τ = {fmt(q.t, 3)}</th>)}{comparison && <><th>Эталон, τ = {fmt(comparison.config.t_end)}</th><th>Разность</th></>}</tr></thead><tbody>{names.map((n, i) => <tr key={n}><th scope="row">{symbol('X', i)} {short[i]}</th>{snapshots.map(q => <td key={q.t}>{fmt(q.values[i], 6)}</td>)}{comparison && <><td>{fmt(comparison.y.at(-1)![i], 6)}</td><td>{fmt(result.y.at(-1)![i] - comparison.y.at(-1)![i], 6)}</td></>}</tr>)}</tbody></table></div></section>

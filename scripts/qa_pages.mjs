@@ -50,7 +50,7 @@ try{
  await page.getByRole('button',{name:'Все 11 графиков',exact:true}).click();
  await page.locator('.profile canvas').waitFor();
  check('All eleven characteristics share one plot',await page.locator('canvas').count()===1);
- await tab('Внешние факторы');await page.getByText('Все внешние факторы',{exact:true}).click();check('Seven factor equations and charts are available',await page.locator('.all-factors canvas').count()===7&&await page.getByLabel(/Формула F/).count()===7);
+ await tab('Внешние факторы');check('Seven factor equations and charts are available',await page.locator('.all-factors canvas').count()===7&&await page.getByLabel(/Формула F/).count()===7);
  await tab('Зависимости');await page.getByText('Все уравнения',{exact:true}).click();check('Twenty-two editable functions and eleven rendered equations',await page.getByLabel(/Функция (плюс|минус) X/).count()===22&&await page.locator('.equation .katex').count()===11&&await page.locator('.katex-error').count()===0);
  await tab('Лепестковые диаграммы');check('Four quarter radars are computed',await page.locator('canvas').count()===4&&baseline.quarters.every((q,i)=>q.t===(i+1)/4));
  await page.screenshot({path:path.join(output,'pages-quarters.png')});
@@ -64,7 +64,7 @@ try{
  check('Arbitrary imported equations are actually integrated',Math.abs(computed.y.at(-1)[0]-Math.exp(-0.7))<1e-8&&computed.y.at(-1).slice(1).every(v=>v===1));
  await tab('Зависимости');await page.getByText('Все уравнения',{exact:true}).click();await page.getByLabel('Функция плюс X1',{exact:true}).fill("__import__('os')");await run();
  check('Unsafe expressions are refused by the browser Python model',await page.getByRole('alert').isVisible());
- await importConfig(baseline.config);await tab('Внешние факторы');await page.getByText('Все внешние факторы',{exact:true}).click();await page.getByLabel('Формула F5',{exact:true}).fill('0');await run();
+ await importConfig(baseline.config);await tab('Внешние факторы');await page.locator('.factor-equation-row').nth(4).locator('summary').click();await page.getByLabel('Формула F5',{exact:true}).fill('0');await run();
  check('Zero denominator is refused without hidden epsilon',await page.getByRole('alert').isVisible());
  await importConfig(baseline.config);
  for(const kind of ['docx','pdf']){

@@ -62,9 +62,8 @@ try{
  check('All eleven characteristics share one plot',await page.locator('canvas').count()===1);
  await capture('ui-all-states.png');
  await selectTab('Внешние факторы');
- await page.getByText('Все внешние факторы',{exact:true}).click();
  check('Seven factor equations and plots',await page.getByLabel(/Формула F/).count()===7&&await page.locator('.all-factors canvas').count()===7);
- check('Factor equations use rendered mathematics',await page.locator('.factor-math .katex').count()===7&&await page.locator('.katex-error').count()===0);
+ check('Factor equations use rendered mathematics',await page.locator('.all-factors .equation-fields:has(.katex)').count()===7&&await page.locator('.katex-error').count()===0);
  await capture('ui-factors.png');
  await selectTab('Лепестковые диаграммы');
  check('Four separate quarter radars',await page.locator('canvas').count()===4);
@@ -91,7 +90,7 @@ try{
  await page.getByLabel('Функция плюс X1',{exact:true}).fill("__import__('os')");await run();
  check('Unsafe expression rejected visibly',await page.getByRole('alert').isVisible());
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();
- await selectTab('Внешние факторы');await page.getByText('Все внешние факторы',{exact:true}).click();await page.getByLabel('Формула F5',{exact:true}).fill('0');await run();
+ await selectTab('Внешние факторы');await page.locator('.factor-equation-row').nth(4).locator('summary').click();await page.getByLabel('Формула F5',{exact:true}).fill('0');await run();
  check('Zero divisor rejected',await page.getByRole('alert').isVisible());
  const restored = page.waitForResponse(response => response.url().endsWith('/api/simulate') &&
    response.request().postDataJSON()?.name === 'Базовый модельный пример');

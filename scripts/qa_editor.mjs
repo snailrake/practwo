@@ -168,15 +168,16 @@ try {
   await page.getByLabel('Конец диапазона зависимости', { exact: true }).fill('1'); await settled();
   await page.getByText('Пропуски на графике: 1.', { exact: false }).waitFor();
   check('Division and exponents render as mathematics with editable literals', await activePart.locator('.inline-formula .math-fraction').count() > 0 && await activePart.locator('.inline-formula .math-power input').count() > 0);
-  await tab('Внешние факторы'); await settled();
+  await tab('Внешние факторы');
+  const factor = i => page.locator('.all-factors').getByRole('group', {name: 'F' + (i + 1), exact: true});
   for (let i = 0; i < 7; i++) {
-    await page.getByLabel('Внешний фактор', { exact: true }).selectOption(String(i)); await settled();
-    check(`F${i+1} uses four fields and the time argument`, await (await raw()).inputValue() === baseline.config.factors[i] && await activePart.locator('.inline-formula input').count() === 4 && await page.getByText('По горизонтали время τ', { exact: true }).count() === 1);
+    check(`F${i+1} uses four fields and the time argument`, await factor(i).locator('input').count() === 4 &&
+      (await factor(i).locator('annotation').allTextContents()).includes('F_{' + (i + 1) + '}(t)='));
   }
-  await page.getByLabel('Внешний фактор', { exact: true }).selectOption('2'); await settled(); await coefficient('a').fill('.1');
+  await factor(2).getByRole('textbox', {name: 'Коэффициент a', exact: true}).fill('.1');
   const wind = await exportResult();
   check('External cubic really changes the computed trajectory', wind.config.factors[2].includes('t**3') && Math.abs(wind.y.at(-1)[2] - baseline.y.at(-1)[2]) > 1e-6);
-  await reset(); await ready(); await settled();
+  await page.getByRole('button', {name: 'Сбросить F3', exact: true}).click(); await ready();
   if (native) {
     let delayed = 0;
     await page.route('**/api/simulate', async route => { const response = await route.fetch(); if (++delayed === 1) await new Promise(resolve => setTimeout(resolve, 1000)); await route.fulfill({ response }); });
