@@ -191,14 +191,10 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
 
 type Part = ReturnType<typeof useFunctionPart>;
 
-function FormulaPart({ part, name, active, select }: { part: Part; name: string; active: boolean; select?: () => void }) {
+function FormulaPart({ part, name }: { part: Part; name: string }) {
   const form = part.form;
   const equation = part.prefix + (part.kind !== 'factors' && typeof form === 'number' && form > 0 && !part.factor ? '(' + variableTex(part.argument) + ')' : '') + '=';
-  return <div className="formula-part" role="group" aria-label={name} data-part={part.kind} data-active={active}
-    onFocusCapture={e => { if (e.target instanceof HTMLInputElement) select?.(); }}>
-    {select
-      ? <button type="button" className="part-label" aria-pressed={active} onClick={select}>{name}</button>
-      : <div className="part-label">{name}</div>}
+  return <div className="formula-part" role="group" aria-label={name} data-part={part.kind}>
     <div className="inline-formula" role="group" aria-label={'Числа в формуле — ' + name}>
       {typeof form === 'number' ? <><span className="polynomial-terms">
         {part.factor && <><MathFormula source={equation} /><span className="polynomial-paren">(</span></>}
@@ -311,12 +307,12 @@ function FormulaWorkspace({ config, names, factors, external = false, result, st
   const argumentLabel = typeof part.form === 'number' && part.form > 0 ? 'Подставляем в формулу' : 'По горизонтали';
   return <>
     <div className="formula-workspace">
-      {external ? <FormulaPart part={plus} name="Формула фактора" active /> : <>
-        <div className="equation-numerator">
-          <FormulaPart part={plus} name="Первая часть" active={side === 'plus'} select={() => setSide('plus')} />
-          <span className="equation-minus" aria-label="вычитаем">−</span>
-          <FormulaPart part={minus} name="Вычитаемая часть" active={side === 'minus'} select={() => setSide('minus')} />
+      {external ? <FormulaPart part={plus} name="Формула фактора" /> : <>
+        <div className="part-switch" role="group" aria-label="Часть уравнения">
+          <button type="button" aria-pressed={side === 'plus'} onClick={() => setSide('plus')}>Первая часть</button>
+          <button type="button" aria-pressed={side === 'minus'} onClick={() => setSide('minus')}>Вычитаемая часть</button>
         </div>
+        <FormulaPart key={side} part={part} name={side === 'plus' ? 'Первая часть' : 'Вычитаемая часть'} />
         <div className="equation-divisor"><span>Делитель</span> <MathFormula source={'S_{' + (index + 1) + '}'} /> = {fmt(config.scales[index], 6)}</div>
       </>}
       <div className="formula-toolbar">

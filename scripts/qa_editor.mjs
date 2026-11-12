@@ -18,7 +18,7 @@ const check = (name, passed) => { checks.push({ name, passed: !!passed }); if (!
 const ready = () => page.locator('.calculation-status[data-ready=true]').waitFor({ timeout: 180000 });
 const settled = () => page.getByLabel('Вид формулы', { exact: true }).waitFor().then(() => page.waitForFunction(() => !document.querySelector('[aria-label="Вид формулы"]').disabled));
 const tab = name => page.getByRole('button', { name, exact: true }).click();
-const activePart = page.locator('.formula-part[data-active=true]');
+const activePart = page.locator('.formula-part');
 const selectPart = side => page.getByRole('button', { name: side === 'plus' ? 'Первая часть' : 'Вычитаемая часть', exact: true }).click();
 const coefficient = name => activePart.getByLabel('Коэффициент ' + name, { exact: true });
 const reset = () => page.getByRole('button', { name: /^Сбросить (уравнение|фактор)$/ }).click();
@@ -41,9 +41,8 @@ try {
   const startupA = await coefficient('a').inputValue();
   check('All four editable fields are physically inside the formula', await activePart.locator('.inline-formula input').count() === 4 && Number(startupA) !== 0 && await coefficient('d').inputValue() === '0');
   const subtracted = page.locator('.formula-part[data-part=minus]');
-  await subtracted.locator('input').first().waitFor();
-  check('Both parts are visible together with subtraction and the divisor', await page.locator('.formula-part').count() === 2 && await page.locator('.equation-minus').innerText() === '−' && (await page.locator('.equation-divisor').innerText()).includes('2'));
-  check('One reset and no separate equation-part selector', await page.locator('.editor-heading button').count() === 1 && await page.getByLabel('Часть уравнения', { exact: true }).count() === 0);
+  check('The first part is the only formula visible by default', await activePart.count() === 1 && await activePart.getAttribute('data-part') === 'plus' && (await page.locator('.equation-divisor').innerText()).includes('2'));
+  check('One reset and two equation-part buttons', await page.locator('.editor-heading button').count() === 1 && await page.getByRole('group', {name: 'Часть уравнения', exact: true}).getByRole('button').count() === 2);
   check('Default coefficients are clearly identified as an investigative scenario', await page.locator('.scenario-note').isVisible() && startup.config.name === 'Кубические зависимости');
   await page.screenshot({ path: path.join(output, 'editor-default-desktop.png'), fullPage: true });
   await page.locator('.formula-workspace').screenshot({ path: path.join(output, 'inline-formula.png') });
@@ -66,9 +65,10 @@ try {
   await page.waitForFunction(before => document.querySelector('.editor-result-plot canvas')?.toDataURL() !== before, initialTimeCurve);
   check('Time graph redraws with the solver result from the same inline edit', changed.config.plus[3].startsWith('(0.9)*X1**3') && Math.abs(changed.y.at(-1)[3] - startup.y.at(-1)[3]) > .01 && await page.locator('.editor-result-plot').getAttribute('data-current') === 'true');
   const subtractedField = subtracted.getByLabel('Коэффициент a', { exact: true });
+  await selectPart('minus');
   await subtractedField.fill('0.7');
   const bothEdited = await exportResult();
-  check('Editing the second cubic selects it and changes only its coefficient in the solver', await subtracted.getAttribute('data-active') === 'true' && bothEdited.config.plus[3] === changed.config.plus[3] && bothEdited.config.minus[3].startsWith('(0.7)*F4**3'));
+  check('Editing the second cubic changes only its coefficient in the solver', await subtracted.isVisible() && bothEdited.config.plus[3] === changed.config.plus[3] && bothEdited.config.minus[3].startsWith('(0.7)*F4**3'));
   await subtractedField.fill('-');
   await selectPart('plus');
   await coefficient('a').fill('1.2');
