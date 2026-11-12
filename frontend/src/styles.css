@@ -138,6 +138,7 @@ main { min-width: 0; }
 .section-heading h2 { margin: 4px 0 0; white-space: nowrap; }
 .section-heading select { max-width: 350px; font-size: 11px; }
 .profile-title { font-weight: 400; margin-bottom: 5px; color: #555; }
+.profile .function-editor { margin-top: 16px; padding-top: 12px; border-top: 1px solid #ddd; }
 .chart { position: relative; min-width: 0; }
 .chart-download { position: absolute; right: 2px; top: 0; font-size: 9px; padding: 2px 5px; border-color: #ccc; color: #666; }
 .results-view { display: flex; gap: 6px; margin-bottom: 22px; }

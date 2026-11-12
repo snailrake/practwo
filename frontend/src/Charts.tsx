@@ -120,9 +120,9 @@ export function AllProfiles({ r, cursor, comparison }: { r: Result; cursor: numb
       ...(reference ? [{ ...reference, name: label, itemStyle: { color }, lineStyle: { color, type: 'dashed', width: 1 } }] : []),
     ];
   });
-  return <Chart label="Все 11 временных зависимостей" height={470} option={{
+  return <Chart label="Все 11 временных зависимостей" height="clamp(255px, 38dvh, 400px)" option={{
     ...base, series,
-    grid: { ...base.grid, bottom: 65 },
+    grid: { ...base.grid, bottom: 48 },
     legend: { bottom: 8, left: 12, right: 12, formatter: (name: string) => name.split(' · ')[0] },
   }} />;
 }

@@ -188,7 +188,10 @@ export function App() {
           {tab === 0 && <>
             <section className="profile">
               <div className="results-view" role="group" aria-label="Отображение результатов"><button aria-pressed={!allCharts} onClick={() => setAllCharts(false)}>Один график</button><button aria-pressed={allCharts} onClick={() => setAllCharts(true)}>Все 11 графиков</button></div>
-              {allCharts ? <><h2>Все 11 временных зависимостей</h2><AllProfiles r={result} cursor={cursor} comparison={comparison} /></> : <>
+              {allCharts ? <><h2>Все 11 временных зависимостей</h2><AllProfiles r={result} cursor={cursor} comparison={comparison} />
+                <FunctionEditor key={'profiles-' + scenarioVersion} showPlots={false} config={config} names={names} factors={factorNames}
+                  result={result} status={resultStatus} onChange={array} onDraft={setDraftPending} onReset={resetEditor} />
+              </> : <>
               <div className="section-heading"><h2>Временной профиль</h2><select aria-label="Характеристика на основном графике" value={selected} onChange={e => setSelected(+e.target.value)}>{names.map((n, i) => <option key={n} value={i}>{'X' + (i + 1)} · {n}</option>)}</select></div>
               <h3 className="profile-title">{symbol('X', selected)} {names[selected]}</h3>
               <Chart label={'Временной профиль X' + (selected + 1)} height={360} option={lineOption(result, selected, cursor, comparison)} />
