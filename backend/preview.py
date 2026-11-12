@@ -1,5 +1,4 @@
 """One-variable sections of the exact expression used by the ODE solver."""
-import ast
 from typing import Literal
 
 import numpy as np
@@ -7,39 +6,9 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .expressions import Expression, ModelError
 from .model import SimulationConfig
-from .notation import to_tex
+from .notation import editable_tree, polynomial_coefficients, polynomial_factor, to_tex
 
 NAMES = {'t'} | {f'X{i}' for i in range(1, 12)} | {f'F{i}' for i in range(1, 8)}
-
-
-def editable_tree(expression):
-    """Validated expression as native mathematical layout, with literal ranges.
-
-    Offsets are UTF-16, matching JS slicing even with newlines/non-ASCII spacing.
-    The frontend replaces only these literals; no new executable syntax is parsed.
-    """
-    source = expression.source
-    lines = source.splitlines(keepends=True)
-    literals = []
-
-    def offset(line, column):
-        prefix = ''.join(lines[:line-1]) + lines[line-1].encode('utf8')[:column].decode('utf8')
-        return len(prefix.encode('utf-16-le')) // 2
-
-    def visit(node):
-        if isinstance(node, ast.Constant):
-            index = len(literals)
-            start, end = offset(node.lineno, node.col_offset), offset(node.end_lineno, node.end_col_offset)
-            literals.append({'start': start, 'end': end, 'text': ast.get_source_segment(source, node)})
-            return {'kind': 'number', 'index': index}
-        if isinstance(node, ast.Name): return {'kind': 'name', 'name': node.id}
-        if isinstance(node, ast.UnaryOp): return {'kind': 'unary', 'op': '-' if isinstance(node.op, ast.USub) else '+', 'child': visit(node.operand)}
-        if isinstance(node, ast.BinOp):
-            symbol = {ast.Add: '+', ast.Sub: '-', ast.Mult: '*', ast.Div: '/', ast.Pow: '**'}[type(node.op)]
-            return {'kind': 'binary', 'op': symbol, 'left': visit(node.left), 'right': visit(node.right)}
-        return {'kind': 'call', 'name': node.func.id, 'args': [visit(n) for n in node.args]}
-
-    return {'tree': visit(expression.tree), 'literals': literals}
 
 
 class PreviewConfig(BaseModel):
@@ -50,82 +19,6 @@ class PreviewConfig(BaseModel):
     argument: str = Field(max_length=3)
     start: float = Field(default=0, ge=-1e6, le=1e6)
     end: float = Field(default=1, ge=-1e6, le=1e6)
-
-
-def polynomial_coefficients(expression, argument):
-    """Recognize exact degree <=3, never fit a different function silently."""
-    if set(expression.dependencies) - {argument}:
-        return None
-
-    def add(a, b, sign=1):
-        return [x + sign*y for x, y in zip(a, b)]
-
-    def multiply(a, b):
-        out = [0.] * 7
-        for i, x in enumerate(a):
-            for j, y in enumerate(b):
-                out[i+j] += x*y
-        if any(out[4:]):
-            raise ValueError('Degree exceeds three')
-        return out[:4]
-
-    def visit(node):
-        if isinstance(node, ast.Name) and node.id == argument:
-            return [0., 1., 0., 0.]
-        if not any(isinstance(n, ast.Name) and n.id == argument for n in ast.walk(node)):
-            return [Expression(ast.unparse(node), set())({}), 0., 0., 0.]
-        if isinstance(node, ast.UnaryOp):
-            return [(-x if isinstance(node.op, ast.USub) else x) for x in visit(node.operand)]
-        if isinstance(node, ast.BinOp):
-            a = visit(node.left)
-            if isinstance(node.op, ast.Pow):
-                power = Expression(ast.unparse(node.right), set())({})
-                if power not in {0, 1, 2, 3}:
-                    raise ValueError('Not a cubic polynomial')
-                out = [1., 0., 0., 0.]
-                for _ in range(int(power)):
-                    out = multiply(out, a)
-                return out
-            b = visit(node.right)
-            if isinstance(node.op, ast.Add): return add(a, b)
-            if isinstance(node.op, ast.Sub): return add(a, b, -1)
-            if isinstance(node.op, ast.Mult): return multiply(a, b)
-            if isinstance(node.op, ast.Div) and not any(b[1:]) and b[0] != 0:
-                return [x/b[0] for x in a]
-        raise ValueError('Not a cubic polynomial')
-
-    try:
-        result = visit(expression.tree)
-        return list(reversed(result)) if all(np.isfinite(result)) else None
-    except (ValueError, ModelError, ZeroDivisionError, OverflowError):
-        return None
-
-
-def polynomial_factor(expression, values):
-    """Recognize the explicit product (polynomial)*(remaining factors)."""
-    root = expression.tree
-    if not (expression.source.startswith('(') and isinstance(root, ast.BinOp) and isinstance(root.op, ast.Mult)):
-        return None
-    try:
-        first = Expression(ast.unparse(root.left), NAMES)
-        other = Expression(ast.unparse(root.right), NAMES)
-    except ModelError:
-        return None
-    if len(first.dependencies) != 1:
-        return None
-    argument = first.dependencies[0]
-    if argument in other.dependencies or not other.dependencies:
-        return None
-    coefficients = polynomial_coefficients(first, argument)
-    if coefficients is None:
-        return None
-    try:
-        value = other(values)
-    except ModelError:
-        value = None
-    return {'argument': argument, 'source': other.source, 'tex': to_tex(other.source),
-            'dependencies': other.dependencies, 'value': value, 'coefficients': coefficients,
-            'reference_x': values[argument]}
 
 
 def preview(request: PreviewConfig):

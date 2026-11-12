@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Chart, fmt, lineOption } from './Charts';
 import { MathFormula } from './Math';
 import { call } from './compute';
-import { InlineExpression, NumberSlot, numeric, replaceLiterals, validNumber, variableTex } from './InlineFormula';
+import { InlineExpression, PolynomialFields, numeric, replaceLiterals, validNumber, variableTex } from './InlineFormula';
 import type { Editable } from './InlineFormula';
 import { polynomialSource, polynomialValue } from './polynomial';
 import type { Config, Result } from './types';
@@ -22,7 +22,6 @@ type Form = 'formula' | 0 | 1 | 2 | 3;
 type Status = 'current' | 'pending' | 'draft' | 'error';
 type Props = {
   config: Config; names: string[]; factors: string[]; external?: boolean;
-  showPlots?: boolean;
   result: Result; status: Status;
   onChange: (key: Kind, index: number, source: string) => void;
   onDraft: (pending: boolean) => void;
@@ -199,13 +198,8 @@ function FormulaPart({ part, name }: { part: Part; name: string }) {
     <div className="inline-formula" role="group" aria-label={'Числа в формуле — ' + name}>
       {typeof form === 'number' ? <><span className="polynomial-terms">
         {part.factor && <><MathFormula source={equation} /><span className="polynomial-paren">(</span></>}
-        {part.coefficients.map((text, i) => i < 3 - form ? null : <span className="polynomial-term" key={i}>
-          {i === 3 - form && !part.factor && <MathFormula source={equation} />}
-          {i > 3 - form && <span className="math-operator">+</span>}
-          <NumberSlot label={'Коэффициент ' + letters[i]} symbol={letters[i]} value={text}
-            onFocus={() => part.setActiveCoefficient(i)} onBlur={() => part.finishCoefficient(i)} onChange={value => part.editCoefficient(i, value)} />
-          {i < 3 && <MathFormula source={(part.kind === 'factors' ? 't' : variableTex(part.argument)) + (i < 2 ? '^{' + (3 - i) + '}' : '')} />}
-        </span>)}
+        <PolynomialFields values={part.coefficients} argument={part.argument} degree={form} prefix={part.factor ? undefined : equation}
+          onFocus={part.setActiveCoefficient} onBlur={part.finishCoefficient} onChange={part.editCoefficient} />
         {part.factor && <span className="polynomial-paren">)</span>}
       </span>{part.factor && <span className="polynomial-factor"><MathFormula source={'\\cdot ' + part.factor.tex} /></span>}</> : part.template
         ? <><MathFormula source={equation} /><InlineExpression node={part.template.editable.tree} values={part.literals} onChange={part.editLiteral} /></>
@@ -296,7 +290,7 @@ function ResultPlot({ result, status, index, title }: { result: Result; status: 
   </div>;
 }
 
-function FormulaWorkspace({ config, names, factors, external = false, showPlots = true, result, status, index, onChange, onDraft }: Props & { index: number }) {
+function FormulaWorkspace({ config, names, factors, external = false, result, status, index, onChange, onDraft }: Props & { index: number }) {
   const [side, setSide] = useState<'plus' | 'minus'>('plus');
   const plus = useFunctionPart(config, external ? 'factors' : 'plus', index, onChange);
   const minus = useFunctionPart(config, 'minus', index, onChange, !external);
@@ -324,7 +318,7 @@ function FormulaWorkspace({ config, names, factors, external = false, showPlots 
           {[3, 2, 1, 0].map(v => <option key={v} value={v}>{forms[v]}</option>)}
           <option value="formula">Аналитическая формула</option>
         </select></label>
-        {!external && (showPlots || typeof part.form === 'number' && part.form > 0) && <label className="field">{argumentLabel}<select aria-label={argumentLabel} value={part.argument}
+        {!external && <label className="field">{argumentLabel}<select aria-label={argumentLabel} value={part.argument}
           disabled={!part.valid || part.form === null}
           onChange={e => part.changeArgument(e.target.value)}>
           {Array.from(new Set([part.argument, ...part.argumentsList])).map(v => <option key={v} value={v}>{variableName(v)}</option>)}
@@ -338,23 +332,23 @@ function FormulaWorkspace({ config, names, factors, external = false, showPlots 
       </div>
       {!valid && <p className="editor-error" role="status">Допишите число в формуле.</p>}
     </div>
-    {showPlots && <div className={external ? 'editor-charts single-plot' : 'editor-charts'}>
+    <div className={external ? 'editor-charts single-plot' : 'editor-charts'}>
       <FormulaPlot part={part} variableName={variableName(part.argument)} index={index} />
       {!external && <ResultPlot result={result} status={valid ? status : 'draft'} index={index} title={names[index]} />}
-    </div>}
+    </div>
     <div className="editor-details">
       <details className="expression-details"><summary>Запись формулы</summary>
         <label className="field">Выражение<input aria-label="Формула в редакторе" maxLength={400} spellCheck={false}
           value={part.source} onChange={e => part.editSource(e.target.value)} /></label>
         <p className="note">Степень записывается как <code>**</code>. Допустимы {external ? 'время t и константы' : 'X1…X11, F1…F7 и время t'}.</p>
       </details>
-      {showPlots && <details className="expression-details"><summary>Диапазон графика</summary>
+      <details className="expression-details"><summary>Диапазон графика</summary>
         <div className="editor-range"><span>{part.argument === 't' ? 'τ' : part.argument}</span>
           {part.domain.map((value, i) => <label key={i}>{i ? 'до' : 'от'}<input
             aria-label={i ? 'Конец диапазона зависимости' : 'Начало диапазона зависимости'} inputMode="decimal"
             value={value} onChange={e => part.editDomain(i, e.target.value)} /></label>)}
         </div>
-      </details>}
+      </details>
     </div>
   </>;
 }
@@ -367,7 +361,7 @@ export function FunctionEditor(props: Props) {
   return <section className="function-editor">
     <div className="editor-heading">
       <div><h2>{external ? 'Функции внешних факторов' : 'Редактор зависимостей'}</h2>
-        <p className="editor-intro">{external ? 'Меняйте числа прямо в формуле фактора.' : props.showPlots === false ? 'Меняйте коэффициенты прямо в формуле. Общий график обновится автоматически.' : 'График слева относится к выделенной части. Числа можно менять прямо в формуле.'}</p></div>
+        <p className="editor-intro">{external ? 'Меняйте числа прямо в формуле фактора.' : 'График слева относится к выделенной части. Числа можно менять прямо в формуле.'}</p></div>
       <label className="editor-target field">{name}<select aria-label={name} value={index} onChange={e => setIndex(+e.target.value)}>
         {(external ? props.factors : props.names).map((n, i) => <option key={n} value={i}>{external ? 'F' : 'X'}{i + 1} · {n}</option>)}
       </select></label>

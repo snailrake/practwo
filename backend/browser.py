@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 from .defaults import STATE_NAMES, FACTOR_NAMES, presets, startup
 from .expressions import ModelError
-from .model import SimulationConfig, simulate
+from .model import SimulationConfig, random_scenario, simulate
 from .verification import verify
 from .preview import PreviewConfig, preview
 
@@ -24,6 +24,8 @@ def dispatch(operation: str, payload: str = '{}') -> str:
                       'engine': 'WebAssembly' if sys.platform == 'emscripten' else 'native'}
         elif operation == 'preview':
             result = preview(PreviewConfig(**json.loads(payload)))
+        elif operation == 'random-scenario':
+            result = random_scenario()
         elif operation in {'simulate', 'verify'}:
             config = SimulationConfig(**json.loads(payload))
             result = simulate(config) if operation == 'simulate' else verify(config)

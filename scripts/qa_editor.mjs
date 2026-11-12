@@ -35,7 +35,7 @@ const importConfig = async config => {
   await page.waitForTimeout(80); await ready();
 };
 try {
-  await page.goto(url); await ready(); await settled();
+  await page.goto(url); await ready(); await tab('Зависимости'); await settled();
   const startup = await exportResult();
   check('First screen is the inline cubic editor without an extra click', await page.getByRole('heading', { name: 'Редактор зависимостей', exact: true }).isVisible() && await page.getByLabel('Вид формулы', { exact: true }).inputValue() === '3');
   const startupA = await coefficient('a').inputValue();
@@ -68,7 +68,7 @@ try {
   await selectPart('minus');
   await subtractedField.fill('0.7');
   const bothEdited = await exportResult();
-  check('Editing the second cubic changes only its coefficient in the solver', await subtracted.isVisible() && bothEdited.config.plus[3] === changed.config.plus[3] && bothEdited.config.minus[3].startsWith('(0.7)*F4**3'));
+  check('Editing the second cubic preserves its other arguments', await subtracted.isVisible() && bothEdited.config.plus[3] === changed.config.plus[3] && bothEdited.config.minus[3].startsWith('((0.7)*F4**3') && bothEdited.config.minus[3].includes('F1 ** 0.8 * F3'));
   await subtractedField.fill('-');
   await selectPart('plus');
   await coefficient('a').fill('1.2');

@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .defaults import STATE_NAMES, FACTOR_NAMES, presets, startup
 from .expressions import ModelError
-from .model import SimulationConfig, simulate
+from .model import SimulationConfig, random_scenario, simulate
 from .verification import verify
 from .preview import PreviewConfig, preview
 
@@ -25,11 +25,11 @@ def get_presets():
     return {"presets": presets(), "startup": startup(), "state_names": STATE_NAMES, "factor_names": FACTOR_NAMES}
 
 
-def calculate(config, operation):
+def calculate(operation, *args):
     if not workers.acquire(blocking=False):
         raise HTTPException(503, "Заняты оба вычислительных потока. Повторите запрос позже.")
     try:
-        return operation(config)
+        return operation(*args)
     except ModelError as exc:
         raise HTTPException(422, str(exc)) from exc
     finally:
@@ -38,17 +38,22 @@ def calculate(config, operation):
 
 @app.post("/api/simulate")
 def simulate_endpoint(config: SimulationConfig):
-    return calculate(config, simulate)
+    return calculate(simulate, config)
+
+
+@app.get("/api/random-scenario")
+def random_scenario_endpoint():
+    return calculate(random_scenario)
 
 
 @app.post("/api/verify")
 def verify_endpoint(config: SimulationConfig):
-    return calculate(config, verify)
+    return calculate(verify, config)
 
 
 @app.post('/api/preview')
 def preview_endpoint(config: PreviewConfig):
-    return calculate(config, preview)
+    return calculate(preview, config)
 
 
 @app.get('/api/report/{kind}')

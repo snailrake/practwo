@@ -1,4 +1,5 @@
 """Table 1 is transcribed from page 6 of the supplied assignment, not fitted data."""
+import ast
 from copy import deepcopy
 
 from .expressions import Expression
@@ -51,15 +52,36 @@ def polynomial(argument, a, b, c, d):
     return f'({a:.10g})*{argument}**3+({b:.10g})*{argument}**2+({c:.10g})*{argument}+({d:.10g})'
 
 
+class UnitArgument(ast.NodeTransformer):
+    def __init__(self, argument):
+        self.argument = argument
+
+    def visit_Name(self, node):
+        return ast.Constant(1) if node.id == self.argument else node
+
+    def visit_BinOp(self, node):
+        self.generic_visit(node)
+        if isinstance(node.op, (ast.Mult, ast.Div)) and isinstance(node.right, ast.Constant) and node.right.value == 1:
+            return node.left
+        if isinstance(node.op, ast.Mult) and isinstance(node.left, ast.Constant) and node.left.value == 1:
+            return node.right
+        return node
+
+
 def cubic_part(source, argument, power, values):
-    """Approximate the one-variable slice through the initial operating point."""
+    """Approximate the selected power and keep the other inputs live."""
     reference = values[argument]
-    amplitude = Expression(source, set(values))(values)
+    multiplier = ast.unparse(UnitArgument(argument).visit(ast.parse(source, mode='eval')))
+    rest = Expression(multiplier, set(values))
+    amplitude = reference**power
+    if not rest.dependencies:
+        amplitude *= rest({})
     # For z=x/x₀, the positive-power approximation has value 1 and slope p
     # at z=1. The reciprocal uses its third-order Taylor expansion at z=1.
     a, b, c, d = (-1, 4, -6, 4) if power == -1 else (2, power - 5, 4 - power, 0)
-    return polynomial(argument, amplitude * a / reference**3, amplitude * b / reference**2,
-                      amplitude * c / reference, amplitude * d)
+    cubic = polynomial(argument, amplitude * a / reference**3, amplitude * b / reference**2,
+                       amplitude * c / reference, amplitude * d)
+    return f'({cubic})*({multiplier})' if rest.dependencies else cubic
 
 
 def presets():

@@ -1,3 +1,9 @@
+import type { Editable } from './InlineFormula';
+
+export type EquationFields = {
+  source: string; argument: string; coefficients: number[] | null; editable: Editable | null;
+  multiplier: { source: string; tex: string } | null;
+};
 export type Config = {
   name: string; initial: number[]; scales: number[]; radar_limits?: number[]; factors: string[];
   plus: string[]; minus: string[]; method: 'DOP853' | 'RK45' | 'Radau';
@@ -9,6 +15,7 @@ export type Result = {
   radar_scales: number[];
   quarters: { t: number; values: number[]; normalized: number[] }[];
   state_names: string[]; factor_names: string[]; equations_tex: string[]; factors_tex: string[];
+  equation_fields: Record<'plus' | 'minus' | 'factors', EquationFields[]>;
   warnings: string[]; dependencies: { target: string; sources: string[] }[];
   diagnostics: { method: string; rtol: number; atol: number; nfev: number; njev: number;
     samples: number; elapsed_ms: number; max_step: number; scipy_success: boolean };

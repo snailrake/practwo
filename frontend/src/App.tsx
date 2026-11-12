@@ -4,6 +4,7 @@ import { MathFormula } from './Math';
 import type { Config, Result, Verification } from './types';
 import { browserPython, call, onRuntimeProgress, reportURL } from './compute';
 import { FunctionEditor } from './FunctionEditor';
+import { EquationList } from './EquationList';
 import { useSimulation } from './useSimulation';
 
 const tabs = ['Все результаты', 'Зависимости', 'Внешние факторы', 'Лепестковые диаграммы'];
@@ -29,12 +30,13 @@ export function App() {
   const [scenarioVersion, setScenarioVersion] = useState(0);
   const { result, busy, error, setError, retry } = useSimulation(config, draftPending);
   const [reference, setReference] = useState<Result | null>(null);
-  const [tab, setTab] = useState(1);
+  const [tab, setTab] = useState(0);
   const [selected, setSelected] = useState(2);
   const [frame, setFrame] = useState(400);
   const [allCharts, setAllCharts] = useState(true);
   const [verification, setVerification] = useState<Verification | null>(null);
   const [checking, setChecking] = useState(false);
+  const [randomizing, setRandomizing] = useState(false);
   const [initialOpen, setInitialOpen] = useState(() => window.matchMedia('(min-width: 801px)').matches);
   const [runtimeProgress, setRuntimeProgress] = useState('Загрузка Python в браузер…');
   const fileInput = useRef<HTMLInputElement>(null);
@@ -85,6 +87,25 @@ export function App() {
     });
     setDraftPending(false);
   }
+  function applyScenario(next: Config) {
+    setDraftPending(false);
+    setScenarioVersion(n => n + 1);
+    setScenarioDefaults(clone(next));
+    setConfig(clone(next));
+  }
+  async function randomize() {
+    const previous = latestConfig.current;
+    setRandomizing(true);
+    setError('');
+    try {
+      const next = await call<Config>('/api/random-scenario');
+      if (latestConfig.current === previous) applyScenario(next);
+    } catch (e) {
+      if (latestConfig.current === previous) setError((e as Error).message);
+    } finally {
+      setRandomizing(false);
+    }
+  }
   async function importScenario(file?: File) {
     if (!file) return;
     try {
@@ -96,7 +117,7 @@ export function App() {
       if (!['initial', 'scales', 'plus', 'minus'].every(k => Array.isArray(c[k]) && c[k].length === 11) || !Array.isArray(c.factors) || c.factors.length !== 7) throw new Error('Нужны 11 начальных значений, 11 делителей, 22 функции и 7 факторов.');
       c.radar_limits ??= presets[0]?.radar_limits;
       if (!Array.isArray(c.radar_limits) || c.radar_limits.length !== 11) throw new Error('Нужны 11 пределов шкал.');
-      setDraftPending(false); setScenarioVersion(n => n + 1); setScenarioDefaults(clone(c)); setConfig(c);
+      applyScenario(c);
     } catch (e) { setError('Импорт: ' + (e as Error).message); }
     finally { if (fileInput.current) fileInput.current.value = ''; }
   }
@@ -139,7 +160,7 @@ export function App() {
         <section>
           <h2>Исходные данные</h2>
           <label className="field">Сценарий
-            <select aria-label="Модельный пример" value={presets.findIndex(p => p.name === config.name)} onChange={e => { const p = presets[+e.target.value]; if (p) { setDraftPending(false); setScenarioVersion(n => n + 1); setScenarioDefaults(clone(p)); setConfig(clone(p)); } }}>
+            <select aria-label="Модельный пример" value={presets.findIndex(p => p.name === config.name)} onChange={e => { const p = presets[+e.target.value]; if (p) applyScenario(p); }}>
               <option value={-1} disabled>Пользовательский сценарий</option>
               {presets.map((p, i) => <option key={p.name} value={i}>{p.name}{i === 0 ? ' · таблица задания' : ''}</option>)}
             </select>
@@ -153,7 +174,7 @@ export function App() {
           </details>
           <div className="calculation-status" role="status" aria-live="polite" data-ready={!!result && !dirty && !busy && !draftPending && !error} data-busy={!error && (busy || dirty || draftPending)}><span />{draftPending ? 'Допишите коэффициент' : error ? 'Проверьте параметры' : busy || dirty || !result ? 'Пересчитываем…' : 'Расчёт обновлён'}</div>
           <p className="note">Интервал 0…{fmt(config.t_end, 3)}. Значения в относительной шкале.</p>
-          {JSON.stringify(scenarioDefaults) === JSON.stringify(presets.at(-1)) && <p className="scenario-note">Каждая ненулевая часть — полином по одному исходному аргументу. Остальные входы при подборе коэффициентов взяты в начальный момент.</p>}
+          {JSON.stringify(scenarioDefaults) === JSON.stringify(presets.at(-1)) && <p className="scenario-note">В каждой ненулевой части один множитель заменён кубическим полиномом. Остальные аргументы участвуют в расчёте.</p>}
         </section>
         <section>
           <details className="additional-settings">
@@ -188,10 +209,7 @@ export function App() {
           {tab === 0 && <>
             <section className="profile">
               <div className="results-view" role="group" aria-label="Отображение результатов"><button aria-pressed={!allCharts} onClick={() => setAllCharts(false)}>Один график</button><button aria-pressed={allCharts} onClick={() => setAllCharts(true)}>Все 11 графиков</button></div>
-              {allCharts ? <><h2>Все 11 временных зависимостей</h2><AllProfiles r={result} cursor={cursor} comparison={comparison} />
-                <FunctionEditor key={'profiles-' + scenarioVersion} showPlots={false} config={config} names={names} factors={factorNames}
-                  result={result} status={resultStatus} onChange={array} onDraft={setDraftPending} onReset={resetEditor} />
-              </> : <>
+              {allCharts ? <><h2>Все 11 временных зависимостей</h2><AllProfiles r={result} cursor={cursor} comparison={comparison} /></> : <>
               <div className="section-heading"><h2>Временной профиль</h2><select aria-label="Характеристика на основном графике" value={selected} onChange={e => setSelected(+e.target.value)}>{names.map((n, i) => <option key={n} value={i}>{'X' + (i + 1)} · {n}</option>)}</select></div>
               <h3 className="profile-title">{symbol('X', selected)} {names[selected]}</h3>
               <Chart label={'Временной профиль X' + (selected + 1)} height={360} option={lineOption(result, selected, cursor, comparison)} />
@@ -203,6 +221,9 @@ export function App() {
               </div>
               <div className="quarter-controls"><span>Четверти:</span>{snapshots.map(q => <button key={q.t} onClick={() => moveTo(q.t)}>{fmt(q.t, 3)}</button>)}</div>
               {comparison && <p className="note">Сплошная линия – текущий расчёт, пунктир – эталон.</p>}
+              {allCharts && <EquationList key={'profiles-' + scenarioVersion} config={config} result={result} randomizing={randomizing}
+                tableMode={presets.slice(0, -1).some(p => p.name === scenarioDefaults?.name)}
+                onChange={array} onDraft={setDraftPending} onRandomize={randomize} onUseTable={() => applyScenario(presets[0])} />}
             </section>
             <details className="plain-details comparison-controls"><summary>Сравнение экспериментов</summary><p>Сохраните текущий результат, затем измените параметры. Новый расчёт появится автоматически.</p><div className="button-row"><button disabled={dirty || busy || draftPending} onClick={() => setReference(clone(result))}>Запомнить эталон</button>{reference && <button onClick={() => setReference(null)}>Убрать</button>}</div>{reference && <p>Эталон: {reference.config.name}</p>}</details>
             <section><h2>Характеристики при τ = {fmt(cursor, 3)}</h2><div className="metrics">{names.map((n, i) => <button title={n} className={selected === i ? 'metric active-metric' : 'metric'} key={n} onClick={() => setSelected(i)}><span>{symbol('X', i)} {short[i]}</span><strong>{fmt(values[i], 5)}</strong></button>)}</div></section>

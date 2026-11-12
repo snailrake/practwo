@@ -39,6 +39,16 @@ def test_presets_use_one_model_and_vary_only_inputs():
     assert ps[3]['factors'][0]=='1.2'
 
 
+def test_random_example_preserves_dependencies_and_fits_the_radar_limits(monkeypatch):
+    monkeypatch.setattr('backend.model.random.uniform', lambda low, high: 1.03)
+    config = TestClient(app).get('/api/random-scenario').json()
+    assert config['initial'] != BASE['initial']
+    result = simulate(SimulationConfig(**config))
+    assert result['dependencies'] == simulate(SimulationConfig(**BASE))['dependencies']
+    assert all(0 <= value <= limit for row in result['y'] for value, limit in zip(row, result['radar_scales']))
+    assert result['equation_fields']['plus'][4]['multiplier']['source'] == '0.0145 / X1 ** 2.1'
+
+
 def test_alternate_sign_mode_cannot_be_submitted():
     c=deepcopy(BASE); c['mode']='abs'
     with pytest.raises(ValidationError): SimulationConfig(**c)

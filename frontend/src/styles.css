@@ -78,8 +78,11 @@ details[open] > summary { margin-bottom: 8px; }
 .polynomial-term, .math-piece { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
 .math-operator { padding: 0 3px; }
 .number-slot { display: inline-flex; align-items: center; position: relative; flex-shrink: 0; margin: 0 2px; }
-.number-slot input { font-family: inherit; font-size: 1em; padding: 3px 5px; height: 1.9em; min-width: 0; max-width: 18ch; text-align: center; border: 1px solid #b4bbc2; border-bottom: 2px solid #59616a; background: #f7f8fa; transition: background .15s, border-color .15s; }
+.number-slot input { font-family: inherit; font-size: 1em; padding: 3px 5px; height: 1.9em; width: var(--exact-width); min-width: 0; max-width: 18ch; text-align: center; border: 1px solid #b4bbc2; border-bottom: 2px solid #59616a; background: #f7f8fa; transition: background .15s, border-color .15s; }
 .number-slot input:focus { background: #fff; border-color: #111; outline-offset: 2px; }
+.number-slot .compact-number:not(:focus) { width: var(--compact-width); color: transparent; }
+.rounded-number { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.compact-number:focus + .rounded-number { display: none; }
 .number-slot small { position: absolute; top: calc(100% + 2px); width: 100%; text-align: center; font: 10px Consolas, monospace; color: #777; pointer-events: none; }
 .number-slot[data-invalid=true] input { border-color: #9c3535; background: #fff9f9; }
 .math-fraction { display: inline-flex; flex-direction: column; align-items: stretch; vertical-align: middle; line-height: 1.5; }
@@ -138,7 +141,14 @@ main { min-width: 0; }
 .section-heading h2 { margin: 4px 0 0; white-space: nowrap; }
 .section-heading select { max-width: 350px; font-size: 11px; }
 .profile-title { font-weight: 400; margin-bottom: 5px; color: #555; }
-.profile .function-editor { margin-top: 16px; padding-top: 12px; border-top: 1px solid #ddd; }
+.equation-editor { margin-top: 16px; padding-top: 12px; border-top: 1px solid #ddd; }
+.equation-editor .section-heading, .equation-editor .button-row { flex-wrap: wrap; }
+.equation-row { padding: 12px 0; border-bottom: 1px solid #ddd; }
+.equation-row h3 { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 2px; }
+.equation-row h3 > span:last-child { color: #555; font-size: 11px; font-weight: 400; }
+.equation-fields, .equation-fields .polynomial-terms { justify-content: flex-start; }
+.equation-fields { min-height: 0; padding: 6px 2px 15px; font-size: 16px; }
+.factor-equations-heading { margin-top: 24px; }
 .chart { position: relative; min-width: 0; }
 .chart-download { position: absolute; right: 2px; top: 0; font-size: 9px; padding: 2px 5px; border-color: #ccc; color: #666; }
 .results-view { display: flex; gap: 6px; margin-bottom: 22px; }

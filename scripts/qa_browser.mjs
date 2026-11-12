@@ -24,16 +24,20 @@ try{
  await selectTab('Все результаты');
  await page.locator('.profile canvas').waitFor();
  check('All results starts with the combined plot',await page.locator('canvas').count()===1);
- const inlineEditor = page.locator('.profile .function-editor');
- const coefficient = inlineEditor.getByRole('textbox',{name:'Коэффициент a',exact:true});
+ const inlineEditor = page.locator('.profile .equation-editor');
+ const coefficient = inlineEditor.getByRole('group',{name:'Первая часть X4',exact:true}).getByRole('textbox',{name:'Коэффициент a',exact:true});
  await coefficient.waitFor();
  const updated = page.waitForResponse(response => response.url().endsWith('/api/simulate') &&
    response.request().postDataJSON()?.plus[3]?.startsWith('(0.9)*X1**3'));
  await coefficient.fill('0.9');
  const updatedResponse = await updated;
  await page.locator('.calculation-status[data-ready=true]').waitFor();
- check('An edit under the combined plot reaches the solver without changing tabs',updatedResponse.ok() && await inlineEditor.isVisible() && await page.locator('.profile canvas').count()===1);
- await inlineEditor.getByRole('button',{name:'Сбросить уравнение',exact:true}).click();
+ check('An edit under the combined plot reaches the solver with all formulas on one page',updatedResponse.ok() && await inlineEditor.locator('.equation-fields').count()===29 && await page.locator('.profile canvas').count()===1);
+ await inlineEditor.getByRole('button',{name:'Заполнить случайными значениями',exact:true}).click();
+ await page.locator('.result-line').getByText('Случайный учебный пример',{exact:true}).waitFor();
+ check('Random example solves on the same page', await page.locator('.calculation-status[data-ready=true]').isVisible());
+ await inlineEditor.getByRole('button',{name:'По таблице задания',exact:true}).click();
+ await page.locator('.result-line').getByText('Базовый модельный пример',{exact:true}).waitFor();
  await page.locator('.calculation-status[data-ready=true]').waitFor();
  await page.getByRole('button',{name:'Один график',exact:true}).click();
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import random
 import time
 from typing import Literal
 
@@ -9,9 +10,9 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from scipy.integrate import solve_ivp
 
-from .defaults import STATE_NAMES, FACTOR_NAMES, RADAR_LIMITS
+from .defaults import STATE_NAMES, FACTOR_NAMES, RADAR_LIMITS, polynomial, startup
 from .expressions import Expression, ModelError
-from .notation import equation_tex, to_tex
+from .notation import equation_fields, equation_tex, to_tex
 
 
 class SimulationConfig(BaseModel):
@@ -145,6 +146,9 @@ def simulate(config: SimulationConfig, *, step_divisor: int = 100):
         "radar_scales": scales.tolist(), "quarters": snapshots,
         "state_names": STATE_NAMES, "factor_names": FACTOR_NAMES,
         "equations_tex": [equation_tex(i+1, p, m) for i, (p,m) in enumerate(zip(config.plus, config.minus))],
+        "equation_fields": {"plus": [equation_fields(p) for p in dynamics.plus],
+                            "minus": [equation_fields(m) for m in dynamics.minus],
+                            "factors": [equation_fields(f) for f in dynamics.factors]},
         "factors_tex": [to_tex(s) for s in config.factors],
         "dependencies": [{"target": f"X{i+1}", "sources": sorted(set(p.dependencies + m.dependencies))}
                          for i, (p, m) in enumerate(zip(dynamics.plus, dynamics.minus))],
@@ -155,3 +159,30 @@ def simulate(config: SimulationConfig, *, step_divisor: int = 100):
                         "elapsed_ms": (time.perf_counter() - started) * 1000,
                         "scipy_success": bool(solution.success)},
     }
+
+
+def random_scenario():
+    """Sample near the cubic example and accept only solved in-range trajectories."""
+    names = {"t"} | {f"X{i}" for i in range(1, 12)} | {f"F{i}" for i in range(1, 8)}
+    for _ in range(5):
+        candidate = startup()
+        candidate["name"] = "Случайный учебный пример"
+        candidate["initial"] = [round(x * random.uniform(.94, 1.06), 2) for x in candidate["initial"]]
+        for kind in ("plus", "minus", "factors"):
+            for index, source in enumerate(candidate[kind]):
+                if source == '0':
+                    continue
+                fields = equation_fields(Expression(source, names))
+                weight = random.uniform(.94, 1.06)
+                cubic = polynomial(fields['argument'], *(weight * c for c in fields['coefficients']))
+                multiplier = fields['multiplier']
+                candidate[kind][index] = f"({cubic})*({multiplier['source']})" if multiplier else cubic
+        config = SimulationConfig(**candidate)
+        try:
+            result = simulate(config)
+        except ModelError:
+            continue
+        trajectories = np.asarray(result["y"])
+        if np.all((trajectories >= 0) & (trajectories <= config.radar_limits)):
+            return config.model_dump()
+    raise ModelError("Не удалось подобрать пример в пределах шкал. Нажмите кнопку ещё раз.")
