@@ -22,8 +22,8 @@ try{
  await page.goto(baseUrl);
  await page.locator('.calculation-status[data-ready=true]').waitFor();
  await selectTab('Все результаты');
- await page.waitForFunction(()=>document.querySelectorAll('.plot-grid canvas').length===11);
- check('All results starts with the eleven plots',await page.locator('.plot-grid canvas').count()===11);
+ await page.locator('.profile canvas').waitFor();
+ check('All results starts with the combined plot',await page.locator('canvas').count()===1);
  await page.getByRole('button',{name:'Один график',exact:true}).click();
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();
  await page.getByRole('heading',{name:'Временной профиль',exact:true}).waitFor();
@@ -43,8 +43,8 @@ try{
  check('Exact half-time snapshot',(await page.locator('output').innerText()).includes('0,5'));
  await page.getByRole('button',{name:'1',exact:true}).click();
  await page.getByRole('button',{name:'Все 11 графиков',exact:true}).click();
- await page.waitForFunction(()=>document.querySelectorAll('.plot-grid canvas').length===11);
- check('All eleven characteristic graphs',await page.locator('canvas').count()===11);
+ await page.locator('.profile canvas').waitFor();
+ check('All eleven characteristics share one plot',await page.locator('canvas').count()===1);
  await capture('ui-all-states.png');
  await selectTab('Внешние факторы');
  await page.getByText('Все внешние факторы',{exact:true}).click();
@@ -55,6 +55,13 @@ try{
  check('Four separate quarter radars',await page.locator('canvas').count()===4);
  check('Quarter table includes all eleven rows',await page.locator('tbody tr').count()===11);
  await capture('ui-quarters.png');
+ await page.getByText('Пределы шкал',{exact:true}).click();
+ const limit = page.getByLabel('Предел X1',{exact:true});
+ await limit.fill('0.1');
+ await page.getByText('За пределом шкалы: X1.',{exact:false}).first().waitFor();
+ check('Values beyond the configured scale remain in the table',await page.locator('tbody tr').count()===11&&await page.locator('.radar-grid canvas').count()===0);
+ await limit.fill('1');
+ await page.locator('.radar-grid canvas').first().waitFor();
  await selectTab('Все результаты');await page.getByText('Сравнение экспериментов',{exact:true}).click();await page.getByRole('button',{name:'Запомнить эталон',exact:true}).click();await selectTab('Лепестковые диаграммы');
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('1');
  check('Changed configuration visibly marked stale',await page.locator('.message[role=status]').isVisible());
@@ -91,6 +98,10 @@ try{
  const jsonPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Результат JSON ↓',exact:true}).click();
  const json=await jsonPromise;await json.saveAs(path.join(output,'ui-export.json'));
  check('JSON contains actual solver result',JSON.parse(await fs.readFile(path.join(output,'ui-export.json'),'utf8')).y.length===401);
+ const legacy = JSON.parse(await fs.readFile(path.join(output,'ui-export.json'),'utf8')).config;
+ delete legacy.radar_limits;
+ await importConfig(legacy);
+ check('Older scenarios receive the default limits and stay exportable',await page.getByRole('button',{name:'Результат JSON ↓',exact:true}).isEnabled());
  await selectTab('Все результаты');const pngPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Скачать Временной профиль X3',exact:true}).click();
  const png=await pngPromise;await png.saveAs(path.join(output,'ui-chart-export.png'));
  check('Graph PNG export has bytes',(await fs.stat(path.join(output,'ui-chart-export.png'))).size>10000);

@@ -1,5 +1,5 @@
 export type Config = {
-  name: string; initial: number[]; scales: number[]; factors: string[];
+  name: string; initial: number[]; scales: number[]; radar_limits?: number[]; factors: string[];
   plus: string[]; minus: string[]; method: 'DOP853' | 'RK45' | 'Radau';
   rtol: number; atol: number; samples: number; t_end: number;
 };

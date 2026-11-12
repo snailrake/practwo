@@ -9,7 +9,7 @@ import numpy as np
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from scipy.integrate import solve_ivp
 
-from .defaults import STATE_NAMES, FACTOR_NAMES
+from .defaults import STATE_NAMES, FACTOR_NAMES, RADAR_LIMITS
 from .expressions import Expression, ModelError
 from .notation import equation_tex, to_tex
 
@@ -19,6 +19,7 @@ class SimulationConfig(BaseModel):
     name: str = Field(default="Пользовательский сценарий", max_length=100)
     initial: list[float] = Field(min_length=11, max_length=11)
     scales: list[float] = Field(min_length=11, max_length=11)
+    radar_limits: list[float] = Field(default_factory=lambda: RADAR_LIMITS.copy(), min_length=11, max_length=11)
     factors: list[str] = Field(min_length=7, max_length=7)
     plus: list[str] = Field(min_length=11, max_length=11)
     minus: list[str] = Field(min_length=11, max_length=11)
@@ -33,6 +34,13 @@ class SimulationConfig(BaseModel):
     def positive_scales(cls, values):
         if any(not 1e-8 <= x <= 1e8 for x in values):
             raise ValueError("Делители S должны лежать между 1e-8 и 1e8")
+        return values
+
+    @field_validator("radar_limits")
+    @classmethod
+    def positive_radar_limits(cls, values):
+        if any(not 1e-9 <= x <= 1e8 for x in values):
+            raise ValueError("Пределы лепестков должны лежать между 1e-9 и 1e8")
         return values
 
     @field_validator("initial")
@@ -113,7 +121,7 @@ def simulate(config: SimulationConfig, *, step_divisor: int = 100):
     plus = np.array([x[0] for x in components])
     minus = np.array([x[1] for x in components])
     factors = np.array([x[2] for x in components])
-    scales = np.maximum(np.max(np.abs(y), axis=0), 1e-9)
+    scales = np.array(config.radar_limits)
     snapshots = [{"t": float(t), "values": y[np.argmin(abs(times-t))].tolist(),
                   "normalized": (y[np.argmin(abs(times-t))] / scales).tolist()} for t in quarters]
     warnings = [
@@ -125,7 +133,11 @@ def simulate(config: SimulationConfig, *, step_divisor: int = 100):
     if np.min(y[:, 10]) < 0 or np.max(y[:, 10]) > 1:
         warnings.append("X11 выходит за 0…1. Интерпретация как доли эффективности оповещения недопустима без изменения модели.")
     payload = config.model_dump()
-    fingerprint = hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
+    fingerprint_payload = payload.copy()
+    if config.radar_limits == RADAR_LIMITS:
+        # Older scenario exports implied these display limits.
+        del fingerprint_payload["radar_limits"]
+    fingerprint = hashlib.sha256(json.dumps(fingerprint_payload, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     return {
         "config": payload, "fingerprint": fingerprint, "t": times.tolist(), "y": y.tolist(),
         "factors": factors.tolist(), "plus": plus.tolist(), "minus": minus.tolist(),

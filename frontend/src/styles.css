@@ -253,7 +253,7 @@ footer { display: flex; justify-content: space-between; gap: 16px; padding: 24px
   .initial-list { grid-template-columns: 1fr; }
 }
 @media (min-width: 1001px) {
-  .function-editor { --editor-chart-height: clamp(190px, calc(100dvh - 440px), 420px); }
+  .function-editor { --editor-chart-height: clamp(180px, calc(100dvh - 478px), 420px); }
   .function-editor:has(.polynomial-factor) { --editor-chart-height: clamp(180px, calc(100dvh - 462px), 420px); }
 }
 @media (min-width: 1001px) and (max-width: 1400px) {

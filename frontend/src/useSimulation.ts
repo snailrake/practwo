@@ -45,7 +45,7 @@ export function useSimulation(config: Config | null, blocked: boolean) {
     const key = JSON.stringify(config);
     const timer = window.setTimeout(() => {
       if (latest.current.key !== key || latest.current.blocked) return;
-      const numbers = [...config.initial, ...config.scales, config.rtol, config.atol, config.samples, config.t_end];
+      const numbers = [...config.initial, ...config.scales, ...(config.radar_limits ?? []), config.rtol, config.atol, config.samples, config.t_end];
       if (numbers.some(v => !Number.isFinite(v))) { setError('Допишите числовые параметры. Показан последний корректный расчёт.'); return; }
       if ([...config.plus, ...config.minus, ...config.factors].some(v => !v.trim() || /[+\-*/(]$/.test(v.trim()))) {
         setError('Допишите формулу. Показан последний корректный расчёт.'); return;

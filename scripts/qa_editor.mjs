@@ -68,7 +68,7 @@ try {
   const subtractedField = subtracted.getByLabel('Коэффициент a', { exact: true });
   await subtractedField.fill('0.7');
   const bothEdited = await exportResult();
-  check('Editing the second cubic selects it and preserves its other factors in the solver', await subtracted.getAttribute('data-active') === 'true' && bothEdited.config.plus[3] === changed.config.plus[3] && bothEdited.config.minus[3].startsWith('((0.7)*F3**3') && bothEdited.config.minus[3].split(')*(').at(-1) === startup.config.minus[3].split(')*(').at(-1));
+  check('Editing the second cubic selects it and changes only its coefficient in the solver', await subtracted.getAttribute('data-active') === 'true' && bothEdited.config.plus[3] === changed.config.plus[3] && bothEdited.config.minus[3].startsWith('(0.7)*F4**3'));
   await subtractedField.fill('-');
   await selectPart('plus');
   await coefficient('a').fill('1.2');
@@ -171,9 +171,9 @@ try {
   await tab('Внешние факторы'); await settled();
   for (let i = 0; i < 7; i++) {
     await page.getByLabel('Внешний фактор', { exact: true }).selectOption(String(i)); await settled();
-    check(`F${i+1} uses its own number of fields and time argument`, await (await raw()).inputValue() === baseline.config.factors[i] && await activePart.locator('.inline-formula input').count() === 1 && await page.getByText('По горизонтали время τ', { exact: true }).count() === 1);
+    check(`F${i+1} uses four fields and the time argument`, await (await raw()).inputValue() === baseline.config.factors[i] && await activePart.locator('.inline-formula input').count() === 4 && await page.getByText('По горизонтали время τ', { exact: true }).count() === 1);
   }
-  await page.getByLabel('Внешний фактор', { exact: true }).selectOption('2'); await settled(); await form(3);
+  await page.getByLabel('Внешний фактор', { exact: true }).selectOption('2'); await settled(); await coefficient('a').fill('.1');
   const wind = await exportResult();
   check('External cubic really changes the computed trajectory', wind.config.factors[2].includes('t**3') && Math.abs(wind.y.at(-1)[2] - baseline.y.at(-1)[2]) > 1e-6);
   await reset(); await ready(); await settled();

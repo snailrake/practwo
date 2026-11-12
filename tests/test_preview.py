@@ -90,11 +90,12 @@ def test_preview_refuses_executable_code():
     assert response.status_code == 422
 
 
-def test_startup_cubic_preserves_arguments_and_initial_values():
+def test_startup_cubic_matches_initial_values_on_one_variable_slices():
     config = startup()
-    assert config['factors'] == BASE['factors']
     values = {f'X{i}': value for i, value in enumerate(BASE['initial'], 1)}
     values.update({f'F{i}': float(value) for i, value in enumerate(BASE['factors'], 1)})
+    for i, source in enumerate(config['factors'], 1):
+        assert Expression(source, {'t'})({'t': 0}) == values[f'F{i}']
     for kind, selections in CUBIC_ARGUMENTS.items():
         for index, selection in enumerate(selections):
             if selection is None:
@@ -103,19 +104,19 @@ def test_startup_cubic_preserves_arguments_and_initial_values():
             argument, _ = selection
             original = Expression(BASE[kind][index], set(values))
             cubic = Expression(config[kind][index], set(values))
-            assert cubic.dependencies == original.dependencies
+            assert cubic.dependencies == [argument]
             graph = preview(PreviewConfig(config=config, kind=kind, index=index, argument=argument))
             assert graph['degree'] == 3 and graph['coefficients'][0] != 0
             assert graph['reference_y'] == pytest.approx(original(values), rel=1e-7)
-            other_values = {key: value if key == argument else value * 1.1 for key, value in values.items()}
-            assert cubic(other_values) == pytest.approx(original(other_values), rel=1e-7)
-            factor = graph['factor']['value'] if graph['factor'] else 1
-            assert all(y == pytest.approx(factor * np.polyval(graph['coefficients'], x)) for x, y in graph['points'])
+            assert graph['factor'] is None
+            assert all(y == pytest.approx(np.polyval(graph['coefficients'], x)) for x, y in graph['points'])
 
     reference = None
     for method in ['DOP853', 'RK45', 'Radau']:
         computed = simulate(SimulationConfig(**{**config, 'method': method}))
         assert computed['t'][-1] == 1 and np.isfinite(computed['y']).all()
+        assert computed['radar_scales'] == config['radar_limits']
+        assert all(0 <= v < 1 for q in computed['quarters'] for v in q['normalized'])
         if reference is None:
             reference = computed['y']
         else:

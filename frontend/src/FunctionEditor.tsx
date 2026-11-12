@@ -75,7 +75,7 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
           if (data.coefficients?.every(v => Number.isFinite(v) && Math.abs(v) <= 1e12)) {
             const anchor = data.factor ? polynomialValue(data.coefficients, data.factor.reference_x) : data.reference_y;
             loadCoefficients(data.coefficients, anchor);
-            setForm(data.degree as Form);
+            setForm(external ? 3 : data.degree as Form);
           } else {
             setTemplate({ source, editable: data.editable });
             setLiterals(data.editable.literals.map(n => n.text));
@@ -172,7 +172,7 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
   const degree = polynomial && valid ? firstTerm < 0 ? 0 : 3 - firstTerm : sourceCurrent ? preview.degree : null;
   const type = degree === null ? 'Аналитическая' : forms[Math.min(degree, 3)];
   const active = Math.max(polynomial ? 3 - form : 0, activeCoefficient);
-  const prefix = external ? 'F_{' + (index + 1) + '}' : 'f_{' + (index + 1) + '}^{' + (kind === 'plus' ? '+' : '-') + '}';
+  const prefix = external ? 'F_{' + (index + 1) + '}(t)' : 'f_{' + (index + 1) + '}^{' + (kind === 'plus' ? '+' : '-') + '}';
   return {
     source, kind, prefix, form, coefficients, literals, template, factor, valid, points, type, argument,
     active, values, sliderLimit: limits[active], domain, start, end, domainValid, error, pending, sourceCurrent,
@@ -192,25 +192,26 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
 type Part = ReturnType<typeof useFunctionPart>;
 
 function FormulaPart({ part, name, active, select }: { part: Part; name: string; active: boolean; select?: () => void }) {
-  const heading = <><MathFormula source={part.prefix} /><span>{name}</span></>;
   const form = part.form;
+  const equation = part.prefix + (part.kind !== 'factors' && typeof form === 'number' && form > 0 && !part.factor ? '(' + variableTex(part.argument) + ')' : '') + '=';
   return <div className="formula-part" role="group" aria-label={name} data-part={part.kind} data-active={active}
     onFocusCapture={e => { if (e.target instanceof HTMLInputElement) select?.(); }}>
     {select
-      ? <button type="button" className="part-label" aria-label={name} aria-pressed={active} onClick={select}>{heading}</button>
-      : <div className="part-label">{heading}</div>}
+      ? <button type="button" className="part-label" aria-pressed={active} onClick={select}>{name}</button>
+      : <div className="part-label">{name}</div>}
     <div className="inline-formula" role="group" aria-label={'Числа в формуле — ' + name}>
       {typeof form === 'number' ? <><span className="polynomial-terms">
-        {part.factor && <span className="polynomial-paren">(</span>}
+        {part.factor && <><MathFormula source={equation} /><span className="polynomial-paren">(</span></>}
         {part.coefficients.map((text, i) => i < 3 - form ? null : <span className="polynomial-term" key={i}>
+          {i === 3 - form && !part.factor && <MathFormula source={equation} />}
           {i > 3 - form && <span className="math-operator">+</span>}
           <NumberSlot label={'Коэффициент ' + letters[i]} symbol={letters[i]} value={text}
             onFocus={() => part.setActiveCoefficient(i)} onBlur={() => part.finishCoefficient(i)} onChange={value => part.editCoefficient(i, value)} />
-          {i < 3 && <MathFormula source={variableTex(part.argument) + (i < 2 ? '^{' + (3 - i) + '}' : '')} />}
+          {i < 3 && <MathFormula source={(part.kind === 'factors' ? 't' : variableTex(part.argument)) + (i < 2 ? '^{' + (3 - i) + '}' : '')} />}
         </span>)}
         {part.factor && <span className="polynomial-paren">)</span>}
       </span>{part.factor && <span className="polynomial-factor"><MathFormula source={'\\cdot ' + part.factor.tex} /></span>}</> : part.template
-        ? <InlineExpression node={part.template.editable.tree} values={part.literals} onChange={part.editLiteral} />
+        ? <><MathFormula source={equation} /><InlineExpression node={part.template.editable.tree} values={part.literals} onChange={part.editLiteral} /></>
         : <span className="formula-loading">{part.error ? 'Откройте запись формулы' : 'Подготавливаем формулу…'}</span>}
     </div>
   </div>;

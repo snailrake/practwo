@@ -27,8 +27,8 @@ try{
  const start=performance.now();await page.goto(url);
  await page.locator('.calculation-status[data-ready=true]').waitFor();
  await tab('Все результаты');
- await page.waitForFunction(()=>document.querySelectorAll('.plot-grid canvas').length===11);
- check('All results starts with the eleven plots',await page.locator('.plot-grid canvas').count()===11);
+ await page.locator('.profile canvas').waitFor();
+ check('All results starts with the combined plot',await page.locator('canvas').count()===1);
  await page.getByRole('button',{name:'Один график',exact:true}).click();
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();
  await page.getByRole('heading',{name:'Временной профиль',exact:true}).waitFor();loadMs=performance.now()-start;
@@ -48,8 +48,8 @@ try{
  check('Four task-focused navigation sections',JSON.stringify(await page.locator('.tabs button').allTextContents())===JSON.stringify(['Все результаты','Зависимости','Внешние факторы','Лепестковые диаграммы']));
  check('Technical controls are collapsed initially',!(await page.getByLabel('rtol',{exact:true}).isVisible())&&!(await page.getByRole('button',{name:'Проверить расчёт',exact:true}).isVisible()));
  await page.getByRole('button',{name:'Все 11 графиков',exact:true}).click();
- await page.waitForFunction(()=>document.querySelectorAll('.plot-grid canvas').length===11);
- check('Eleven state charts are available',await page.locator('canvas').count()===11);
+ await page.locator('.profile canvas').waitFor();
+ check('All eleven characteristics share one plot',await page.locator('canvas').count()===1);
  await tab('Внешние факторы');await page.getByText('Все внешние факторы',{exact:true}).click();check('Seven factor equations and charts are available',await page.locator('.all-factors canvas').count()===7&&await page.getByLabel(/Формула F/).count()===7);
  await tab('Зависимости');await page.getByText('Все уравнения',{exact:true}).click();check('Twenty-two editable functions and eleven rendered equations',await page.getByLabel(/Функция (плюс|минус) X/).count()===22&&await page.locator('.equation .katex').count()===11&&await page.locator('.katex-error').count()===0);
  await tab('Лепестковые диаграммы');check('Four quarter radars are computed',await page.locator('canvas').count()===4&&baseline.quarters.every((q,i)=>q.t===(i+1)/4));

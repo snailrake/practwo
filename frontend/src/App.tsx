@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Chart, DependencyGraph, QuarterRadars, fmt, lineOption, short } from './Charts';
+import { AllProfiles, Chart, DependencyGraph, QuarterRadars, fmt, lineOption, short } from './Charts';
 import { MathFormula } from './Math';
 import type { Config, Result, Verification } from './types';
 import { browserPython, call, onRuntimeProgress, reportURL } from './compute';
@@ -8,6 +8,7 @@ import { useSimulation } from './useSimulation';
 
 const tabs = ['Все результаты', 'Зависимости', 'Внешние факторы', 'Лепестковые диаграммы'];
 const clone = <T,>(value: T): T => structuredClone(value);
+const configKey = (value: Config | null) => value ? JSON.stringify(value, Object.keys(value).sort()) : '';
 const symbol = (prefix: string, i: number) => <>{prefix}<sub>{i + 1}</sub></>;
 const fieldNumber = (value: number) => Number.isFinite(value) ? value : '';
 
@@ -40,7 +41,7 @@ export function App() {
   const loaded = useRef(false);
   const latestConfig = useRef(config);
   latestConfig.current = config;
-  const dirty = !!result && JSON.stringify(config) !== JSON.stringify(result.config);
+  const dirty = !!result && configKey(config) !== configKey(result.config);
   const comparison = reference && result && reference.config.t_end === result.config.t_end ? reference : null;
 
   useEffect(() => { if (result) setFrame(result.t.length - 1); }, [result]);
@@ -93,19 +94,21 @@ export function App() {
       if (c.mode && c.mode !== 'literal') throw new Error('Этот старый файл использует изменённые уравнения. Выберите сценарий текущей модели.');
       delete c.mode;
       if (!['initial', 'scales', 'plus', 'minus'].every(k => Array.isArray(c[k]) && c[k].length === 11) || !Array.isArray(c.factors) || c.factors.length !== 7) throw new Error('Нужны 11 начальных значений, 11 делителей, 22 функции и 7 факторов.');
+      c.radar_limits ??= presets[0]?.radar_limits;
+      if (!Array.isArray(c.radar_limits) || c.radar_limits.length !== 11) throw new Error('Нужны 11 пределов шкал.');
       setDraftPending(false); setScenarioVersion(n => n + 1); setScenarioDefaults(clone(c)); setConfig(c);
     } catch (e) { setError('Импорт: ' + (e as Error).message); }
     finally { if (fileInput.current) fileInput.current.value = ''; }
   }
   async function check() {
     if (!result) return;
-    const key = JSON.stringify(result.config);
+    const key = configKey(result.config);
     setChecking(true); setError('');
     try {
       const next = await call<Verification>('/api/verify', result.config);
-      if (JSON.stringify(latestConfig.current) === key) setVerification(next);
+      if (configKey(latestConfig.current) === key) setVerification(next);
     }
-    catch (e) { if (JSON.stringify(latestConfig.current) === key) setError((e as Error).message); }
+    catch (e) { if (configKey(latestConfig.current) === key) setError((e as Error).message); }
     finally { setChecking(false); }
   }
   function csv() {
@@ -150,7 +153,7 @@ export function App() {
           </details>
           <div className="calculation-status" role="status" aria-live="polite" data-ready={!!result && !dirty && !busy && !draftPending && !error} data-busy={!error && (busy || dirty || draftPending)}><span />{draftPending ? 'Допишите коэффициент' : error ? 'Проверьте параметры' : busy || dirty || !result ? 'Пересчитываем…' : 'Расчёт обновлён'}</div>
           <p className="note">Интервал 0…{fmt(config.t_end, 3)}. Значения в относительной шкале.</p>
-          {JSON.stringify(scenarioDefaults) === JSON.stringify(presets.at(-1)) && <p className="scenario-note">В каждой ненулевой части уравнения один из исходных аргументов входит кубически. Коэффициенты выбраны для учебного эксперимента.</p>}
+          {JSON.stringify(scenarioDefaults) === JSON.stringify(presets.at(-1)) && <p className="scenario-note">Каждая ненулевая часть — полином по одному исходному аргументу. Остальные входы при подборе коэффициентов взяты в начальный момент.</p>}
         </section>
         <section>
           <details className="additional-settings">
@@ -185,7 +188,7 @@ export function App() {
           {tab === 0 && <>
             <section className="profile">
               <div className="results-view" role="group" aria-label="Отображение результатов"><button aria-pressed={!allCharts} onClick={() => setAllCharts(false)}>Один график</button><button aria-pressed={allCharts} onClick={() => setAllCharts(true)}>Все 11 графиков</button></div>
-              {allCharts ? <><h2>Все 11 временных зависимостей</h2><div className="plot-grid">{names.map((n, i) => <div className="plot-cell" key={n}><h3>{symbol('X', i)} {short[i]}</h3><Chart label={'График X' + (i + 1)} height={240} option={lineOption(result, i, cursor, comparison)} /></div>)}</div></> : <>
+              {allCharts ? <><h2>Все 11 временных зависимостей</h2><AllProfiles r={result} cursor={cursor} comparison={comparison} /></> : <>
               <div className="section-heading"><h2>Временной профиль</h2><select aria-label="Характеристика на основном графике" value={selected} onChange={e => setSelected(+e.target.value)}>{names.map((n, i) => <option key={n} value={i}>{'X' + (i + 1)} · {n}</option>)}</select></div>
               <h3 className="profile-title">{symbol('X', selected)} {names[selected]}</h3>
               <Chart label={'Временной профиль X' + (selected + 1)} height={360} option={lineOption(result, selected, cursor, comparison)} />
@@ -210,9 +213,11 @@ export function App() {
             <Chart label={'Внешний фактор F' + (i + 1)} height={220} option={lineOption(result, i, undefined, comparison, 'factors')} />
           </div>)}</div></section></details></>}
           {tab === 3 && <>
-            <section><h2>Четыре снимка расчёта</h2><p className="section-note radar-explanation">Каждая диаграмма показывает 11 показателей в конце одной четверти. Сравнивайте один и тот же луч на разных снимках. Край луча соответствует максимуму его показателя за весь расчёт.</p><QuarterRadars r={result} /></section>
+            <section><h2>Четыре снимка расчёта</h2><p className="section-note radar-explanation">На всех четырёх снимках у каждого показателя одна шкала. Число под названием луча — его верхний предел в относительных единицах.</p><QuarterRadars r={result} /></section>
             <section><h2>Численные значения срезов</h2><div className="table-scroll"><table><thead><tr><th>Характеристика</th>{snapshots.map(q => <th key={q.t}>τ = {fmt(q.t, 3)}</th>)}{comparison && <><th>Эталон, τ = {fmt(comparison.config.t_end)}</th><th>Разность</th></>}</tr></thead><tbody>{names.map((n, i) => <tr key={n}><th scope="row">{symbol('X', i)} {short[i]}</th>{snapshots.map(q => <td key={q.t}>{fmt(q.values[i], 6)}</td>)}{comparison && <><td>{fmt(comparison.y.at(-1)![i], 6)}</td><td>{fmt(result.y.at(-1)![i] - comparison.y.at(-1)![i], 6)}</td></>}</tr>)}</tbody></table></div></section>
-            <details className="plain-details"><summary>Как устроена шкала лучей</summary><p>Длина луча – доля от максимума того же показателя за весь расчёт. Площадь фигуры не показывает уровень опасности.</p><div className="scale-values">{result.radar_scales.map((r, i) => <span key={i}>{symbol('X', i)} {short[i]} · максимум {fmt(r, 6)}</span>)}</div></details>
+            <details className="plain-details"><summary>Пределы шкал</summary><p>Задайте верхнюю границу каждого луча. По умолчанию используются пределы учебного сценария.</p><div className="scale-values">{(config.radar_limits ?? result.radar_scales).map((limit, i, limits) => <label className="field" key={i}>
+              {symbol('X', i)} {short[i]}<input type="number" min={1e-9} max={1e8} step="any" aria-label={'Предел X' + (i + 1)}
+                value={fieldNumber(limit)} onChange={e => update('radar_limits', limits.map((v, j) => j === i ? e.target.valueAsNumber : v))} /></label>)}</div></details>
           </>}
           {tab === 1 && <>
             <FunctionEditor key={'model-' + scenarioVersion} config={config} names={names} factors={factorNames}

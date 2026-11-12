@@ -76,22 +76,45 @@ export function lineOption(r: Result, index: number, cursor?: number, comparison
 export function QuarterRadars({ r }: { r: Result }) {
   if (r.quarters.some(q => q.values.some(v => v < 0))) return <p className="warning">Лепестковые диаграммы не строятся для отрицательных характеристик. Значения сохранены в таблице и временных графиках без обрезания.</p>;
   return <div className="radar-grid">{r.quarters.map((q, i) => {
+    const outside = q.values.flatMap((value, j) => value > r.radar_scales[j] ? ['X' + (j + 1)] : []);
     const option: EChartsCoreOption = {
       tooltip: { trigger: 'item', confine: true, renderMode: 'richText',
         formatter: () => ['Значения в момент τ = ' + fmt(q.t), ...q.values.map((v, j) => 'X' + (j + 1) + ' · ' + short[j] + '  ' + fmt(v, 5))].join('\n') },
       radar: {
-        radius: '68%', center: ['50%', '50%'], splitNumber: 4,
-        indicator: short.map((_, j) => ({ name: 'X' + (j + 1), min: 0, max: 1 })),
+        radius: '64%', center: ['50%', '50%'], splitNumber: 4,
+        indicator: r.radar_scales.map((limit, j) => ({ name: 'X' + (j + 1) + '\n' + fmt(limit, 4), min: 0, max: limit })),
         axisName: { color: '#222', fontSize: 11 },
         splitArea: { show: false }, splitLine: { lineStyle: { color: '#ccc' } },
         axisLine: { lineStyle: { color: '#ddd' } },
       },
       series: [{ id: 'quarter-' + i, type: 'radar', symbolSize: 3, lineStyle: { color: '#111', width: 1.8 },
-        data: [{ name: 'τ = ' + fmt(q.t), value: q.normalized, itemStyle: { color: '#111' }, areaStyle: { color: '#111', opacity: .035 } }],
+        data: [{ name: 'τ = ' + fmt(q.t), value: q.values, itemStyle: { color: '#111' }, areaStyle: { color: '#111', opacity: .035 } }],
       }],
     };
-    return <div className="radar-cell" key={q.t}><h3>Четверть {i + 1} <span>τ = {fmt(q.t, 3)}</span></h3><Chart label={'Лепестковая диаграмма четверти ' + (i + 1)} height={300} option={option} /></div>;
+    return <div className="radar-cell" key={q.t}><h3>Четверть {i + 1} <span>τ = {fmt(q.t, 3)}</span></h3>
+      {outside.length ? <p className="warning">За пределом шкалы: {outside.join(', ')}. Увеличьте пределы для этого снимка.</p>
+        : <Chart label={'Лепестковая диаграмма четверти ' + (i + 1)} height={300} option={option} />}</div>;
   })}</div>;
+}
+
+export function AllProfiles({ r, cursor, comparison }: { r: Result; cursor: number; comparison: Result | null }) {
+  const colors = ['#245e55', '#b34429', '#4169b1', '#773d8a', '#956600', '#0b748b',
+    '#a32763', '#557219', '#394658', '#aa5819', '#383284'];
+  const base = lineOption(r, 0, cursor);
+  const series = short.flatMap((name, index) => {
+    const label = 'X' + (index + 1) + ' · ' + name;
+    const [current, reference] = lineOption(r, index, index === 0 ? cursor : undefined, comparison).series;
+    const color = colors[index];
+    return [
+      { ...current, name: label, itemStyle: { color }, lineStyle: { color, width: 2 } },
+      ...(reference ? [{ ...reference, name: label, itemStyle: { color }, lineStyle: { color, type: 'dashed', width: 1 } }] : []),
+    ];
+  });
+  return <Chart label="Все 11 временных зависимостей" height={470} option={{
+    ...base, series,
+    grid: { ...base.grid, bottom: 65 },
+    legend: { bottom: 8, left: 12, right: 12, formatter: (name: string) => name.split(' · ')[0] },
+  }} />;
 }
 
 export function DependencyGraph({ r }: { r: Result }) {

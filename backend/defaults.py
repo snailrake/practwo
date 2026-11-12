@@ -1,5 +1,4 @@
 """Table 1 is transcribed from page 6 of the supplied assignment, not fitted data."""
-import ast
 from copy import deepcopy
 
 from .expressions import Expression
@@ -13,6 +12,7 @@ STATE_NAMES = [
 ]
 FACTOR_NAMES = ["Объём выброса", "Персонал объекта", "Скорость ветра",
                 "Температура воздуха", "Задержка оповещения", "Население", "Убежища"]
+RADAR_LIMITS = [1, 1.25, 1, 1.25, 0.25, 0.75, 0.75, 1, 1, 0.5, 1]
 PLUS = [
     "0.0186*X2*F1**0.8",
     "0.085*X3*X7*X8*F1**0.8/F5",
@@ -31,59 +31,35 @@ BASE = {
     "name": "Базовый модельный пример",
     "initial": [0.7, 0.6, 0.8, 0.5, 0.1, 0.15, 0.08, 0.5, 0.4, 0.3, 0.45],
     "scales": [0.2, 1, 0.0001, 2, 1, 30, 1, 2, 4, 1, 500],
+    "radar_limits": RADAR_LIMITS,
     "factors": ["0.8", "0.5", "0.8", "1.1", "0.6", "0.8", "0.6"],
     "plus": PLUS, "minus": MINUS,
     "method": "DOP853", "rtol": 1e-8, "atol": 1e-10,
     "samples": 401, "t_end": 1.0,
 }
 
-# Each selected input enters its original part as a separable power u**p.
+# Each selected input enters its tabular expression as a separable power.
 CUBIC_ARGUMENTS = {
-    'plus': [('X2', 1), ('X3', 1), ('F3', 1), ('X1', 1), ('F2', 1), ('X2', 1),
+    'plus': [('F1', .8), ('X3', 1), ('F3', 1), ('X1', 1), ('F2', 1), ('F6', 1),
              ('X10', 1), ('X3', 1), ('X3', .2), ('X3', .5), ('X10', 1)],
-    'minus': [('X9', 1), ('X9', 1), None, ('F3', 1), None, ('X4', 1), None,
+    'minus': [('X9', 1), ('X9', 1), None, ('F4', 1), None, ('F7', -1), None,
               ('X9', 1), None, None, ('F5', -1)],
 }
 
 
-class UnitArgument(ast.NodeTransformer):
-    def __init__(self, argument):
-        self.argument = argument
-
-    def visit_Name(self, node):
-        return ast.Constant(1) if node.id == self.argument else node
-
-    def visit_BinOp(self, node):
-        self.generic_visit(node)
-        if isinstance(node.op, (ast.Mult, ast.Div)) and isinstance(node.right, ast.Constant) and node.right.value == 1:
-            return node.left
-        if isinstance(node.op, ast.Mult) and isinstance(node.left, ast.Constant) and node.left.value == 1:
-            return node.right
-        return node
+def polynomial(argument, a, b, c, d):
+    return f'({a:.10g})*{argument}**3+({b:.10g})*{argument}**2+({c:.10g})*{argument}+({d:.10g})'
 
 
-def cubic_part(source, argument, power, reference, names):
-    """Replace the selected power with a cubic while retaining the other factors."""
-    # In z=u/reference, positive powers keep the zero, value and slope.
-    # The reciprocal uses its third-order Taylor polynomial at z=1.
-    curvature = 2 * reference ** 2 if power == 1 else .4
-    normalized = (-1, 4, -6, 4) if power == -1 else (
-        curvature, power - 1 - 2 * curvature, 2 - power + curvature, 0,
-    )
-    multiplier = ast.unparse(UnitArgument(argument).visit(ast.parse(source, mode='eval')))
-    rest = Expression(multiplier, names)
-    scale = reference ** power
-    if not rest.dependencies:
-        scale *= rest({})
-    terms = []
-    for degree, coefficient in zip((3, 2, 1, 0), normalized, strict=True):
-        if coefficient == 0:
-            continue
-        number = f'({scale * coefficient / reference ** degree:.8g})'
-        variable = f'*{argument}**{degree}' if degree > 1 else f'*{argument}' if degree == 1 else ''
-        terms.append(number + variable)
-    polynomial = '+'.join(terms)
-    return f'({polynomial})*({multiplier})' if rest.dependencies else polynomial
+def cubic_part(source, argument, power, values):
+    """Approximate the one-variable slice through the initial operating point."""
+    reference = values[argument]
+    amplitude = Expression(source, set(values))(values)
+    # For z=x/x₀, the positive-power approximation has value 1 and slope p
+    # at z=1. The reciprocal uses its third-order Taylor expansion at z=1.
+    a, b, c, d = (-1, 4, -6, 4) if power == -1 else (2, power - 5, 4 - power, 0)
+    return polynomial(argument, amplitude * a / reference**3, amplitude * b / reference**2,
+                      amplitude * c / reference, amplitude * d)
 
 
 def presets():
@@ -110,5 +86,14 @@ def startup():
         for index, selection in enumerate(arguments):
             if selection is not None:
                 argument, power = selection
-                config[kind][index] = cubic_part(config[kind][index], argument, power, values[argument], set(values))
+                config[kind][index] = cubic_part(config[kind][index], argument, power, values)
+    # Illustrative model-time profiles. Each begins at the tabular initial value.
+    time_coefficients = [
+        (1.6, 0, -.7), (.15, -.45, 0), (.8, 0, 0), (-.15, .25, 0),
+        (0, 0, 0), (.1, -.45, 0), (-.15, .45, 0),
+    ]
+    config['factors'] = [
+        polynomial('t', *coefficients, values[f'F{i}'])
+        for i, coefficients in enumerate(time_coefficients, 1)
+    ]
     return config
