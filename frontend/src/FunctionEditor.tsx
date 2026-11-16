@@ -198,12 +198,12 @@ function FormulaPart({ part, name }: { part: Part; name: string }) {
   return <div className="formula-part" role="group" aria-label={name} data-part={part.kind}>
     <div className="inline-formula" role="group" aria-label={'Числа в формуле — ' + name}>
       {typeof form === 'number' ? <><span className="polynomial-terms">
-        {part.factor && <><MathFormula source={equation} /><span className="polynomial-paren">(</span></>}
+        {part.factor && <><MathFormula linkVariables source={equation} /><span className="polynomial-paren">(</span></>}
         <PolynomialFields values={part.coefficients} argument={part.argument} degree={form} prefix={part.factor ? undefined : equation}
           onFocus={part.setActiveCoefficient} onBlur={part.finishCoefficient} onChange={part.editCoefficient} />
         {part.factor && <span className="polynomial-paren">)</span>}
-      </span>{part.factor && <span className="polynomial-factor"><MathFormula source={'\\cdot ' + part.factor.tex} /></span>}</> : part.template
-        ? <><MathFormula source={equation} /><InlineExpression node={part.template.editable.tree} values={part.literals} onChange={part.editLiteral} /></>
+      </span>{part.factor && <span className="polynomial-factor"><MathFormula linkVariables source={'\\cdot ' + part.factor.tex} /></span>}</> : part.template
+        ? <><MathFormula linkVariables source={equation} /><InlineExpression node={part.template.editable.tree} values={part.literals} onChange={part.editLiteral} /></>
         : <span className="formula-loading">{part.error ? 'Откройте запись формулы' : 'Подготавливаем формулу…'}</span>}
     </div>
   </div>;
@@ -305,13 +305,13 @@ function FormulaWorkspace({ config, names, factors, external = false, result, st
   return <>
     <div className="formula-workspace">
       {external ? <FormulaPart part={plus} name="Формула фактора" /> : <>
-        {sourceEquation && <div className="source-equation"><MathFormula block source={sourceEquation.tex} /></div>}
+        {sourceEquation && <div className="source-equation"><MathFormula block linkVariables source={sourceEquation.tex} /></div>}
         <div className="part-switch" role="group" aria-label="Часть уравнения">
           <button type="button" aria-pressed={side === 'plus'} onClick={() => setSide('plus')}>Первая часть</button>
           {(!sourceEquation || sourceEquation.has_minus) && <button type="button" aria-pressed={side === 'minus'} onClick={() => setSide('minus')}>Вычитаемая часть</button>}
         </div>
         <FormulaPart key={side} part={part} name={side === 'plus' ? 'Первая часть' : 'Вычитаемая часть'} />
-        <div className="equation-divisor"><span>Делитель</span> <MathFormula source={sourceEquation ? 'X_{' + (index + 1) + '}^{\\max}' : 'S_{' + (index + 1) + '}'} /> = {fmt(config.scales[index], 6)}</div>
+        <div className="equation-divisor"><span>Делитель</span> <MathFormula linkVariables source={sourceEquation ? 'X_{' + (index + 1) + '}^{\\max}' : 'S_{' + (index + 1) + '}'} /> = {fmt(config.scales[index], 6)}</div>
       </>}
       <div className="formula-toolbar">
         {!sourceEquation && <label className="field">Вид формулы<select aria-label="Вид формулы" value={part.form ?? 'formula'}

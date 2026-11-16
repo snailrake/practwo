@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { AllProfiles, Chart, DependencyGraph, QuarterRadars, fmt, lineOption, short } from './Charts';
 import { MathFormula } from './Math';
 import type { Config, Result, Verification } from './types';
@@ -38,6 +38,7 @@ export function App() {
   const [selected, setSelected] = useState(2);
   const [frame, setFrame] = useState(400);
   const [allCharts, setAllCharts] = useState(true);
+  const [definitionJump, setDefinitionJump] = useState<{ id: string } | null>(null);
   const [verification, setVerification] = useState<Verification | null>(null);
   const [checking, setChecking] = useState(false);
   const [randomizing, setRandomizing] = useState(false);
@@ -58,6 +59,31 @@ export function App() {
 
   useEffect(() => { if (result) setFrame(result.t.length - 1); }, [result]);
   useEffect(() => { setVerification(null); }, [config]);
+  useEffect(() => {
+    if (!definitionJump) return;
+    const target = document.getElementById(definitionJump.id);
+    if (!target) return;
+    for (let parent = target.parentElement; parent; parent = parent.parentElement) {
+      if (parent instanceof HTMLDetailsElement) parent.open = true;
+    }
+    target.focus({ preventScroll: true });
+    target.scrollIntoView({ block: 'center' });
+    setDefinitionJump(null);
+  }, [definitionJump, tab, allCharts, result]);
+
+  function followDefinition(event: MouseEvent<HTMLDivElement>) {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey ||
+        event.shiftKey || event.altKey || !(event.target instanceof Element)) return;
+    const link = event.target.closest('a[href^="#definition-"], a[href^="#divisor-"], a[href="#model-time"]');
+    const id = link?.getAttribute('href')?.slice(1);
+    if (!id) return;
+    event.preventDefault();
+    if (!id.startsWith('divisor-') && !document.getElementById(id)) {
+      setAllCharts(true);
+      setTab(0);
+    }
+    setDefinitionJump({ id });
+  }
   useEffect(() => {
     if (loaded.current) return;
     loaded.current = true;
@@ -171,7 +197,7 @@ export function App() {
     setFrame(result.t.reduce((best, t, i) => Math.abs(t - time) < Math.abs(result.t[best] - time) ? i : best, 0));
   }
 
-  return <div className={formulaView ? 'app formula-view' : 'app'}>
+  return <div className={formulaView ? 'app formula-view' : 'app'} onClick={followDefinition}>
     <header className="header">
       <div><h1>Моделирование химического выброса</h1><p className="subtitle">Системная динамика · 11 характеристик · Python / SciPy{browserPython ? ' · В браузере' : ''}</p></div>
       <div className="header-links"><a href={reportURL('docx')}>Отчёт DOCX ↓</a><a href={reportURL('pdf')}>PDF ↓</a></div>
@@ -214,7 +240,7 @@ export function App() {
           <details>
             <summary>Нормировочные делители {isSystem4 ? <MathFormula source="X_i^{\max}" /> : 'Sᵢ'}</summary>
             <p className="note">Положительные делители правых частей. Не переводят модельные значения в физические единицы.</p>
-            <div className="scale-inputs">{names.map((n, i) => <label key={n}><MathFormula source={divisorTex(i, isSystem4)} /><input aria-label={'S' + (i + 1) + ' делитель'} type="number" min={1e-8} step="any" value={fieldNumber(config.scales[i])} onChange={e => array('scales', i, e.target.valueAsNumber)} /></label>)}</div>
+            <div className="scale-inputs">{names.map((n, i) => <label key={n}><MathFormula source={divisorTex(i, isSystem4)} /><input id={'divisor-X' + (i + 1)} aria-label={'S' + (i + 1) + ' делитель'} type="number" min={1e-8} step="any" value={fieldNumber(config.scales[i])} onChange={e => array('scales', i, e.target.valueAsNumber)} /></label>)}</div>
           </details>
           </details>
         </section>
@@ -276,7 +302,7 @@ export function App() {
                 <p>{system4Cubic ? 'В каждой части системы (4) один множитель заменён кубическим полиномом. Списки аргументов сохранены.' : isSystem4 ? 'Система (4) сохраняет аргументы рисунка в каждой части. Исходные коэффициенты взяты из таблицы 2 статьи.' : 'Здесь используются формулы учебной таблицы 1 и её нумерация.'} Начальные значения и делители заданы для вычислительного эксперимента.</p>
                 <p>Вычитаемая часть берётся со знаком коэффициента из источника. Вычитание отрицательного значения увеличивает производную.</p>
               </details>
-              <div className="equation-list">{names.map((n, i) => <div className="equation" key={n}><h3>{symbol('X', i)} {n} <span><MathFormula source={divisorTex(i, isSystem4)} /> = {fmt(result.config.scales[i], 6)}</span></h3><MathFormula block source={result.source_equations?.[i].tex ?? result.equations_tex[i]} />
+              <div className="equation-list">{names.map((n, i) => <div className="equation" key={n}><h3>{symbol('X', i)} {n} <span><MathFormula linkVariables source={divisorTex(i, isSystem4)} /> = {fmt(result.config.scales[i], 6)}</span></h3><MathFormula block linkVariables source={result.source_equations?.[i].tex ?? result.equations_tex[i]} />
                 <label className="formula-input"><span>f⁺ =</span><input aria-label={'Функция плюс X' + (i + 1)} maxLength={400} spellCheck={false} value={config.plus[i]} onChange={e => array('plus', i, e.target.value)} /></label>
                 {(!result.source_equations || result.source_equations[i].has_minus) && <label className="formula-input"><span>f⁻ =</span><input aria-label={'Функция минус X' + (i + 1)} maxLength={400} spellCheck={false} value={config.minus[i]} onChange={e => array('minus', i, e.target.value)} /></label>}
               </div>)}</div>

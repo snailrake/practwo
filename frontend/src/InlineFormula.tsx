@@ -45,11 +45,11 @@ export function PolynomialFields({ values, argument, degree, prefix, onChange, o
     const index = 3 - degree + offset;
     const power = 3 - index;
     return <span className="polynomial-term" key={index}>
-      {offset === 0 && prefix && <MathFormula source={prefix} />}
+      {offset === 0 && prefix && <MathFormula linkVariables source={prefix} />}
       {offset > 0 && <span className="math-operator">+</span>}
       <NumberSlot compact={compact} label={'Коэффициент ' + letters[index]} symbol={letters[index]} value={value}
         onChange={text => onChange(index, text)} onFocus={() => onFocus?.(index)} onBlur={() => onBlur?.(index)} />
-      {power > 0 && <MathFormula source={'{' + (argument === 't' ? 't' : variableTex(argument, stateTime)) + '}' + (power > 1 ? '^{' + power + '}' : '')} />}
+      {power > 0 && <MathFormula linkVariables source={'{' + (argument === 't' ? 't' : variableTex(argument, stateTime)) + '}' + (power > 1 ? '^{' + power + '}' : '')} />}
     </span>;
   })}</>;
 }
@@ -57,7 +57,7 @@ export function PolynomialFields({ values, argument, degree, prefix, onChange, o
 export function InlineExpression({ node, values, onChange, compact, stateTime }: { node: FormulaNode; values: string[]; onChange: (index: number, text: string) => void; compact?: boolean; stateTime?: boolean }) {
   function render(n: FormulaNode, parent = 0): ReactNode {
     if (n.kind === 'number') return <NumberSlot compact={compact} label={'Число ' + (n.index+1) + ' в формуле'} value={values[n.index]} onChange={text => onChange(n.index, text)} />;
-    if (n.kind === 'name') return <MathFormula source={variableTex(n.name, stateTime)} />;
+    if (n.kind === 'name') return <MathFormula linkVariables source={variableTex(n.name, stateTime)} />;
     if (n.kind === 'unary') return <span className="math-piece">{parent > 3 && '('}{n.op === '-' ? '−' : '+'}{render(n.child, 3)}{parent > 3 && ')'}</span>;
     if (n.kind === 'call') return <span className="math-piece">{n.name === 'sqrt' ? <span className="root-sign">√</span> : <span className="math-function">{n.name}</span>}<span className={n.name === 'sqrt' ? 'root-body' : 'math-piece'}>{n.name !== 'sqrt' && '('}{n.args.map((arg, i) => <span className="math-piece" key={i}>{i > 0 && ', '}{render(arg)}</span>)}{n.name !== 'sqrt' && ')'}</span></span>;
     if (n.op === '/') return <span className="math-fraction"><span>{render(n.left)}</span><span>{render(n.right)}</span></span>;

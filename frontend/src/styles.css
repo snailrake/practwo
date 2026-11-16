@@ -152,6 +152,15 @@ main { min-width: 0; }
 .source-equation { margin: 6px 0; }
 .source-equation .katex-display { text-align: left; margin: 3px 0; }
 .source-equation .katex-display > .katex { text-align: left; }
+.formula-links { pointer-events: none; }
+.formula-links a {
+  pointer-events: auto;
+  color: #245e55;
+  text-decoration: underline dotted;
+  text-underline-offset: .18em;
+}
+.formula-links a:hover { text-decoration-style: solid; }
+.equation-row h3[id^="definition-"]:focus { outline: 2px solid #245e55; outline-offset: 4px; }
 .factor-equation-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; }
 .factor-equation-row .section-heading { flex-wrap: wrap; }
 .factor-equation-row details input { width: 100%; }

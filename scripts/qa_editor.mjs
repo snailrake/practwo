@@ -174,7 +174,7 @@ try {
   const factor = i => page.locator('.all-factors').getByRole('group', {name: 'F' + (i + 1), exact: true});
   for (let i = 0; i < 7; i++) {
     check(`F${i+1} uses four fields and the time argument`, await factor(i).locator('input').count() === 4 &&
-      (await factor(i).locator('annotation').allTextContents()).includes('F_{' + (i + 1) + '}(t)='));
+      await factor(i).getByRole('link', {name: 'Внешний фактор F' + (i + 1), exact: true}).count() === 1);
   }
   await factor(2).getByRole('textbox', {name: 'Коэффициент a', exact: true}).fill('.1');
   const wind = await exportResult();

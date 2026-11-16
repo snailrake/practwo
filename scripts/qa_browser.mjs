@@ -28,7 +28,11 @@ try{
  check('System (4) is the default and displays all 13 source equations',await inlineEditor.locator('.source-equation').count()===13&&await page.getByLabel(/X\d+ начальное условие/).count()===13);
  check('System (4) opens with a nonzero X4 cubic coefficient',Number(await inlineEditor.getByRole('group',{name:'Первая часть X4',exact:true}).getByRole('textbox',{name:'Коэффициент a',exact:true}).inputValue())!==0);
  const x2 = inlineEditor.locator('.source-equation').nth(1);
- check('X2 shows both signed functions with the indices of the figure',(await x2.locator('annotation').textContent()).includes('X_{10}(t),X_{11}(t)'));
+ check('X2 shows both signed functions with the indices of the figure',await x2.getByRole('link',{name:'Уравнение X10',exact:true}).count()===1&&await x2.getByRole('link',{name:'Уравнение X11',exact:true}).count()===1);
+ await x2.getByRole('link',{name:'Уравнение X11',exact:true}).click();
+ check('A variable opens its equation',await page.locator('#definition-X11:focus').count()===1);
+ await x2.getByRole('link',{name:'Внешний фактор F1',exact:true}).click();
+ check('A factor opens its editable definition',await page.locator('#definition-F1:focus').count()===1);
  await selectTab('Внешние факторы');
  check('System (4) exposes F8 with four editable coefficients',await page.locator('.all-factors .factor-equation-row').count()===8&&await page.getByRole('group',{name:'F8',exact:true}).locator('input').count()===4);
  await selectTab('Лепестковые диаграммы');

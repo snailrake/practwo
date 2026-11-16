@@ -68,12 +68,12 @@ export function EquationList(props: Props) {
     if (!saved && source.trim() !== fields.source) return <p className="note">Обновляется {label}…</p>;
     return <div className="inline-formula equation-fields" role="group" aria-label={label} key={key}>
       {fields.coefficients ? <span className="polynomial-terms">
-        {fields.multiplier && <><MathFormula source={prefix} /><span>(</span></>}
+        {fields.multiplier && <><MathFormula linkVariables source={prefix} /><span>(</span></>}
         <PolynomialFields compact={!tableMode} stateTime values={values} argument={argument} degree={degree}
           prefix={fields.multiplier ? undefined : prefix} onChange={edit} />
-        {fields.multiplier && <><span>)</span><MathFormula source={'\\cdot ' + fields.multiplier.tex} /></>}
+        {fields.multiplier && <><span>)</span><MathFormula linkVariables source={'\\cdot ' + fields.multiplier.tex} /></>}
       </span> : fields.editable && <>
-        <MathFormula source={prefix} />
+        <MathFormula linkVariables source={prefix} />
         <InlineExpression compact={!tableMode} stateTime node={fields.editable.tree} values={values} onChange={edit} />
       </>}
     </div>;
@@ -85,7 +85,7 @@ export function EquationList(props: Props) {
     {result.factor_names.map((name, index) => <div className="equation-row factor-equation-row" key={name}>
       <div>
         <div className="section-heading">
-          <h3>F{index + 1} · {name}</h3>
+          <h3 id={'definition-F' + (index + 1)} tabIndex={-1}>F{index + 1} · {name}</h3>
           <button type="button" aria-label={'Сбросить F' + (index + 1)} onClick={() => {
             clearDraft('factors', index);
             props.onResetFactor(index);
@@ -115,6 +115,7 @@ export function EquationList(props: Props) {
       </div>
     </div>
     <p className="section-note">{tableMode ? 'Коэффициенты показаны с полной точностью.' : 'Коэффициенты показаны кратко. Нажмите на число, чтобы увидеть его точное значение.'}</p>
+    <p className="section-note">Нажмите на X или F в формуле, чтобы перейти к его уравнению.</p>
     {sourceEquations ? <details className="plain-details system4-source">
       <summary>Источник формул и обозначения</summary>
       <p>Аргументы и индексы взяты с рисунка (4) задания. {props.system4Cubic
@@ -125,16 +126,16 @@ export function EquationList(props: Props) {
       <a href="https://hi-tech.asu-edu.ru/files/1%2845%29/137-154.pdf#page=8" target="_blank" rel="noreferrer">Статья, таблица 2 ↗</a>
     </details> : <MathFormula source="\frac{dX_i(t)}{dt}=\frac{f_i^+-f_i^-}{S_i}" />}
     {result.state_names.map((name, index) => <div className="equation-row" key={name}>
-      <h3><MathFormula source={variableTex('X' + (index + 1))} /> {name}
-        <span>Делитель <MathFormula source={(sourceEquations ? 'X' : 'S') + '_{' + (index + 1) + '}' + (sourceEquations ? '^{\\max}' : '')} /> = {fmt(config.scales[index], 5)}</span>
+      <h3 id={'definition-X' + (index + 1)} tabIndex={-1}><MathFormula source={variableTex('X' + (index + 1))} /> {name}
+        <span>Делитель <MathFormula linkVariables source={(sourceEquations ? 'X' : 'S') + '_{' + (index + 1) + '}' + (sourceEquations ? '^{\\max}' : '')} /> = {fmt(config.scales[index], 5)}</span>
       </h3>
-      {sourceEquations && <div className="source-equation"><MathFormula block source={sourceEquations[index].tex} /></div>}
+      {sourceEquations && <div className="source-equation"><MathFormula block linkVariables source={sourceEquations[index].tex} /></div>}
       {renderPart('plus', index)}
       {(!sourceEquations || sourceEquations[index].has_minus) && renderPart('minus', index)}
     </div>)}
     <h3 className="factor-equations-heading">Внешние факторы</h3>
     {result.factor_names.map((name, index) => <div className="equation-row" key={name}>
-      <h3>{name}</h3>
+      <h3 id={'definition-F' + (index + 1)} tabIndex={-1}>{name}</h3>
       {renderPart('factors', index)}
     </div>)}
   </section>;
