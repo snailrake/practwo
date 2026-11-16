@@ -26,6 +26,7 @@ try{
  check('All results starts with the combined plot',await page.locator('canvas').count()===1);
  const inlineEditor = page.locator('.profile .equation-editor');
  check('System (4) is the default and displays all 13 source equations',await inlineEditor.locator('.source-equation').count()===13&&await page.getByLabel(/X\d+ начальное условие/).count()===13);
+ check('System (4) opens with a nonzero X4 cubic coefficient',Number(await inlineEditor.getByRole('group',{name:'Первая часть X4',exact:true}).getByRole('textbox',{name:'Коэффициент a',exact:true}).inputValue())!==0);
  const x2 = inlineEditor.locator('.source-equation').nth(1);
  check('X2 shows both signed functions with the indices of the figure',(await x2.locator('annotation').textContent()).includes('X_{10}(t),X_{11}(t)'));
  await selectTab('Внешние факторы');

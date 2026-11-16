@@ -31,6 +31,7 @@ try{
  check('All results starts with the combined plot',await page.locator('canvas').count()===1);
  const system4 = await exportResult();
  check('Browser Python starts with the 13 equations of system (4)',system4.y[0].length===13&&system4.factors[0].length===8&&await page.locator('.source-equation').count()===13);
+ check('System (4) has editable cubic functions and 8 cubic factor profiles',system4.equation_fields.plus[3].coefficients[0]!==0&&system4.equation_fields.factors.every(f=>f.coefficients[0]!==0));
  check('All 11 selected results use the original figure indices',JSON.stringify(system4.profile_indices)===JSON.stringify([0,1,2,3,4,5,7,8,9,10,11]));
  await page.getByRole('button',{name:'Один график',exact:true}).click();
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();

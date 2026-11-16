@@ -8,7 +8,7 @@ from pydantic import ValidationError
 
 from backend.app import app
 from backend.browser import dispatch
-from backend.defaults import system4
+from backend.defaults import system4, system4_cubic
 from backend.expressions import ModelError
 from backend.model import Dynamics, SimulationConfig, simulate
 from backend.preview import PreviewConfig, preview
@@ -72,6 +72,23 @@ def test_system4_keeps_new_inputs_live_and_supports_cubic_edit():
     p = preview(PreviewConfig(config=edited, kind='plus', index=12, argument='F8'))
     assert p['fixed'].keys() == {'X3', 'F6'}
     assert p['points'][-1][1] > p['points'][0][1]
+
+
+def test_system4_cubic_has_nonzero_cubes_and_preserves_figure_arguments():
+    exact = SimulationConfig(**system4())
+    config = SimulationConfig(**system4_cubic())
+    model = Dynamics(config)  # Checks every part against the figure.
+    for actual, original in zip(model.components(0, config.initial), Dynamics(exact).components(0, exact.initial)):
+        np.testing.assert_allclose(actual, original, rtol=1e-8, atol=1e-12)
+    result = simulate(config)
+    for kind in ('plus', 'minus', 'factors'):
+        for original, fields in zip(getattr(exact, kind), result['equation_fields'][kind]):
+            if original != '0':
+                assert fields['coefficients'][0] != 0
+    assert all(0 <= ratio <= 1 for q in result['quarters'] for ratio in q['normalized'])
+    p = preview(PreviewConfig(config=config, kind='plus', index=3, argument='X1'))
+    assert p['degree'] == 3
+    assert abs(p['points'][100][1] - (p['points'][0][1] + p['points'][-1][1]) / 2) > .1
 
 
 def test_system4_rejects_mixed_dimensions_or_missing_dependencies():

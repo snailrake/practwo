@@ -24,8 +24,8 @@ def dispatch(operation: str, payload: str = '{}') -> str:
                       'engine': 'WebAssembly' if sys.platform == 'emscripten' else 'native'}
         elif operation == 'preview':
             result = preview(PreviewConfig(**json.loads(payload)))
-        elif operation in {'random-scenario', 'random-system4'}:
-            result = random_scenario(operation == 'random-system4')
+        elif operation in {'random-scenario', 'random-system4', 'random-system4-cubic'}:
+            result = random_scenario(operation.startswith('random-system4'), operation == 'random-system4-cubic')
         elif operation in {'simulate', 'verify'}:
             config = SimulationConfig(**json.loads(payload))
             result = simulate(config) if operation == 'simulate' else verify(config)

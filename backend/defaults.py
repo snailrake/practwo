@@ -68,6 +68,12 @@ CUBIC_ARGUMENTS = {
     'minus': [('X9', 1), ('X9', 1), None, ('F4', 1), None, ('F7', -1), None,
               ('X9', 1), None, None, ('F5', -1)],
 }
+SYSTEM4_CUBIC_ARGUMENTS = {
+    'plus': [('F1', .8), ('X3', 1), ('F3', 1), ('X1', 1), ('F2', 1), ('F6', 1),
+             ('X13', 1), ('X11', 1), ('X3', 1), ('X3', .2), ('X3', .5), ('X11', 1), ('F8', 1)],
+    'minus': [('X10', 1), ('X10', 1), None, ('F4', 1), None, ('X4', 1),
+              None, None, ('X10', 1), None, None, ('F5', -1), None],
+}
 
 
 def polynomial(argument, a, b, c, d):
@@ -154,31 +160,42 @@ def system4():
 
 def preset_payload():
     return {
-        "presets": presets(), "startup": startup(), "system4": system4(),
+        "presets": presets(), "startup": startup(), "system4": system4(), "system4_cubic": system4_cubic(),
         "state_names": STATE_NAMES, "factor_names": FACTOR_NAMES,
         "system4_state_names": SYSTEM4_NAMES, "system4_factor_names": SYSTEM4_FACTORS,
     }
+
+
+def with_cubic_parts(config, selections, time_coefficients):
+    values = {f'X{i}': value for i, value in enumerate(config['initial'], 1)}
+    values.update({f'F{i}': float(source) for i, source in enumerate(config['factors'], 1)})
+    for kind, arguments in selections.items():
+        for index, selection in enumerate(arguments):
+            if selection is not None:
+                argument, power = selection
+                config[kind][index] = cubic_part(config[kind][index], argument, power, values)
+    config['factors'] = [
+        polynomial('t', *coefficients, values[f'F{i}'])
+        for i, coefficients in enumerate(time_coefficients, 1)
+    ]
+    return config
 
 
 def startup():
     """Cubic sensitivity experiment at the tabular model's initial point."""
     config = deepcopy(BASE)
     config['name'] = 'Кубические зависимости'
-    values = {f'X{i}': value for i, value in enumerate(config['initial'], 1)}
-    values.update({f'F{i}': float(source) for i, source in enumerate(config['factors'], 1)})
-    for kind, arguments in CUBIC_ARGUMENTS.items():
-        for index, selection in enumerate(arguments):
-            if selection is not None:
-                argument, power = selection
-                config[kind][index] = cubic_part(config[kind][index], argument, power, values)
-    # Illustrative model-time profiles. Each begins at the tabular initial value.
     config['scales'][0] = .14
-    time_coefficients = [
+    return with_cubic_parts(config, CUBIC_ARGUMENTS, [
         (2.2, 0, -1), (.15, -.45, 0), (1.4, 0, 0), (-.15, .25, 0),
         (0, 0, 0), (.1, -.45, 0), (-.15, .45, 0),
-    ]
-    config['factors'] = [
-        polynomial('t', *coefficients, values[f'F{i}'])
-        for i, coefficients in enumerate(time_coefficients, 1)
-    ]
-    return config
+    ])
+
+
+def system4_cubic():
+    config = system4()
+    config['name'] = 'Система (4) · кубический пример'
+    return with_cubic_parts(config, SYSTEM4_CUBIC_ARGUMENTS, [
+        (.6, 0, -.25), (.14, -.28, 0), (.55, 0, -.15), (-.15, .25, 0),
+        (.1, -.2, 0), (.1, -.30, 0), (-.15, .4, 0), (.16, -.1, 0),
+    ])

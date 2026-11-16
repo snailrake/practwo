@@ -51,6 +51,11 @@ def random_system4_endpoint():
     return calculate(random_scenario, True)
 
 
+@app.get("/api/random-system4-cubic")
+def random_system4_cubic_endpoint():
+    return calculate(random_scenario, True, True)
+
+
 @app.post("/api/verify")
 def verify_endpoint(config: SimulationConfig):
     return calculate(verify, config)

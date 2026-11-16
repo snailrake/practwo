@@ -17,6 +17,8 @@ type Props = {
   onRandomize: () => void;
   onUseTable: () => void;
   onUseSystem4: () => void;
+  onUseArticle: () => void;
+  system4Cubic: boolean;
 } | {
   factorsOnly: true;
   comparison: Result | null;
@@ -105,7 +107,8 @@ export function EquationList(props: Props) {
       <h2>Редактор зависимостей</h2>
       <div className="button-row">
         <button type="button" onClick={props.onUseTable}>По таблице задания</button>
-        {!sourceEquations && <button type="button" onClick={props.onUseSystem4}>По рисунку (4)</button>}
+        {props.system4Cubic ? <button type="button" onClick={props.onUseArticle}>Исходные формулы статьи</button> :
+          <button type="button" onClick={props.onUseSystem4}>Кубический пример (4)</button>}
         <button type="button" disabled={props.randomizing} onClick={props.onRandomize}>
           {props.randomizing ? 'Подбираем значения…' : 'Заполнить случайными значениями'}
         </button>
@@ -114,7 +117,9 @@ export function EquationList(props: Props) {
     <p className="section-note">{tableMode ? 'Коэффициенты показаны с полной точностью.' : 'Коэффициенты показаны кратко. Нажмите на число, чтобы увидеть его точное значение.'}</p>
     {sourceEquations ? <details className="plain-details system4-source">
       <summary>Источник формул и обозначения</summary>
-      <p>Аргументы и индексы взяты с рисунка (4) задания. Выражения и коэффициенты — из таблицы 2 статьи Цвиркуна и соавторов.</p>
+      <p>Аргументы и индексы взяты с рисунка (4) задания. {props.system4Cubic
+        ? 'В каждой части один исходный множитель заменён кубическим полиномом. В начальной точке сохранены значение и наклон по этому аргументу.'
+        : 'Исходные выражения и коэффициенты взяты из таблицы 2 статьи Цвиркуна и соавторов.'}</p>
       <p>В строке X₃ делитель X₃₁ᵐᵃˣ прочитан как X₃ᵐᵃˣ. В строке f₁₃⁺ использован коэффициент k₁₃⁺ = 0,025, указанный в таблице для этой функции.</p>
       <p>Начальные значения, делители и профили F(t) заданы для учебного расчёта.</p>
       <a href="https://hi-tech.asu-edu.ru/files/1%2845%29/137-154.pdf#page=8" target="_blank" rel="noreferrer">Статья, таблица 2 ↗</a>

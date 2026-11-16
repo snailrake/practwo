@@ -12,7 +12,7 @@ from scipy.integrate import solve_ivp
 
 from .defaults import (
     STATE_NAMES, FACTOR_NAMES, RADAR_LIMITS, SYSTEM4_NAMES, SYSTEM4_FACTORS,
-    SYSTEM4_RADAR_LIMITS, SYSTEM4_PROFILES, SYSTEM4_ARGUMENTS, polynomial, startup, system4,
+    SYSTEM4_RADAR_LIMITS, SYSTEM4_PROFILES, SYSTEM4_ARGUMENTS, polynomial, startup, system4, system4_cubic,
 )
 from .expressions import Expression, ModelError
 from .notation import equation_fields, equation_tex, system4_equation_tex, to_tex
@@ -196,13 +196,14 @@ def simulate(config: SimulationConfig, *, step_divisor: int = 100):
     }
 
 
-def random_scenario(use_system4=False):
+def random_scenario(use_system4=False, cubic=False):
     """Sample near the corresponding example and accept solved in-range trajectories."""
     for _ in range(5):
-        candidate = system4() if use_system4 else startup()
-        candidate["name"] = "Система (4) · случайный пример" if use_system4 else "Случайный учебный пример"
+        candidate = (system4_cubic() if cubic else system4()) if use_system4 else startup()
+        candidate["name"] = ("Система (4) · случайный кубический пример" if cubic else
+                             "Система (4) · случайный пример" if use_system4 else "Случайный учебный пример")
         candidate["initial"] = [round(x * random.uniform(.94, 1.06), 2) for x in candidate["initial"]]
-        if use_system4:
+        if use_system4 and not cubic:
             candidate["factors"] = [str(round(float(value) * random.uniform(.94, 1.06), 2))
                                     for value in candidate["factors"]]
         else:

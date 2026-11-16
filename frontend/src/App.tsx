@@ -14,7 +14,7 @@ const symbol = (prefix: string, i: number) => <>{prefix}<sub>{i + 1}</sub></>;
 const fieldNumber = (value: number) => Number.isFinite(value) ? value : '';
 const divisorTex = (index: number, system4: boolean) => (system4 ? 'X' : 'S') + '_{' + (index + 1) + '}' + (system4 ? '^{\\max}' : '');
 type PresetData = {
-  presets: Config[]; startup: Config; system4: Config;
+  presets: Config[]; startup: Config; system4: Config; system4_cubic: Config;
   state_names: string[]; factor_names: string[];
   system4_state_names: string[]; system4_factor_names: string[];
 };
@@ -49,7 +49,9 @@ export function App() {
   latestConfig.current = config;
   const isSystem4 = config?.initial.length === 13;
   const result = solved?.y[0].length === config?.initial.length ? solved : null;
-  const presets = presetData ? [...presetData.presets, presetData.startup, presetData.system4] : [];
+  const presets = presetData ? [...presetData.presets, presetData.startup, presetData.system4, presetData.system4_cubic] : [];
+  const system4Cubic = isSystem4 && (scenarioDefaults?.name === presetData?.system4_cubic.name ||
+    scenarioDefaults?.name === 'Система (4) · случайный кубический пример');
   const dirty = !!result && configKey(config) !== configKey(result.config);
   const comparison = reference && result && reference.y[0].length === result.y[0].length &&
     reference.config.t_end === result.config.t_end ? reference : null;
@@ -62,7 +64,7 @@ export function App() {
     const unsubscribe = onRuntimeProgress(setRuntimeProgress);
     call<PresetData>('/api/presets').then(data => {
       setPresetData(data);
-      setScenarioDefaults(clone(data.system4)); setConfig(clone(data.system4));
+      setScenarioDefaults(clone(data.system4_cubic)); setConfig(clone(data.system4_cubic));
     }).catch(e => setError(e.message));
     return unsubscribe;
   }, []);
@@ -107,7 +109,8 @@ export function App() {
     setRandomizing(true);
     setError('');
     try {
-      const next = await call<Config>(isSystem4 ? '/api/random-system4' : '/api/random-scenario');
+      const endpoint = system4Cubic ? 'random-system4-cubic' : isSystem4 ? 'random-system4' : 'random-scenario';
+      const next = await call<Config>('/api/' + endpoint);
       if (latestConfig.current === previous) applyScenario(next);
     } catch (e) {
       if (latestConfig.current === previous) setError((e as Error).message);
@@ -161,7 +164,7 @@ export function App() {
   const snapshots = result?.quarters ?? [];
   const timeSymbol = isSystem4 ? 't' : 'τ';
   const formulaView = tab === 1 || tab === 2;
-  const tableMode = isSystem4 || presetData.presets.some(p => p.name === scenarioDefaults?.name);
+  const tableMode = isSystem4 && !system4Cubic || presetData.presets.some(p => p.name === scenarioDefaults?.name);
   const resultStatus = draftPending ? 'draft' : error ? 'error' : dirty || busy ? 'pending' : 'current';
   function moveTo(time: number) {
     if (!result) return;
@@ -245,7 +248,8 @@ export function App() {
               {allCharts && <EquationList key={'profiles-' + scenarioVersion} config={config} result={result} randomizing={randomizing}
                 tableMode={tableMode}
                 onChange={array} onDraft={setDraftPending} onRandomize={randomize}
-                onUseTable={() => applyScenario(presets[0])} onUseSystem4={() => applyScenario(presetData.system4)} />}
+                onUseTable={() => applyScenario(presets[0])} onUseSystem4={() => applyScenario(presetData.system4_cubic)}
+                onUseArticle={() => applyScenario(presetData.system4)} system4Cubic={system4Cubic} />}
             </section>
             <details className="plain-details comparison-controls"><summary>Сравнение экспериментов</summary><p>Сохраните текущий результат, затем измените параметры. Новый расчёт появится автоматически.</p><div className="button-row"><button disabled={dirty || busy || draftPending} onClick={() => setReference(clone(result))}>Запомнить эталон</button>{reference && <button onClick={() => setReference(null)}>Убрать</button>}</div>{reference && <p>Эталон: {reference.config.name}</p>}</details>
             <section><h2>Характеристики при {timeSymbol} = {fmt(cursor, 3)}</h2><div className="metrics">{(allCharts ? result.profile_indices : names.map((_, i) => i)).map(i => <button title={names[i]} className={selected === i ? 'metric active-metric' : 'metric'} key={i} onClick={() => setSelected(i)}><span>{symbol('X', i)} {labels[i]}</span><strong>{fmt(values[i], 5)}</strong></button>)}</div></section>
@@ -269,7 +273,7 @@ export function App() {
             <details className="plain-details all-equations"><summary>Все уравнения</summary><section><h2>Система уравнений</h2><MathFormula block source={isSystem4 ? '\\frac{dX_i(t)}{dt}=\\frac{f_i^+-f_i^-}{X_i^{\\max}},\\qquad X_i(0)=X_i^0' : '\\frac{dX_i}{d\\tau}=\\frac{f_i^+-f_i^-}{S_i},\\qquad X_i(0)=X_i^0'} /><p className="section-note">{dirty || draftPending ? 'Математическая запись показывает предыдущий расчёт.' : 'Формулы ниже соответствуют выполненному расчёту.'} Изменения в полях автоматически запускают новый расчёт.</p>
               <details className="plain-details"><summary>Синтаксис формул и исходные допущения</summary>
                 <p>В выражениях доступны X1…X{names.length}, F1…F{factorNames.length}, t и константы pi, e. Операции + − * / ** и функции sqrt, exp, log, sin, cos, tanh, abs, min, max. Для внешних факторов допустимы только время и константы.</p>
-                <p>{isSystem4 ? 'Система (4) сохраняет аргументы рисунка в каждой части. Коэффициенты взяты из таблицы 2 статьи.' : 'Здесь используются формулы учебной таблицы 1 и её нумерация.'} Начальные значения и делители заданы для вычислительного эксперимента.</p>
+                <p>{system4Cubic ? 'В каждой части системы (4) один множитель заменён кубическим полиномом. Списки аргументов сохранены.' : isSystem4 ? 'Система (4) сохраняет аргументы рисунка в каждой части. Исходные коэффициенты взяты из таблицы 2 статьи.' : 'Здесь используются формулы учебной таблицы 1 и её нумерация.'} Начальные значения и делители заданы для вычислительного эксперимента.</p>
                 <p>Вычитаемая часть берётся со знаком коэффициента из источника. Вычитание отрицательного значения увеличивает производную.</p>
               </details>
               <div className="equation-list">{names.map((n, i) => <div className="equation" key={n}><h3>{symbol('X', i)} {n} <span><MathFormula source={divisorTex(i, isSystem4)} /> = {fmt(result.config.scales[i], 6)}</span></h3><MathFormula block source={result.source_equations?.[i].tex ?? result.equations_tex[i]} />
