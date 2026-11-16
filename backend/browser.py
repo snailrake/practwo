@@ -7,7 +7,7 @@ import numpy
 import scipy
 from pydantic import ValidationError
 
-from .defaults import STATE_NAMES, FACTOR_NAMES, presets, startup
+from .defaults import preset_payload
 from .expressions import ModelError
 from .model import SimulationConfig, random_scenario, simulate
 from .verification import verify
@@ -17,15 +17,15 @@ from .preview import PreviewConfig, preview
 def dispatch(operation: str, payload: str = '{}') -> str:
     try:
         if operation == 'presets':
-            result = {'presets': presets(), 'startup': startup(), 'state_names': STATE_NAMES, 'factor_names': FACTOR_NAMES}
+            result = preset_payload()
         elif operation == 'environment':
             result = {'python': platform.python_version(), 'numpy': numpy.__version__,
                       'scipy': scipy.__version__, 'platform': sys.platform,
                       'engine': 'WebAssembly' if sys.platform == 'emscripten' else 'native'}
         elif operation == 'preview':
             result = preview(PreviewConfig(**json.loads(payload)))
-        elif operation == 'random-scenario':
-            result = random_scenario()
+        elif operation in {'random-scenario', 'random-system4'}:
+            result = random_scenario(operation == 'random-system4')
         elif operation in {'simulate', 'verify'}:
             config = SimulationConfig(**json.loads(payload))
             result = simulate(config) if operation == 'simulate' else verify(config)

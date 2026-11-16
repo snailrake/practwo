@@ -35,7 +35,9 @@ const importConfig = async config => {
   await page.waitForTimeout(80); await ready();
 };
 try {
-  await page.goto(url); await ready(); await tab('Зависимости'); await settled();
+  await page.goto(url); await ready();
+  await page.getByLabel('Модельный пример', { exact: true }).selectOption({ label: 'Кубические зависимости' });
+  await ready(); await tab('Зависимости'); await settled();
   const startup = await exportResult();
   check('First screen is the inline cubic editor without an extra click', await page.getByRole('heading', { name: 'Редактор зависимостей', exact: true }).isVisible() && await page.getByLabel('Вид формулы', { exact: true }).inputValue() === '3');
   const startupA = await coefficient('a').inputValue();

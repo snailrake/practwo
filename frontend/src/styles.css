@@ -149,6 +149,9 @@ main { min-width: 0; }
 .equation-fields, .equation-fields .polynomial-terms { justify-content: flex-start; }
 .equation-fields { min-height: 0; padding: 6px 2px 15px; font-size: 16px; }
 .factor-equations-heading { margin-top: 24px; }
+.source-equation { margin: 6px 0; }
+.source-equation .katex-display { text-align: left; margin: 3px 0; }
+.source-equation .katex-display > .katex { text-align: left; }
 .factor-equation-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: center; }
 .factor-equation-row .section-heading { flex-wrap: wrap; }
 .factor-equation-row details input { width: 100%; }

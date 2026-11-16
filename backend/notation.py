@@ -6,7 +6,7 @@ from .expressions import Expression, ModelError
 
 
 def to_tex(source: str, *, state_time: bool = False) -> str:
-    allowed = {'t'} | {f'X{i}' for i in range(1, 12)} | {f'F{i}' for i in range(1, 8)}
+    allowed = {'t'} | {f'X{i}' for i in range(1, 14)} | {f'F{i}' for i in range(1, 9)}
     Expression(source, allowed)  # identical grammar and limits to the solver
 
     def walk(n):
@@ -55,6 +55,18 @@ def equation_tex(i, plus, minus):
     rhs = to_tex(plus)
     if minus.strip() != '0': rhs += r'-\left(' + to_tex(minus) + r'\right)'
     return r'S_{' + str(i) + r'}\frac{dX_{' + str(i) + r'}}{d\tau}=' + rhs
+
+
+def system4_equation_tex(index, arguments):
+    state = f'X_{{{index}}}'
+
+    def function(sign, inputs):
+        names = ','.join(to_tex(name, state_time=True) for name in inputs.split())
+        return f'f_{{{index}}}^{{{sign}}}\\!\\left({names}\\right)'
+
+    plus, minus = arguments
+    rhs = function('+', plus) + ('-' + function('-', minus) if minus else '')
+    return rf'\frac{{d{state}(t)}}{{dt}}=\frac{{1}}{{{state}^{{\max}}}}\left[{rhs}\right]'
 
 
 def editable_tree(expression):

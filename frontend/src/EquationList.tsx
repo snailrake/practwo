@@ -16,6 +16,7 @@ type Props = {
   randomizing: boolean;
   onRandomize: () => void;
   onUseTable: () => void;
+  onUseSystem4: () => void;
 } | {
   factorsOnly: true;
   comparison: Result | null;
@@ -24,6 +25,7 @@ type Props = {
 
 export function EquationList(props: Props) {
   const { config, result, tableMode, onChange, onDraft } = props;
+  const sourceEquations = result.source_equations;
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const invalid = Object.values(drafts).some(draft => !draft.values.every(validNumber));
   useEffect(() => onDraft(invalid), [invalid, onDraft]);
@@ -45,16 +47,18 @@ export function EquationList(props: Props) {
     const fields = saved?.fields ?? result.equation_fields[kind][index];
     const values = saved?.values ?? fields.coefficients?.map(String) ?? fields.editable?.literals.map(literal => literal.text) ?? [];
     const firstTerm = fields.coefficients?.findIndex(value => value !== 0) ?? -1;
-    const degree = external ? 3 : firstTerm < 0 ? 0 : 3 - firstTerm;
+    const degree = external || sourceEquations && fields.argument ? 3 : firstTerm < 0 ? 0 : 3 - firstTerm;
     const argument = external ? 't' : fields.argument;
     const label = external ? 'F' + (index + 1) : (kind === 'plus' ? 'Первая часть X' : 'Вычитаемая часть X') + (index + 1);
-    const prefix = external ? 'F_{' + (index + 1) + '}(t)=' : 'f_{' + (index + 1) + '}^{' + (kind === 'plus' ? '+' : '-') + '}=';
+    const signature = sourceEquations && fields.coefficients && argument && !fields.multiplier
+      ? '(' + variableTex(argument, true) + ')' : '';
+    const prefix = external ? 'F_{' + (index + 1) + '}(t)=' : 'f_{' + (index + 1) + '}^{' + (kind === 'plus' ? '+' : '-') + '}' + signature + '=';
 
     function edit(slot: number, text: string) {
       const next = values.map((value, i) => i === slot ? text : value);
       const expression = !next.every(validNumber) ? source : fields.editable
         ? replaceLiterals(fields.source, fields.editable, next)
-        : polynomialSource(next.map(numeric), argument, fields.multiplier?.source);
+        : polynomialSource(next.map(numeric), argument, fields.multiplier?.source, !!sourceEquations && !external);
       setDrafts(previous => ({ ...previous, [key]: { source: expression, fields, values: next } }));
       if (expression !== source) onChange(kind, index, expression);
     }
@@ -101,17 +105,27 @@ export function EquationList(props: Props) {
       <h2>Редактор зависимостей</h2>
       <div className="button-row">
         <button type="button" onClick={props.onUseTable}>По таблице задания</button>
+        {!sourceEquations && <button type="button" onClick={props.onUseSystem4}>По рисунку (4)</button>}
         <button type="button" disabled={props.randomizing} onClick={props.onRandomize}>
           {props.randomizing ? 'Подбираем значения…' : 'Заполнить случайными значениями'}
         </button>
       </div>
     </div>
     <p className="section-note">{tableMode ? 'Коэффициенты показаны с полной точностью.' : 'Коэффициенты показаны кратко. Нажмите на число, чтобы увидеть его точное значение.'}</p>
-    <MathFormula source="\frac{dX_i(t)}{dt}=\frac{f_i^+-f_i^-}{S_i}" />
+    {sourceEquations ? <details className="plain-details system4-source">
+      <summary>Источник формул и обозначения</summary>
+      <p>Аргументы и индексы взяты с рисунка (4) задания. Выражения и коэффициенты — из таблицы 2 статьи Цвиркуна и соавторов.</p>
+      <p>В строке X₃ делитель X₃₁ᵐᵃˣ прочитан как X₃ᵐᵃˣ. В строке f₁₃⁺ использован коэффициент k₁₃⁺ = 0,025, указанный в таблице для этой функции.</p>
+      <p>Начальные значения, делители и профили F(t) заданы для учебного расчёта.</p>
+      <a href="https://hi-tech.asu-edu.ru/files/1%2845%29/137-154.pdf#page=8" target="_blank" rel="noreferrer">Статья, таблица 2 ↗</a>
+    </details> : <MathFormula source="\frac{dX_i(t)}{dt}=\frac{f_i^+-f_i^-}{S_i}" />}
     {result.state_names.map((name, index) => <div className="equation-row" key={name}>
-      <h3><MathFormula source={variableTex('X' + (index + 1))} /> {name} <span>Делитель S{index + 1} = {fmt(config.scales[index], 5)}</span></h3>
+      <h3><MathFormula source={variableTex('X' + (index + 1))} /> {name}
+        <span>Делитель <MathFormula source={(sourceEquations ? 'X' : 'S') + '_{' + (index + 1) + '}' + (sourceEquations ? '^{\\max}' : '')} /> = {fmt(config.scales[index], 5)}</span>
+      </h3>
+      {sourceEquations && <div className="source-equation"><MathFormula block source={sourceEquations[index].tex} /></div>}
       {renderPart('plus', index)}
-      {renderPart('minus', index)}
+      {(!sourceEquations || sourceEquations[index].has_minus) && renderPart('minus', index)}
     </div>)}
     <h3 className="factor-equations-heading">Внешние факторы</h3>
     {result.factor_names.map((name, index) => <div className="equation-row" key={name}>

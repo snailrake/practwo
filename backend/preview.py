@@ -8,28 +8,29 @@ from .expressions import Expression, ModelError
 from .model import SimulationConfig
 from .notation import editable_tree, polynomial_coefficients, polynomial_factor, to_tex
 
-NAMES = {'t'} | {f'X{i}' for i in range(1, 12)} | {f'F{i}' for i in range(1, 8)}
-
-
 class PreviewConfig(BaseModel):
     model_config = ConfigDict(extra='forbid', allow_inf_nan=False)
     config: SimulationConfig
     kind: Literal['plus', 'minus', 'factors']
-    index: int = Field(ge=0, le=10)
+    index: int = Field(ge=0, le=12)
     argument: str = Field(max_length=3)
     start: float = Field(default=0, ge=-1e6, le=1e6)
     end: float = Field(default=1, ge=-1e6, le=1e6)
 
 
 def preview(request: PreviewConfig):
-    if request.argument not in NAMES:
-        raise ModelError('Выберите X1…X11, F1…F7 или время t')
+    names = request.config.variables
+    if request.argument not in names:
+        raise ModelError('Выберите переменную текущей системы или время t')
     if request.start >= request.end:
         raise ModelError('Начало диапазона должно быть меньше конца')
-    if request.kind == 'factors' and (request.index >= 7 or request.argument != 't'):
+    sources = getattr(request.config, request.kind)
+    if request.index >= len(sources):
+        raise ModelError('Этой функции нет в текущей системе')
+    if request.kind == 'factors' and request.argument != 't':
         raise ModelError('Внешний фактор задаётся функцией времени t')
-    source = getattr(request.config, request.kind)[request.index]
-    expression = Expression(source, {'t'} if request.kind == 'factors' else NAMES)
+    source = sources[request.index]
+    expression = Expression(source, {'t'} if request.kind == 'factors' else names)
     values = {'t': 0., **{f'X{i+1}': x for i, x in enumerate(request.config.initial)}}
     for name in expression.dependencies:
         if name.startswith('F'):

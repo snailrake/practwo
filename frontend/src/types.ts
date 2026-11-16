@@ -15,6 +15,8 @@ export type Result = {
   radar_scales: number[];
   quarters: { t: number; values: number[]; normalized: number[] }[];
   state_names: string[]; factor_names: string[]; equations_tex: string[]; factors_tex: string[];
+  profile_indices: number[];
+  source_equations: { tex: string; has_minus: boolean }[] | null;
   equation_fields: Record<'plus' | 'minus' | 'factors', EquationFields[]>;
   warnings: string[]; dependencies: { target: string; sources: string[] }[];
   diagnostics: { method: string; rtol: number; atol: number; nfev: number; njev: number;

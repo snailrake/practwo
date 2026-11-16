@@ -1,14 +1,13 @@
 // Same term order and per-operation bounds as backend.expressions.Expression.
 // This evaluates the function curve; Python still integrates the entire ODE.
-export function polynomialSource(coefficients: number[], argument: string, multiplier?: string) {
+export function polynomialSource(coefficients: number[], argument: string, multiplier?: string, preserveArgument = false) {
   const terms = coefficients.flatMap((value, i) => value === 0 ? [] : [
     `(${value})` + (i < 3 ? '*' + argument + (i < 2 ? '**' + (3-i) : '') : ''),
   ]);
   const expression = terms.join('+') || '0';
-  if (!multiplier) return expression;
   // Keep the chosen argument in the editable form even when its coefficient is zero.
-  const marker = coefficients.slice(0, 3).every(value => value === 0) ? '+0*' + argument : '';
-  return `(${expression}${marker})*(${multiplier})`;
+  const marker = (preserveArgument || multiplier) && coefficients.slice(0, 3).every(value => value === 0) ? '+0*' + argument : '';
+  return multiplier ? `(${expression}${marker})*(${multiplier})` : expression + marker;
 }
 
 export function polynomialValue(coefficients: number[], x: number): number | null {

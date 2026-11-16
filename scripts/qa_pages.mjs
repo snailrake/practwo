@@ -29,6 +29,9 @@ try{
  await tab('Все результаты');
  await page.locator('.profile canvas').waitFor();
  check('All results starts with the combined plot',await page.locator('canvas').count()===1);
+ const system4 = await exportResult();
+ check('Browser Python starts with the 13 equations of system (4)',system4.y[0].length===13&&system4.factors[0].length===8&&await page.locator('.source-equation').count()===13);
+ check('All 11 selected results use the original figure indices',JSON.stringify(system4.profile_indices)===JSON.stringify([0,1,2,3,4,5,7,8,9,10,11]));
  await page.getByRole('button',{name:'Один график',exact:true}).click();
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();
  await page.getByRole('heading',{name:'Временной профиль',exact:true}).waitFor();loadMs=performance.now()-start;
@@ -51,7 +54,7 @@ try{
  await page.locator('.profile canvas').waitFor();
  check('All eleven characteristics share one plot',await page.locator('canvas').count()===1);
  await tab('Внешние факторы');check('Seven factor equations and charts are available',await page.locator('.all-factors canvas').count()===7&&await page.getByLabel(/Формула F/).count()===7);
- await tab('Зависимости');await page.getByText('Все уравнения',{exact:true}).click();check('Twenty-two editable functions and eleven rendered equations',await page.getByLabel(/Функция (плюс|минус) X/).count()===22&&await page.locator('.equation .katex').count()===11&&await page.locator('.katex-error').count()===0);
+ await tab('Зависимости');await page.getByText('Все уравнения',{exact:true}).click();check('Twenty-two editable functions and eleven rendered equations',await page.getByLabel(/Функция (плюс|минус) X/).count()===22&&await page.locator('.equation .math-block .katex').count()===11&&await page.locator('.katex-error').count()===0);
  await tab('Лепестковые диаграммы');check('Four quarter radars are computed',await page.locator('canvas').count()===4&&baseline.quarters.every((q,i)=>q.t===(i+1)/4));
  await page.screenshot({path:path.join(output,'pages-quarters.png')});
  await tab('Все результаты');await page.getByText('Проверка расчёта',{exact:true}).click();await page.getByRole('button',{name:'Проверить расчёт',exact:true}).click();

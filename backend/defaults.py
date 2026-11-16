@@ -14,6 +14,28 @@ STATE_NAMES = [
 FACTOR_NAMES = ["Объём выброса", "Персонал объекта", "Скорость ветра",
                 "Температура воздуха", "Задержка оповещения", "Население", "Убежища"]
 RADAR_LIMITS = [1, 1.25, 1, 1.25, 0.25, 0.75, 0.75, 1, 1, 0.5, 1]
+SYSTEM4_NAMES = STATE_NAMES[:6] + [
+    "Получившие амбулаторную помощь", "Размещённые в стационаре и реанимации",
+] + STATE_NAMES[7:] + ["Ранее подвергавшиеся воздействию транспортных выбросов"]
+SYSTEM4_FACTORS = FACTOR_NAMES + ["Площадь фонового загрязнения от транспорта"]
+# The 11 named outputs in the assignment, in the numbering of system (4).
+SYSTEM4_PROFILES = [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11]
+SYSTEM4_RADAR_LIMITS = RADAR_LIMITS[:6] + [0.75] + RADAR_LIMITS[6:] + [0.5]
+SYSTEM4_ARGUMENTS = [
+    ("F1", "X10 X11 F3 F4"),
+    ("X3 X7 X8 X9 F1", "X10 X11"),
+    ("X1 F1 F3 F4", ""),
+    ("X1", "F1 F3 F4"),
+    ("X1 F2", ""),
+    ("F5 F6", "X4 X11 X12 F7"),
+    ("X5 X6 X13", ""),
+    ("X5 X6 X11 X13", ""),
+    ("X3", "X10 X11"),
+    ("X3 X9", ""),
+    ("X3 F6", ""),
+    ("X11 F6 F7", "F5"),
+    ("X3 F6 F8", ""),
+]
 PLUS = [
     "0.0186*X2*F1**0.8",
     "0.085*X3*X7*X8*F1**0.8/F5",
@@ -96,6 +118,46 @@ def presets():
     volume.update(name="Больший объём выброса")
     volume["factors"][0] = "1.2"
     return [baseline, wind, alarm, volume]
+
+
+def system4():
+    """Assignment (4), with the corresponding analytical forms from the article.
+
+    Tsvirkun et al., Caspian Journal, 2019, no. 1, system (2) and table 2,
+    pp. 142, 144. Read X31^max as X3^max and use the k13+ value in row 13.
+    The initial values, divisors, and constant factor profiles are lab inputs.
+    """
+    config = deepcopy(BASE)
+    config.update(
+        name="Система (4) · по рисунку задания",
+        initial=[.7, .6, .8, .5, .1, .15, .05, .08, .5, .4, .3, .45, .1],
+        scales=[.2, 1, .0001, 2, 1, 30, 1, 1, 2, 4, 1, 500, 1],
+        radar_limits=SYSTEM4_RADAR_LIMITS.copy(),
+        factors=BASE["factors"] + ["0.25"],
+        plus=[
+            "0.03*F1**0.8",
+            "0.12*X3*(X7+X8)*X9*F1**0.8",
+            "-2.2e-6*F1**0.8*F3*F4/X1**2.9",
+            "1.1*X1", "0.03*F2/X1**2.1", "0.05*F5*F6",
+            "0.7*(X5+X6)**0.6*X13", "0.25*(X5+X6)**0.7*X11*X13",
+            "0.81*X3", "1.15*(X3*X9)**0.2", "0.06*sqrt(X3*F6)",
+            "305.5*X11*F7/F6", "0.025*X3**0.5*F6*F8",
+        ],
+        minus=[
+            "-0.05*X10*X11/(F3*F4)", "-0.31*X10*X11", "0",
+            "-0.07*F1**0.8*F3*F4", "0", "0.08*X4/(X11*X12*F7)",
+            "0", "0", "0.75*X10*X11", "0", "0", "-0.003/F5", "0",
+        ],
+    )
+    return config
+
+
+def preset_payload():
+    return {
+        "presets": presets(), "startup": startup(), "system4": system4(),
+        "state_names": STATE_NAMES, "factor_names": FACTOR_NAMES,
+        "system4_state_names": SYSTEM4_NAMES, "system4_factor_names": SYSTEM4_FACTORS,
+    }
 
 
 def startup():

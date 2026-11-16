@@ -25,6 +25,16 @@ try{
  await page.locator('.profile canvas').waitFor();
  check('All results starts with the combined plot',await page.locator('canvas').count()===1);
  const inlineEditor = page.locator('.profile .equation-editor');
+ check('System (4) is the default and displays all 13 source equations',await inlineEditor.locator('.source-equation').count()===13&&await page.getByLabel(/X\d+ начальное условие/).count()===13);
+ const x2 = inlineEditor.locator('.source-equation').nth(1);
+ check('X2 shows both signed functions with the indices of the figure',(await x2.locator('annotation').textContent()).includes('X_{10}(t),X_{11}(t)'));
+ await selectTab('Внешние факторы');
+ check('System (4) exposes F8 with four editable coefficients',await page.locator('.all-factors .factor-equation-row').count()===8&&await page.getByRole('group',{name:'F8',exact:true}).locator('input').count()===4);
+ await selectTab('Лепестковые диаграммы');
+ check('Four radars retain the 11 required characteristics, including alerting as X12',await page.locator('canvas').count()===4&&await page.locator('tbody tr').count()===11&&await page.getByRole('rowheader',{name:/X12.*Оповещение/}).count()===1);
+ await selectTab('Все результаты');
+ await page.getByLabel('Модельный пример',{exact:true}).selectOption({label:'Кубические зависимости'});
+ await page.locator('.calculation-status[data-ready=true]').waitFor();
  const coefficient = inlineEditor.getByRole('group',{name:'Первая часть X4',exact:true}).getByRole('textbox',{name:'Коэффициент a',exact:true});
  await coefficient.waitFor();
  const updated = page.waitForResponse(response => response.url().endsWith('/api/simulate') &&
@@ -85,7 +95,7 @@ try{
  await selectTab('Зависимости');
  await page.getByText('Все уравнения',{exact:true}).click();
  check('All 22 model functions editable',await page.getByLabel(/Функция (плюс|минус) X/).count()===22);
- check('All eleven equations correctly rendered',await page.locator('.equation .katex').count()===11&&await page.locator('.katex-error').count()===0);
+ check('All eleven equations correctly rendered',await page.locator('.equation .math-block .katex').count()===11&&await page.locator('.katex-error').count()===0);
  await capture('ui-equations.png');
  await page.getByLabel('Функция плюс X1',{exact:true}).fill("__import__('os')");await run();
  check('Unsafe expression rejected visibly',await page.getByRole('alert').isVisible());
@@ -127,7 +137,7 @@ try{
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('3');await run();
  check('Volume experiment uses original model',!(await page.getByRole('alert').count()));
  await page.getByText('Дополнительные настройки',{exact:true}).click();await page.getByText('Решатель и точность',{exact:true}).click();await page.getByLabel('t_end',{exact:true}).fill('0.8');await run();
- check('Different intervals are not silently compared',await page.getByText('Сравнение недоступно:',{exact:false}).isVisible());
+ check('Different intervals are not silently compared',await page.getByText('Для сравнения нужны одинаковая система и одинаковый интервал времени.',{exact:true}).isVisible());
  await importConfig(base);await page.getByText('Решатель и точность',{exact:true}).click();
  await page.getByText('Начальные условия Xᵢ(0)',{exact:true}).click();
  await page.setViewportSize({width:390,height:844});await page.waitForTimeout(250);

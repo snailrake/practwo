@@ -27,7 +27,6 @@ type Props = {
   onDraft: (pending: boolean) => void;
   onReset: (index: number, external: boolean) => void;
 };
-const variables = ['t', ...Array.from({ length: 11 }, (_, i) => 'X' + (i + 1)), ...Array.from({ length: 7 }, (_, i) => 'F' + (i + 1))];
 const forms = ['Постоянная', 'Линейная', 'Квадратичная', 'Кубическая'];
 const letters = ['a', 'b', 'c', 'd'];
 const chartHeight = 'var(--editor-chart-height, 320px)';
@@ -36,6 +35,8 @@ const axisText = { fontSize: 14, color: '#333' };
 
 function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Props['onChange'], enabled = true) {
   const external = kind === 'factors';
+  const fixedArguments = config.initial.length === 13 && !external;
+  const variables = ['t', ...config.initial.map((_, i) => 'X' + (i + 1)), ...config.factors.map((_, i) => 'F' + (i + 1))];
   const [argument, setArgument] = useState(external ? 't' : 'X1');
   const [form, setForm] = useState<Form | null>(null);
   const [coefficients, setCoefficients] = useState(['0', '0', '0', '0']);
@@ -75,7 +76,7 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
           if (data.coefficients?.every(v => Number.isFinite(v) && Math.abs(v) <= 1e12)) {
             const anchor = data.factor ? polynomialValue(data.coefficients, data.factor.reference_x) : data.reference_y;
             loadCoefficients(data.coefficients, anchor);
-            setForm(external ? 3 : data.degree as Form);
+            setForm(external || fixedArguments && data.dependencies.length > 0 ? 3 : data.degree as Form);
           } else {
             setTemplate({ source, editable: data.editable });
             setLiterals(data.editable.literals.map(n => n.text));
@@ -109,7 +110,7 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
   function editCoefficient(i: number, text: string) {
     const next = coefficients.map((value, j) => j === i ? text : value);
     setCoefficients(next);
-    if (next.every(validNumber)) write(polynomialSource(next.map(numeric), argument, factor?.source));
+    if (next.every(validNumber)) write(polynomialSource(next.map(numeric), argument, factor?.source, fixedArguments));
   }
 
   function editLiteral(i: number, text: string) {
@@ -146,7 +147,7 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
 
   function changeArgument(next: string) {
     setArgument(next);
-    if (polynomial && valid) write(polynomialSource(values, next, factor?.source));
+    if (!fixedArguments && polynomial && valid) write(polynomialSource(values, next, factor?.source));
   }
 
   function editSource(next: string) {
@@ -158,7 +159,7 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
   const points: Points = useMemo(() => {
     if (!domainValid) return [];
     const scale = factor ? factor.value : 1;
-    if (!polynomial || !valid || scale === null || source !== polynomialSource(values, argument, factor?.source)) {
+    if (!polynomial || !valid || scale === null || source !== polynomialSource(values, argument, factor?.source, fixedArguments)) {
       return sourceCurrent && preview ? preview.points : [];
     }
     return Array.from({ length: 201 }, (_, i) => {
@@ -167,7 +168,7 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
       const y = value === null ? null : value * scale;
       return [x, y !== null && Math.abs(y) <= 1e12 ? y : null];
     });
-  }, [source, polynomial, coefficients, start, end, preview, factor, argument, domainValid, sourceCurrent, valid]);
+  }, [source, polynomial, coefficients, start, end, preview, factor, argument, domainValid, sourceCurrent, valid, fixedArguments]);
   const firstTerm = values.findIndex(v => v !== 0);
   const degree = polynomial && valid ? firstTerm < 0 ? 0 : 3 - firstTerm : sourceCurrent ? preview.degree : null;
   const type = degree === null ? 'Аналитическая' : forms[Math.min(degree, 3)];
@@ -176,7 +177,7 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
   return {
     source, kind, prefix, form, coefficients, literals, template, factor, valid, points, type, argument,
     active, values, sliderLimit: limits[active], domain, start, end, domainValid, error, pending, sourceCurrent,
-    argumentsList: polynomial ? variables.filter(name => !factor?.dependencies.includes(name)) : preview?.dependencies.length ? preview.dependencies : variables,
+    argumentsList: polynomial && !fixedArguments ? variables.filter(name => !factor?.dependencies.includes(name)) : preview?.dependencies.length ? preview.dependencies : variables,
     fixed: sourceCurrent ? preview.fixed : {},
     changeForm, changeArgument, editCoefficient, editLiteral, editSource, setActiveCoefficient,
     finishCoefficient(i: number) {
@@ -292,32 +293,34 @@ function ResultPlot({ result, status, index, title }: { result: Result; status: 
 
 function FormulaWorkspace({ config, names, factors, external = false, result, status, index, onChange, onDraft }: Props & { index: number }) {
   const [side, setSide] = useState<'plus' | 'minus'>('plus');
+  const sourceEquation = result.source_equations?.[index];
   const plus = useFunctionPart(config, external ? 'factors' : 'plus', index, onChange);
-  const minus = useFunctionPart(config, 'minus', index, onChange, !external);
+  const minus = useFunctionPart(config, 'minus', index, onChange, !external && (sourceEquation?.has_minus ?? true));
   const part = side === 'plus' ? plus : minus;
   const valid = plus.valid && (external || minus.valid);
   useEffect(() => { onDraft(!valid); }, [valid, onDraft]);
   useEffect(() => () => onDraft(false), [onDraft]);
   const variableName = (name: string) => name === 't' ? 'время τ' : name + ' · ' + (name[0] === 'X' ? names[+name.slice(1) - 1] : factors[+name.slice(1) - 1]);
-  const argumentLabel = typeof part.form === 'number' && part.form > 0 ? 'Подставляем в формулу' : 'По горизонтали';
+  const argumentLabel = !sourceEquation && typeof part.form === 'number' && part.form > 0 ? 'Подставляем в формулу' : 'По горизонтали';
   return <>
     <div className="formula-workspace">
       {external ? <FormulaPart part={plus} name="Формула фактора" /> : <>
+        {sourceEquation && <div className="source-equation"><MathFormula block source={sourceEquation.tex} /></div>}
         <div className="part-switch" role="group" aria-label="Часть уравнения">
           <button type="button" aria-pressed={side === 'plus'} onClick={() => setSide('plus')}>Первая часть</button>
-          <button type="button" aria-pressed={side === 'minus'} onClick={() => setSide('minus')}>Вычитаемая часть</button>
+          {(!sourceEquation || sourceEquation.has_minus) && <button type="button" aria-pressed={side === 'minus'} onClick={() => setSide('minus')}>Вычитаемая часть</button>}
         </div>
         <FormulaPart key={side} part={part} name={side === 'plus' ? 'Первая часть' : 'Вычитаемая часть'} />
-        <div className="equation-divisor"><span>Делитель</span> <MathFormula source={'S_{' + (index + 1) + '}'} /> = {fmt(config.scales[index], 6)}</div>
+        <div className="equation-divisor"><span>Делитель</span> <MathFormula source={sourceEquation ? 'X_{' + (index + 1) + '}^{\\max}' : 'S_{' + (index + 1) + '}'} /> = {fmt(config.scales[index], 6)}</div>
       </>}
       <div className="formula-toolbar">
-        <label className="field">Вид формулы<select aria-label="Вид формулы" value={part.form ?? 'formula'}
+        {!sourceEquation && <label className="field">Вид формулы<select aria-label="Вид формулы" value={part.form ?? 'formula'}
           title={part.form === 'formula' ? 'Выбор полинома заменяет выделенную часть целиком' : undefined}
           disabled={part.pending || !part.sourceCurrent || !part.valid}
           onChange={e => part.changeForm(e.target.value === 'formula' ? 'formula' : +e.target.value as Form)}>
           {[3, 2, 1, 0].map(v => <option key={v} value={v}>{forms[v]}</option>)}
           <option value="formula">Аналитическая формула</option>
-        </select></label>
+        </select></label>}
         {!external && <label className="field">{argumentLabel}<select aria-label={argumentLabel} value={part.argument}
           disabled={!part.valid || part.form === null}
           onChange={e => part.changeArgument(e.target.value)}>
@@ -340,7 +343,7 @@ function FormulaWorkspace({ config, names, factors, external = false, result, st
       <details className="expression-details"><summary>Запись формулы</summary>
         <label className="field">Выражение<input aria-label="Формула в редакторе" maxLength={400} spellCheck={false}
           value={part.source} onChange={e => part.editSource(e.target.value)} /></label>
-        <p className="note">Степень записывается как <code>**</code>. Допустимы {external ? 'время t и константы' : 'X1…X11, F1…F7 и время t'}.</p>
+        <p className="note">Степень записывается как <code>**</code>. {sourceEquation ? 'Аргументы должны совпадать со строкой рисунка.' : external ? 'Допустимы время t и константы.' : 'Допустимы X1…X11, F1…F7 и время t.'}</p>
       </details>
       <details className="expression-details"><summary>Диапазон графика</summary>
         <div className="editor-range"><span>{part.argument === 't' ? 'τ' : part.argument}</span>

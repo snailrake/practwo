@@ -12,6 +12,12 @@ const clone = <T,>(value: T): T => structuredClone(value);
 const configKey = (value: Config | null) => value ? JSON.stringify(value, Object.keys(value).sort()) : '';
 const symbol = (prefix: string, i: number) => <>{prefix}<sub>{i + 1}</sub></>;
 const fieldNumber = (value: number) => Number.isFinite(value) ? value : '';
+const divisorTex = (index: number, system4: boolean) => (system4 ? 'X' : 'S') + '_{' + (index + 1) + '}' + (system4 ? '^{\\max}' : '');
+type PresetData = {
+  presets: Config[]; startup: Config; system4: Config;
+  state_names: string[]; factor_names: string[];
+  system4_state_names: string[]; system4_factor_names: string[];
+};
 
 function download(name: string, value: string, type = 'application/json') {
   const url = URL.createObjectURL(new Blob([value], { type }));
@@ -21,14 +27,12 @@ function download(name: string, value: string, type = 'application/json') {
 }
 
 export function App() {
-  const [presets, setPresets] = useState<Config[]>([]);
-  const [names, setNames] = useState<string[]>([]);
-  const [factorNames, setFactorNames] = useState<string[]>([]);
+  const [presetData, setPresetData] = useState<PresetData | null>(null);
   const [config, setConfig] = useState<Config | null>(null);
   const [scenarioDefaults, setScenarioDefaults] = useState<Config | null>(null);
   const [draftPending, setDraftPending] = useState(false);
   const [scenarioVersion, setScenarioVersion] = useState(0);
-  const { result, busy, error, setError, retry } = useSimulation(config, draftPending);
+  const { result: solved, busy, error, setError, retry } = useSimulation(config, draftPending);
   const [reference, setReference] = useState<Result | null>(null);
   const [tab, setTab] = useState(0);
   const [selected, setSelected] = useState(2);
@@ -43,8 +47,12 @@ export function App() {
   const loaded = useRef(false);
   const latestConfig = useRef(config);
   latestConfig.current = config;
+  const isSystem4 = config?.initial.length === 13;
+  const result = solved?.y[0].length === config?.initial.length ? solved : null;
+  const presets = presetData ? [...presetData.presets, presetData.startup, presetData.system4] : [];
   const dirty = !!result && configKey(config) !== configKey(result.config);
-  const comparison = reference && result && reference.config.t_end === result.config.t_end ? reference : null;
+  const comparison = reference && result && reference.y[0].length === result.y[0].length &&
+    reference.config.t_end === result.config.t_end ? reference : null;
 
   useEffect(() => { if (result) setFrame(result.t.length - 1); }, [result]);
   useEffect(() => { setVerification(null); }, [config]);
@@ -52,9 +60,9 @@ export function App() {
     if (loaded.current) return;
     loaded.current = true;
     const unsubscribe = onRuntimeProgress(setRuntimeProgress);
-    call<{ presets: Config[]; startup: Config; state_names: string[]; factor_names: string[] }>('/api/presets').then(data => {
-      setPresets([...data.presets, data.startup]); setNames(data.state_names); setFactorNames(data.factor_names);
-      setScenarioDefaults(clone(data.startup)); setConfig(clone(data.startup));
+    call<PresetData>('/api/presets').then(data => {
+      setPresetData(data);
+      setScenarioDefaults(clone(data.system4)); setConfig(clone(data.system4));
     }).catch(e => setError(e.message));
     return unsubscribe;
   }, []);
@@ -92,13 +100,14 @@ export function App() {
     setScenarioVersion(n => n + 1);
     setScenarioDefaults(clone(next));
     setConfig(clone(next));
+    setSelected(index => index < next.initial.length ? index : 2);
   }
   async function randomize() {
     const previous = latestConfig.current;
     setRandomizing(true);
     setError('');
     try {
-      const next = await call<Config>('/api/random-scenario');
+      const next = await call<Config>(isSystem4 ? '/api/random-system4' : '/api/random-scenario');
       if (latestConfig.current === previous) applyScenario(next);
     } catch (e) {
       if (latestConfig.current === previous) setError((e as Error).message);
@@ -109,14 +118,18 @@ export function App() {
   async function importScenario(file?: File) {
     if (!file) return;
     try {
-      if (file.size > 1500000) throw new Error('Файл слишком большой. Загрузите конфигурацию или экспортированный результат JSON.');
+      if (file.size > 5000000) throw new Error('Файл слишком большой. Загрузите конфигурацию или экспортированный результат JSON.');
       const json = JSON.parse(await file.text());
       const c = clone(json.config ?? json);
       if (c.mode && c.mode !== 'literal') throw new Error('Этот старый файл использует изменённые уравнения. Выберите сценарий текущей модели.');
       delete c.mode;
-      if (!['initial', 'scales', 'plus', 'minus'].every(k => Array.isArray(c[k]) && c[k].length === 11) || !Array.isArray(c.factors) || c.factors.length !== 7) throw new Error('Нужны 11 начальных значений, 11 делителей, 22 функции и 7 факторов.');
-      c.radar_limits ??= presets[0]?.radar_limits;
-      if (!Array.isArray(c.radar_limits) || c.radar_limits.length !== 11) throw new Error('Нужны 11 пределов шкал.');
+      const n = c.initial?.length;
+      if (![11, 13].includes(n) || !['initial', 'scales', 'plus', 'minus'].every(k => Array.isArray(c[k]) && c[k].length === n) ||
+          !Array.isArray(c.factors) || c.factors.length !== (n === 13 ? 8 : 7)) {
+        throw new Error('Укажите 11 состояний и 7 факторов для таблицы 1 или 13 состояний и 8 факторов для системы (4).');
+      }
+      c.radar_limits ??= (n === 13 ? presetData?.system4 : presets[0])?.radar_limits;
+      if (!Array.isArray(c.radar_limits) || c.radar_limits.length !== n) throw new Error('Количество пределов шкал должно совпадать с количеством состояний.');
       applyScenario(c);
     } catch (e) { setError('Импорт: ' + (e as Error).message); }
     finally { if (fileInput.current) fileInput.current.value = ''; }
@@ -134,17 +147,21 @@ export function App() {
   }
   function csv() {
     if (!result) return;
-    const headers = ['tau', ...names.map((_, i) => 'X' + (i + 1)), ...factorNames.map((_, i) => 'F' + (i + 1))];
+    const headers = ['tau', ...result.state_names.map((_, i) => 'X' + (i + 1)), ...result.factor_names.map((_, i) => 'F' + (i + 1))];
     const rows = result.t.map((t, i) => [t, ...result.y[i], ...result.factors[i]].map(v => v.toPrecision(12)).join(';'));
     download('chemical-release-results.csv', '\ufeff' + headers.join(';') + '\n' + rows.join('\n'), 'text/csv;charset=utf-8');
   }
-  if (!config) return <div className="app loading"><h1>Моделирование химического выброса</h1><p role={error ? 'alert' : 'status'}>{error || (browserPython ? runtimeProgress : 'Соединение с Python-сервером…')}</p>{browserPython && <p className="note">Первый запуск загружает Python и научные библиотеки. Ничего устанавливать на компьютер не нужно.</p>}{error && <button onClick={() => window.location.reload()}>Повторить загрузку</button>}</div>;
+  if (!config || !presetData) return <div className="app loading"><h1>Моделирование химического выброса</h1><p role={error ? 'alert' : 'status'}>{error || (browserPython ? runtimeProgress : 'Соединение с Python-сервером…')}</p>{browserPython && <p className="note">Первый запуск загружает Python и научные библиотеки. Ничего устанавливать на компьютер не нужно.</p>}{error && <button onClick={() => window.location.reload()}>Повторить загрузку</button>}</div>;
 
+  const names = isSystem4 ? presetData.system4_state_names : presetData.state_names;
+  const factorNames = isSystem4 ? presetData.system4_factor_names : presetData.factor_names;
+  const labels = isSystem4 ? [...short.slice(0, 6), 'Амбулаторная помощь', ...short.slice(6), 'Фоновое воздействие'] : short;
   const cursor = result?.t[Math.min(frame, result.t.length - 1)] ?? 0;
   const values = result?.y[Math.min(frame, result.y.length - 1)] ?? config.initial;
   const snapshots = result?.quarters ?? [];
+  const timeSymbol = isSystem4 ? 't' : 'τ';
   const formulaView = tab === 1 || tab === 2;
-  const tableMode = presets.slice(0, -1).some(p => p.name === scenarioDefaults?.name);
+  const tableMode = isSystem4 || presetData.presets.some(p => p.name === scenarioDefaults?.name);
   const resultStatus = draftPending ? 'draft' : error ? 'error' : dirty || busy ? 'pending' : 'current';
   function moveTo(time: number) {
     if (!result) return;
@@ -169,13 +186,14 @@ export function App() {
           <details className="initial-details" open={initialOpen} onToggle={e => setInitialOpen(e.currentTarget.open)}>
             <summary>Начальные условия Xᵢ(0)</summary>
             <div className="initial-list">{names.map((n, i) => <label className={selected === i ? 'parameter selected' : 'parameter'} key={n} title={n}>
-              <span><b>{symbol('X', i)}</b> {short[i]}</span>
+              <span><b>{symbol('X', i)}</b> {labels[i]}</span>
               <input aria-label={'X' + (i + 1) + ' начальное условие'} type="number" step="any" min={0} value={fieldNumber(config.initial[i])} onFocus={() => setSelected(i)} onChange={e => array('initial', i, e.target.valueAsNumber)} />
             </label>)}</div>
           </details>
           <div className="calculation-status" role="status" aria-live="polite" data-ready={!!result && !dirty && !busy && !draftPending && !error} data-busy={!error && (busy || dirty || draftPending)}><span />{draftPending ? 'Допишите коэффициент' : error ? 'Проверьте параметры' : busy || dirty || !result ? 'Пересчитываем…' : 'Расчёт обновлён'}</div>
-          <p className="note">Интервал 0…{fmt(config.t_end, 3)}. Значения в относительной шкале.</p>
-          {JSON.stringify(scenarioDefaults) === JSON.stringify(presets.at(-1)) && <p className="scenario-note">В каждой ненулевой части один множитель заменён кубическим полиномом. Остальные аргументы участвуют в расчёте.</p>}
+          <p className="note">Модельное время {timeSymbol} от 0 до {fmt(config.t_end, 3)}. Значения в относительной шкале.</p>
+          {isSystem4 && <p className="scenario-note">Система (4) · 13 уравнений и 8 факторов. Начальные значения и делители заданы для учебного примера.</p>}
+          {scenarioDefaults?.name === presetData.startup.name && <p className="scenario-note">В каждой ненулевой части один множитель заменён кубическим полиномом. Остальные аргументы участвуют в расчёте.</p>}
         </section>
         <section>
           <details className="additional-settings">
@@ -191,9 +209,9 @@ export function App() {
             </label>)}</div>
           </details>
           <details>
-            <summary>Нормировочные делители Sᵢ</summary>
+            <summary>Нормировочные делители {isSystem4 ? <MathFormula source="X_i^{\max}" /> : 'Sᵢ'}</summary>
             <p className="note">Положительные делители правых частей. Не переводят модельные значения в физические единицы.</p>
-            <div className="scale-inputs">{names.map((n, i) => <label key={n}>{symbol('S', i)}<input aria-label={'S' + (i + 1) + ' делитель'} type="number" min={1e-8} step="any" value={fieldNumber(config.scales[i])} onChange={e => array('scales', i, e.target.valueAsNumber)} /></label>)}</div>
+            <div className="scale-inputs">{names.map((n, i) => <label key={n}><MathFormula source={divisorTex(i, isSystem4)} /><input aria-label={'S' + (i + 1) + ' делитель'} type="number" min={1e-8} step="any" value={fieldNumber(config.scales[i])} onChange={e => array('scales', i, e.target.valueAsNumber)} /></label>)}</div>
           </details>
           </details>
         </section>
@@ -203,54 +221,60 @@ export function App() {
         <nav className="tabs" aria-label="Разделы приложения">{tabs.map((name, i) => <button className={tab === i ? 'active' : ''} key={name} onClick={() => setTab(i)} aria-current={tab === i ? 'page' : undefined}>{name}</button>)}</nav>
         {error && <div className="message error" role="alert"><span>{error}</span><button onClick={retry}>Повторить расчёт</button></div>}
         {(dirty || draftPending) && result && !formulaView && <p className="message" role="status">{draftPending ? 'Допишите коэффициент.' : error ? 'Исправьте параметры.' : 'Обновляем результаты автоматически.'} Пока показан последний корректный расчёт.</p>}
-        {result?.warnings.filter(w => w.startsWith('Есть отрицательные') || w.startsWith('X11 выходит')).map(w => <p className="message error" key={w}>{w}</p>)}
-        {reference && result && !comparison && <p className="message">Сравнение недоступно: у эталона другой конец интервала. Задайте одинаковые интервалы.</p>}
+        {result?.warnings.filter(w => w.startsWith('Есть отрицательные') || /^X\d+ выходит/.test(w)).map(w => <p className="message error" key={w}>{w}</p>)}
+        {reference && result && !comparison && <p className="message">Для сравнения нужны одинаковая система и одинаковый интервал времени.</p>}
         {result && <>
-          {!formulaView && <div className="result-line"><span>{result.config.name}</span><span>τ = 0…{fmt(result.config.t_end, 3)}</span></div>}
+          {!formulaView && <div className="result-line"><span>{result.config.name}</span><span>{timeSymbol} = 0…{fmt(result.config.t_end, 3)}</span></div>}
           {tab === 0 && <>
             <section className="profile">
               <div className="results-view" role="group" aria-label="Отображение результатов"><button aria-pressed={!allCharts} onClick={() => setAllCharts(false)}>Один график</button><button aria-pressed={allCharts} onClick={() => setAllCharts(true)}>Все 11 графиков</button></div>
-              {allCharts ? <><h2>Все 11 временных зависимостей</h2><AllProfiles r={result} cursor={cursor} comparison={comparison} /></> : <>
+              {allCharts ? <><h2>Все 11 временных зависимостей</h2>
+                {isSystem4 && <p className="section-note">11 показателей задания в нумерации системы (4). Амбулаторная помощь X₇ и фоновое воздействие X₁₃ доступны в режиме «Один график».</p>}
+                <AllProfiles key={names.length} r={result} cursor={cursor} comparison={comparison} /></> : <>
               <div className="section-heading"><h2>Временной профиль</h2><select aria-label="Характеристика на основном графике" value={selected} onChange={e => setSelected(+e.target.value)}>{names.map((n, i) => <option key={n} value={i}>{'X' + (i + 1)} · {n}</option>)}</select></div>
               <h3 className="profile-title">{symbol('X', selected)} {names[selected]}</h3>
               <Chart label={'Временной профиль X' + (selected + 1)} height={360} option={lineOption(result, selected, cursor, comparison)} />
               </>}
               <div className="time-control">
-                <label htmlFor="model-time">Время τ</label>
+                <label htmlFor="model-time">Время {timeSymbol}</label>
                 <input id="model-time" aria-label="Момент машинного времени" type="range" min={0} max={result.t.length - 1} value={Math.min(frame, result.t.length - 1)} onChange={e => setFrame(+e.target.value)} />
-                <output>τ = {fmt(cursor, 3)}</output>
+                <output>{timeSymbol} = {fmt(cursor, 3)}</output>
               </div>
               <div className="quarter-controls"><span>Четверти:</span>{snapshots.map(q => <button key={q.t} onClick={() => moveTo(q.t)}>{fmt(q.t, 3)}</button>)}</div>
               {comparison && <p className="note">Сплошная линия – текущий расчёт, пунктир – эталон.</p>}
               {allCharts && <EquationList key={'profiles-' + scenarioVersion} config={config} result={result} randomizing={randomizing}
                 tableMode={tableMode}
-                onChange={array} onDraft={setDraftPending} onRandomize={randomize} onUseTable={() => applyScenario(presets[0])} />}
+                onChange={array} onDraft={setDraftPending} onRandomize={randomize}
+                onUseTable={() => applyScenario(presets[0])} onUseSystem4={() => applyScenario(presetData.system4)} />}
             </section>
             <details className="plain-details comparison-controls"><summary>Сравнение экспериментов</summary><p>Сохраните текущий результат, затем измените параметры. Новый расчёт появится автоматически.</p><div className="button-row"><button disabled={dirty || busy || draftPending} onClick={() => setReference(clone(result))}>Запомнить эталон</button>{reference && <button onClick={() => setReference(null)}>Убрать</button>}</div>{reference && <p>Эталон: {reference.config.name}</p>}</details>
-            <section><h2>Характеристики при τ = {fmt(cursor, 3)}</h2><div className="metrics">{names.map((n, i) => <button title={n} className={selected === i ? 'metric active-metric' : 'metric'} key={n} onClick={() => setSelected(i)}><span>{symbol('X', i)} {short[i]}</span><strong>{fmt(values[i], 5)}</strong></button>)}</div></section>
+            <section><h2>Характеристики при {timeSymbol} = {fmt(cursor, 3)}</h2><div className="metrics">{(allCharts ? result.profile_indices : names.map((_, i) => i)).map(i => <button title={names[i]} className={selected === i ? 'metric active-metric' : 'metric'} key={i} onClick={() => setSelected(i)}><span>{symbol('X', i)} {labels[i]}</span><strong>{fmt(values[i], 5)}</strong></button>)}</div></section>
           </>}
           {tab === 2 && <EquationList key={'factors-' + scenarioVersion} factorsOnly config={config} result={result}
             tableMode={tableMode} comparison={comparison} onChange={array} onDraft={setDraftPending}
             onResetFactor={index => resetEditor(index, true)} />}
           {tab === 3 && <>
             <section><h2>Четыре снимка расчёта</h2><p className="section-note radar-explanation">На всех четырёх снимках у каждого показателя одна шкала. Число под названием луча — его верхний предел в относительных единицах.</p><QuarterRadars r={result} /></section>
-            <section><h2>Численные значения срезов</h2><div className="table-scroll"><table><thead><tr><th>Характеристика</th>{snapshots.map(q => <th key={q.t}>τ = {fmt(q.t, 3)}</th>)}{comparison && <><th>Эталон, τ = {fmt(comparison.config.t_end)}</th><th>Разность</th></>}</tr></thead><tbody>{names.map((n, i) => <tr key={n}><th scope="row">{symbol('X', i)} {short[i]}</th>{snapshots.map(q => <td key={q.t}>{fmt(q.values[i], 6)}</td>)}{comparison && <><td>{fmt(comparison.y.at(-1)![i], 6)}</td><td>{fmt(result.y.at(-1)![i] - comparison.y.at(-1)![i], 6)}</td></>}</tr>)}</tbody></table></div></section>
-            <details className="plain-details"><summary>Пределы шкал</summary><p>Задайте верхнюю границу каждого луча. По умолчанию используются пределы учебного сценария.</p><div className="scale-values">{(config.radar_limits ?? result.radar_scales).map((limit, i, limits) => <label className="field" key={i}>
-              {symbol('X', i)} {short[i]}<input type="number" min={1e-9} max={1e8} step="any" aria-label={'Предел X' + (i + 1)}
-                value={fieldNumber(limit)} onChange={e => update('radar_limits', limits.map((v, j) => j === i ? e.target.valueAsNumber : v))} /></label>)}</div></details>
+            <section><h2>Численные значения срезов</h2><div className="table-scroll"><table><thead><tr><th>Характеристика</th>{snapshots.map(q => <th key={q.t}>{timeSymbol} = {fmt(q.t, 3)}</th>)}{comparison && <><th>Эталон, {timeSymbol} = {fmt(comparison.config.t_end)}</th><th>Разность</th></>}</tr></thead><tbody>{result.profile_indices.map(i => <tr key={i}><th scope="row">{symbol('X', i)} {labels[i]}</th>{snapshots.map(q => <td key={q.t}>{fmt(q.values[i], 6)}</td>)}{comparison && <><td>{fmt(comparison.y.at(-1)![i], 6)}</td><td>{fmt(result.y.at(-1)![i] - comparison.y.at(-1)![i], 6)}</td></>}</tr>)}</tbody></table></div></section>
+            <details className="plain-details"><summary>Пределы шкал</summary><p>Задайте верхнюю границу каждого луча. По умолчанию используются пределы учебного сценария.</p><div className="scale-values">{result.profile_indices.map(i => {
+              const limits = config.radar_limits ?? result.radar_scales;
+              return <label className="field" key={i}>
+              {symbol('X', i)} {labels[i]}<input type="number" min={1e-9} max={1e8} step="any" aria-label={'Предел X' + (i + 1)}
+                value={fieldNumber(limits[i])} onChange={e => update('radar_limits', limits.map((v, j) => j === i ? e.target.valueAsNumber : v))} /></label>;
+            })}</div></details>
           </>}
           {tab === 1 && <>
             <FunctionEditor key={'model-' + scenarioVersion} config={config} names={names} factors={factorNames}
               result={result} status={resultStatus} onChange={array} onDraft={setDraftPending} onReset={resetEditor} />
-            <details className="plain-details all-equations"><summary>Все уравнения</summary><section><h2>Система уравнений</h2><MathFormula block source="\frac{dX_i}{d\tau}=\frac{f_i^+-f_i^-}{S_i},\qquad X_i(0)=X_i^0" /><p className="section-note">{dirty || draftPending ? 'Математическая запись показывает предыдущий расчёт.' : 'Формулы ниже соответствуют выполненному расчёту.'} Изменения в полях автоматически запускают новый расчёт.</p>
+            <details className="plain-details all-equations"><summary>Все уравнения</summary><section><h2>Система уравнений</h2><MathFormula block source={isSystem4 ? '\\frac{dX_i(t)}{dt}=\\frac{f_i^+-f_i^-}{X_i^{\\max}},\\qquad X_i(0)=X_i^0' : '\\frac{dX_i}{d\\tau}=\\frac{f_i^+-f_i^-}{S_i},\\qquad X_i(0)=X_i^0'} /><p className="section-note">{dirty || draftPending ? 'Математическая запись показывает предыдущий расчёт.' : 'Формулы ниже соответствуют выполненному расчёту.'} Изменения в полях автоматически запускают новый расчёт.</p>
               <details className="plain-details"><summary>Синтаксис формул и исходные допущения</summary>
-                <p>Переменные: X1…X11, F1…F7, t; константы: pi, e. Операции: + − * / **. Функции: sqrt, exp, log, sin, cos, tanh, abs, min, max. Для внешних факторов допустимы только время и константы.</p>
-                <p>Реализована таблица 1 задания: 11 характеристик. В изображении системы (4) имеются X12 и X13, не определённые в перечне и таблице. Начальные уровни и делители готовых сценариев – условия вычислительного эксперимента, не измерения на предприятии.</p>
-                <p>f⁺ и f⁻ – алгебраические части, а не обязательно положительные потоки. Отрицательные коэффициенты из исходной таблицы сохранены. В приложении используется только одна система уравнений.</p>
+                <p>В выражениях доступны X1…X{names.length}, F1…F{factorNames.length}, t и константы pi, e. Операции + − * / ** и функции sqrt, exp, log, sin, cos, tanh, abs, min, max. Для внешних факторов допустимы только время и константы.</p>
+                <p>{isSystem4 ? 'Система (4) сохраняет аргументы рисунка в каждой части. Коэффициенты взяты из таблицы 2 статьи.' : 'Здесь используются формулы учебной таблицы 1 и её нумерация.'} Начальные значения и делители заданы для вычислительного эксперимента.</p>
+                <p>Вычитаемая часть берётся со знаком коэффициента из источника. Вычитание отрицательного значения увеличивает производную.</p>
               </details>
-              <div className="equation-list">{names.map((n, i) => <div className="equation" key={n}><h3>{symbol('X', i)} {n} <span>S{i + 1} = {fmt(result.config.scales[i], 6)}</span></h3><MathFormula block source={result.equations_tex[i]} />
+              <div className="equation-list">{names.map((n, i) => <div className="equation" key={n}><h3>{symbol('X', i)} {n} <span><MathFormula source={divisorTex(i, isSystem4)} /> = {fmt(result.config.scales[i], 6)}</span></h3><MathFormula block source={result.source_equations?.[i].tex ?? result.equations_tex[i]} />
                 <label className="formula-input"><span>f⁺ =</span><input aria-label={'Функция плюс X' + (i + 1)} maxLength={400} spellCheck={false} value={config.plus[i]} onChange={e => array('plus', i, e.target.value)} /></label>
-                <label className="formula-input"><span>f⁻ =</span><input aria-label={'Функция минус X' + (i + 1)} maxLength={400} spellCheck={false} value={config.minus[i]} onChange={e => array('minus', i, e.target.value)} /></label>
+                {(!result.source_equations || result.source_equations[i].has_minus) && <label className="formula-input"><span>f⁻ =</span><input aria-label={'Функция минус X' + (i + 1)} maxLength={400} spellCheck={false} value={config.minus[i]} onChange={e => array('minus', i, e.target.value)} /></label>}
               </div>)}</div>
             </section></details>
             <details className="plain-details"><summary>Граф зависимостей уравнений</summary><DependencyGraph r={result} /><p className="note">Связи получены из действующих выражений. Ребро означает наличие переменной в формуле, а не доказанный знак её влияния.</p></details>

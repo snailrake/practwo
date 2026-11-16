@@ -7,28 +7,51 @@ import time
 from typing import Literal
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from scipy.integrate import solve_ivp
 
-from .defaults import STATE_NAMES, FACTOR_NAMES, RADAR_LIMITS, polynomial, startup
+from .defaults import (
+    STATE_NAMES, FACTOR_NAMES, RADAR_LIMITS, SYSTEM4_NAMES, SYSTEM4_FACTORS,
+    SYSTEM4_RADAR_LIMITS, SYSTEM4_PROFILES, SYSTEM4_ARGUMENTS, polynomial, startup, system4,
+)
 from .expressions import Expression, ModelError
-from .notation import equation_fields, equation_tex, to_tex
+from .notation import equation_fields, equation_tex, system4_equation_tex, to_tex
 
 
 class SimulationConfig(BaseModel):
     model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     name: str = Field(default="Пользовательский сценарий", max_length=100)
-    initial: list[float] = Field(min_length=11, max_length=11)
-    scales: list[float] = Field(min_length=11, max_length=11)
-    radar_limits: list[float] = Field(default_factory=lambda: RADAR_LIMITS.copy(), min_length=11, max_length=11)
-    factors: list[str] = Field(min_length=7, max_length=7)
-    plus: list[str] = Field(min_length=11, max_length=11)
-    minus: list[str] = Field(min_length=11, max_length=11)
+    initial: list[float] = Field(min_length=11, max_length=13)
+    scales: list[float] = Field(min_length=11, max_length=13)
+    radar_limits: list[float] = Field(
+        default_factory=lambda data: (SYSTEM4_RADAR_LIMITS if len(data['initial']) == 13 else RADAR_LIMITS).copy(),
+        min_length=11, max_length=13,
+    )
+    factors: list[str] = Field(min_length=7, max_length=8)
+    plus: list[str] = Field(min_length=11, max_length=13)
+    minus: list[str] = Field(min_length=11, max_length=13)
     method: Literal["DOP853", "RK45", "Radau"] = "DOP853"
     rtol: float = Field(default=1e-8, ge=1e-12, le=1e-3)
     atol: float = Field(default=1e-10, ge=1e-14, le=1e-4)
     samples: int = Field(default=401, ge=41, le=2001)
     t_end: float = Field(default=1, gt=0, le=2)
+
+    @property
+    def is_system4(self):
+        return len(self.initial) == 13
+
+    @property
+    def variables(self):
+        return {"t"} | {f"X{i+1}" for i in range(len(self.initial))} | {f"F{i+1}" for i in range(len(self.factors))}
+
+    @model_validator(mode='after')
+    def consistent_dimensions(self):
+        n = len(self.initial)
+        if (n, len(self.factors)) not in {(11, 7), (13, 8)} or any(
+            len(values) != n for values in (self.scales, self.plus, self.minus, self.radar_limits)
+        ):
+            raise ValueError("Таблица 1 требует 11 состояний и 7 факторов, система (4) — 13 состояний и 8 факторов")
+        return self
 
     @field_validator("scales")
     @classmethod
@@ -56,12 +79,22 @@ class Dynamics:
     def __init__(self, config: SimulationConfig):
         self.config = config
         self.factors = [Expression(x, {"t"}) for x in config.factors]
-        names = {"t"} | {f"X{i}" for i in range(1, 12)} | {f"F{i}" for i in range(1, 8)}
+        names = config.variables
         self.plus = [Expression(x, names) for x in config.plus]
         self.minus = [Expression(x, names) for x in config.minus]
+        if config.is_system4:
+            self.check_system4()
         self.evaluations = 0
         self.deadline = time.monotonic() + 12
         self.components(0.0, np.array(config.initial))
+
+    def check_system4(self):
+        for i, (parts, arguments) in enumerate(zip(zip(self.plus, self.minus), SYSTEM4_ARGUMENTS), 1):
+            for part, expected, sign in zip(parts, arguments, ('+', '−')):
+                if set(part.dependencies) != set(expected.split()):
+                    raise ModelError(f"Система (4), f{i}{sign}: аргументы по рисунку — {expected.replace(' ', ', ') or 'часть отсутствует'}")
+                if not expected and part({}) != 0:
+                    raise ModelError(f"Система (4), f{i}{sign}: эта часть отсутствует на рисунке")
 
     def components(self, t, y):
         factors = []
@@ -125,14 +158,12 @@ def simulate(config: SimulationConfig, *, step_divisor: int = 100):
     scales = np.array(config.radar_limits)
     snapshots = [{"t": float(t), "values": y[np.argmin(abs(times-t))].tolist(),
                   "normalized": (y[np.argmin(abs(times-t))] / scales).tolist()} for t in quarters]
-    warnings = [
-        "Учебная агрегированная модель. Нет калибровки для объекта, вещества, физических единиц и реальных потерь.",
-        "В задании рисунок системы содержит X12 и X13, но перечень и таблица функций задают 11 характеристик. Использована таблица 1.",
-    ]
+    warnings = ["Учебная агрегированная модель. Нет калибровки для объекта, вещества, физических единиц и реальных потерь."]
     if np.min(y) < -1e-8:
         warnings.append("Есть отрицательные характеристики: математическое решение получено, но сценарий физически недопустим. Значения не обрезаны.")
-    if np.min(y[:, 10]) < 0 or np.max(y[:, 10]) > 1:
-        warnings.append("X11 выходит за 0…1. Интерпретация как доли эффективности оповещения недопустима без изменения модели.")
+    alarm = 11 if config.is_system4 else 10
+    if np.min(y[:, alarm]) < 0 or np.max(y[:, alarm]) > 1:
+        warnings.append(f"X{alarm+1} выходит за 0…1. Эффективность оповещения за пределами шкалы.")
     payload = config.model_dump()
     fingerprint_payload = payload.copy()
     if config.radar_limits == RADAR_LIMITS:
@@ -144,7 +175,11 @@ def simulate(config: SimulationConfig, *, step_divisor: int = 100):
         "factors": factors.tolist(), "plus": plus.tolist(), "minus": minus.tolist(),
         "derivatives": ((plus - minus) / np.array(config.scales)).tolist(),
         "radar_scales": scales.tolist(), "quarters": snapshots,
-        "state_names": STATE_NAMES, "factor_names": FACTOR_NAMES,
+        "state_names": SYSTEM4_NAMES if config.is_system4 else STATE_NAMES,
+        "factor_names": SYSTEM4_FACTORS if config.is_system4 else FACTOR_NAMES,
+        "profile_indices": SYSTEM4_PROFILES if config.is_system4 else list(range(11)),
+        "source_equations": [{"tex": system4_equation_tex(i, args), "has_minus": bool(args[1])}
+                             for i, args in enumerate(SYSTEM4_ARGUMENTS, 1)] if config.is_system4 else None,
         "equations_tex": [equation_tex(i+1, p, m) for i, (p,m) in enumerate(zip(config.plus, config.minus))],
         "equation_fields": {"plus": [equation_fields(p) for p in dynamics.plus],
                             "minus": [equation_fields(m) for m in dynamics.minus],
@@ -161,22 +196,26 @@ def simulate(config: SimulationConfig, *, step_divisor: int = 100):
     }
 
 
-def random_scenario():
-    """Sample near the cubic example and accept only solved in-range trajectories."""
-    names = {"t"} | {f"X{i}" for i in range(1, 12)} | {f"F{i}" for i in range(1, 8)}
+def random_scenario(use_system4=False):
+    """Sample near the corresponding example and accept solved in-range trajectories."""
     for _ in range(5):
-        candidate = startup()
-        candidate["name"] = "Случайный учебный пример"
+        candidate = system4() if use_system4 else startup()
+        candidate["name"] = "Система (4) · случайный пример" if use_system4 else "Случайный учебный пример"
         candidate["initial"] = [round(x * random.uniform(.94, 1.06), 2) for x in candidate["initial"]]
-        for kind in ("plus", "minus", "factors"):
-            for index, source in enumerate(candidate[kind]):
-                if source == '0':
-                    continue
-                fields = equation_fields(Expression(source, names))
-                weight = random.uniform(.94, 1.06)
-                cubic = polynomial(fields['argument'], *(weight * c for c in fields['coefficients']))
-                multiplier = fields['multiplier']
-                candidate[kind][index] = f"({cubic})*({multiplier['source']})" if multiplier else cubic
+        if use_system4:
+            candidate["factors"] = [str(round(float(value) * random.uniform(.94, 1.06), 2))
+                                    for value in candidate["factors"]]
+        else:
+            names = SimulationConfig(**candidate).variables
+            for kind in ("plus", "minus", "factors"):
+                for index, source in enumerate(candidate[kind]):
+                    if source == '0':
+                        continue
+                    fields = equation_fields(Expression(source, names))
+                    weight = random.uniform(.94, 1.06)
+                    cubic = polynomial(fields['argument'], *(weight * c for c in fields['coefficients']))
+                    multiplier = fields['multiplier']
+                    candidate[kind][index] = f"({cubic})*({multiplier['source']})" if multiplier else cubic
         config = SimulationConfig(**candidate)
         try:
             result = simulate(config)

@@ -5,7 +5,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .defaults import STATE_NAMES, FACTOR_NAMES, presets, startup
+from .defaults import preset_payload
 from .expressions import ModelError
 from .model import SimulationConfig, random_scenario, simulate
 from .verification import verify
@@ -22,7 +22,7 @@ def health():
 
 @app.get("/api/presets")
 def get_presets():
-    return {"presets": presets(), "startup": startup(), "state_names": STATE_NAMES, "factor_names": FACTOR_NAMES}
+    return preset_payload()
 
 
 def calculate(operation, *args):
@@ -44,6 +44,11 @@ def simulate_endpoint(config: SimulationConfig):
 @app.get("/api/random-scenario")
 def random_scenario_endpoint():
     return calculate(random_scenario)
+
+
+@app.get("/api/random-system4")
+def random_system4_endpoint():
+    return calculate(random_scenario, True)
 
 
 @app.post("/api/verify")
