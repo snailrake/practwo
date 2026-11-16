@@ -4,7 +4,7 @@ import { MathFormula } from './Math';
 import { call } from './compute';
 import { InlineExpression, PolynomialFields, numeric, replaceLiterals, validNumber, variableTex } from './InlineFormula';
 import type { Editable } from './InlineFormula';
-import { polynomialSource, polynomialValue } from './polynomial';
+import { coefficientText, polynomialSource, polynomialValue, roundCoefficient } from './polynomial';
 import type { Config, Result } from './types';
 
 type Kind = 'plus' | 'minus' | 'factors';
@@ -22,7 +22,7 @@ type Form = 'formula' | 0 | 1 | 2 | 3;
 type Status = 'current' | 'pending' | 'draft' | 'error';
 type Props = {
   config: Config; names: string[]; factors: string[]; external?: boolean;
-  result: Result; status: Status;
+  result: Result; status: Status; roundCoefficients: boolean;
   onChange: (key: Kind, index: number, source: string) => void;
   onDraft: (pending: boolean) => void;
   onReset: (index: number, external: boolean) => void;
@@ -33,7 +33,7 @@ const chartHeight = 'var(--editor-chart-height, 320px)';
 const plotGrid = { left: 9, right: 34, top: 30, bottom: 20, containLabel: true };
 const axisText = { fontSize: 14, color: '#333' };
 
-function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Props['onChange'], enabled = true) {
+function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Props['onChange'], roundCoefficients: boolean, enabled = true) {
   const external = kind === 'factors';
   const fixedArguments = config.initial.length === 13 && !external;
   const variables = ['t', ...config.initial.map((_, i) => 'X' + (i + 1)), ...config.factors.map((_, i) => 'F' + (i + 1))];
@@ -97,14 +97,14 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
   }, [config, enabled, kind, index, argument, start, end, domainValid]);
 
   function loadCoefficients(c: number[], anchor: number | null) {
-    setCoefficients(c.map(String));
+    setCoefficients(c.map(value => coefficientText(value, roundCoefficients)));
     setLimits(c.map(v => Math.min(1e12, Math.max(Math.abs(v) * 2, Math.abs(anchor ?? 0), .1))));
     setActiveCoefficient(Math.max(0, c.findIndex(v => v !== 0)));
   }
 
   function write(next: string) {
     ownSource.current = next;
-    onChange(kind, index, next);
+    if (next !== source) onChange(kind, index, next);
   }
 
   function editCoefficient(i: number, text: string) {
@@ -139,10 +139,11 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
       setError('Коэффициенты выходят за численный диапазон.');
       return;
     }
-    loadCoefficients(c, anchor);
+    const nextCoefficients = roundCoefficients ? c.map(roundCoefficient) : c;
+    loadCoefficients(nextCoefficients, anchor);
     setForm(next);
     setArgument(variable);
-    write(polynomialSource(c, variable, factor?.source));
+    write(polynomialSource(nextCoefficients, variable, factor?.source));
   }
 
   function changeArgument(next: string) {
@@ -192,14 +193,14 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
 
 type Part = ReturnType<typeof useFunctionPart>;
 
-function FormulaPart({ part, name }: { part: Part; name: string }) {
+function FormulaPart({ part, name, roundCoefficients }: { part: Part; name: string; roundCoefficients: boolean }) {
   const form = part.form;
   const equation = part.prefix + (part.kind !== 'factors' && typeof form === 'number' && form > 0 && !part.factor ? '(' + variableTex(part.argument) + ')' : '') + '=';
   return <div className="formula-part" role="group" aria-label={name} data-part={part.kind}>
     <div className="inline-formula" role="group" aria-label={'Числа в формуле — ' + name}>
       {typeof form === 'number' ? <><span className="polynomial-terms">
         {part.factor && <><MathFormula linkVariables source={equation} /><span className="polynomial-paren">(</span></>}
-        <PolynomialFields values={part.coefficients} argument={part.argument} degree={form} prefix={part.factor ? undefined : equation}
+        <PolynomialFields round={roundCoefficients} values={part.coefficients} argument={part.argument} degree={form} prefix={part.factor ? undefined : equation}
           onFocus={part.setActiveCoefficient} onBlur={part.finishCoefficient} onChange={part.editCoefficient} />
         {part.factor && <span className="polynomial-paren">)</span>}
       </span>{part.factor && <span className="polynomial-factor"><MathFormula linkVariables source={'\\displaystyle \\cdot ' + part.factor.tex} /></span>}</> : part.template
@@ -291,26 +292,27 @@ function ResultPlot({ result, status, index, title }: { result: Result; status: 
   </div>;
 }
 
-function FormulaWorkspace({ config, names, factors, external = false, result, status, index, onChange, onDraft }: Props & { index: number }) {
+function FormulaWorkspace({ config, names, factors, external = false, result, status, index, onChange, onDraft, roundCoefficients }: Props & { index: number }) {
   const [side, setSide] = useState<'plus' | 'minus'>('plus');
   const sourceEquation = result.source_equations?.[index];
-  const plus = useFunctionPart(config, external ? 'factors' : 'plus', index, onChange);
-  const minus = useFunctionPart(config, 'minus', index, onChange, !external && (sourceEquation?.has_minus ?? true));
+  const plus = useFunctionPart(config, external ? 'factors' : 'plus', index, onChange, roundCoefficients);
+  const minus = useFunctionPart(config, 'minus', index, onChange, roundCoefficients, !external && (sourceEquation?.has_minus ?? true));
   const part = side === 'plus' ? plus : minus;
   const valid = plus.valid && (external || minus.valid);
+  const sliderStep = part.sliderLimit / 200;
   useEffect(() => { onDraft(!valid); }, [valid, onDraft]);
   useEffect(() => () => onDraft(false), [onDraft]);
   const variableName = (name: string) => name === 't' ? 'время τ' : name + ' · ' + (name[0] === 'X' ? names[+name.slice(1) - 1] : factors[+name.slice(1) - 1]);
   const argumentLabel = !sourceEquation && typeof part.form === 'number' && part.form > 0 ? 'Подставляем в формулу' : 'По горизонтали';
   return <>
     <div className="formula-workspace">
-      {external ? <FormulaPart part={plus} name="Формула фактора" /> : <>
+      {external ? <FormulaPart part={plus} name="Формула фактора" roundCoefficients={roundCoefficients} /> : <>
         {sourceEquation && <div className="source-equation"><MathFormula block linkVariables source={sourceEquation.tex} /></div>}
         <div className="part-switch" role="group" aria-label="Часть уравнения">
           <button type="button" aria-pressed={side === 'plus'} onClick={() => setSide('plus')}>Первая часть</button>
           {(!sourceEquation || sourceEquation.has_minus) && <button type="button" aria-pressed={side === 'minus'} onClick={() => setSide('minus')}>Вычитаемая часть</button>}
         </div>
-        <FormulaPart key={side} part={part} name={side === 'plus' ? 'Первая часть' : 'Вычитаемая часть'} />
+        <FormulaPart key={side} part={part} name={side === 'plus' ? 'Первая часть' : 'Вычитаемая часть'} roundCoefficients={roundCoefficients} />
         <div className="equation-divisor"><span>Делитель</span> <MathFormula linkVariables source={sourceEquation ? 'X_{' + (index + 1) + '}^{\\max}' : 'S_{' + (index + 1) + '}'} /> = {fmt(config.scales[index], 6)}</div>
       </>}
       <div className="formula-toolbar">
@@ -328,9 +330,14 @@ function FormulaWorkspace({ config, names, factors, external = false, result, st
         </select></label>}
         {typeof part.form === 'number' && <label className="coefficient-adjustment">
           <span>Коэффициент {letters[part.active]}</span>
-          <input aria-label="Ползунок выбранного коэффициента" type="range" min={-part.sliderLimit} max={part.sliderLimit} step={part.sliderLimit / 200}
+          <input aria-label="Ползунок выбранного коэффициента" type="range" min={-part.sliderLimit} max={part.sliderLimit}
+            step={roundCoefficients ? Math.max(.01, roundCoefficient(sliderStep)) : sliderStep}
             value={Number.isFinite(part.values[part.active]) ? Math.max(-part.sliderLimit, Math.min(part.sliderLimit, part.values[part.active])) : 0}
-            onChange={e => part.editCoefficient(part.active, String(Number(Number(e.target.value).toPrecision(12))))} />
+            onChange={e => {
+              const value = e.target.valueAsNumber;
+              const next = roundCoefficients ? roundCoefficient(value) : Number(value.toPrecision(12));
+              part.editCoefficient(part.active, coefficientText(next, roundCoefficients));
+            }} />
         </label>}
       </div>
       {!valid && <p className="editor-error" role="status">Допишите число в формуле.</p>}

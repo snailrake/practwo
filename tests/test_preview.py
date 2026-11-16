@@ -107,8 +107,9 @@ def test_startup_cubic_preserves_table_dependencies_and_initial_values():
             assert cubic.dependencies == original.dependencies
             graph = preview(PreviewConfig(config=config, kind=kind, index=index, argument=argument))
             assert graph['degree'] == 3 and graph['coefficients'][0] != 0
-            assert graph['reference_y'] == pytest.approx(original(values), rel=1e-7)
             multiplier = graph['factor']['value'] if graph['factor'] else 1
+            error = .005 * abs(multiplier) * sum(abs(values[argument])**p for p in range(4))
+            assert abs(graph['reference_y'] - original(values)) <= error + 1e-12
             assert all(y == pytest.approx(multiplier * np.polyval(graph['coefficients'], x)) for x, y in graph['points'])
 
     reference = None

@@ -9,7 +9,7 @@ from pydantic import ValidationError
 from backend.app import app
 from backend.browser import dispatch
 from backend.defaults import system4, system4_cubic
-from backend.expressions import ModelError
+from backend.expressions import Expression, ModelError
 from backend.model import Dynamics, SimulationConfig, simulate
 from backend.preview import PreviewConfig, preview
 
@@ -77,14 +77,26 @@ def test_system4_keeps_new_inputs_live_and_supports_cubic_edit():
 def test_system4_cubic_has_nonzero_cubes_and_preserves_figure_arguments():
     exact = SimulationConfig(**system4())
     config = SimulationConfig(**system4_cubic())
-    model = Dynamics(config)  # Checks every part against the figure.
-    for actual, original in zip(model.components(0, config.initial), Dynamics(exact).components(0, exact.initial)):
-        np.testing.assert_allclose(actual, original, rtol=1e-8, atol=1e-12)
-    result = simulate(config)
-    for kind in ('plus', 'minus', 'factors'):
-        for original, fields in zip(getattr(exact, kind), result['equation_fields'][kind]):
-            if original != '0':
-                assert fields['coefficients'][0] != 0
+    result = simulate(config)  # Checks every part against the figure.
+    kinds = ('plus', 'minus', 'factors')
+    original = dict(zip(kinds, Dynamics(exact).components(0, exact.initial)))
+    inputs = {'t': 0., **{f'X{i}': v for i, v in enumerate(config.initial, 1)},
+              **{f'F{i}': v for i, v in enumerate(result['factors'][0], 1)}}
+    for kind in kinds:
+        for i, fields in enumerate(result['equation_fields'][kind]):
+            if getattr(exact, kind)[i] == '0':
+                continue
+            coefficients = fields['coefficients']
+            assert coefficients[0] != 0
+            assert coefficients == [round(c, 2) for c in coefficients]
+            argument = inputs[fields['argument']]
+            multiplier = fields['multiplier']
+            scale = Expression(multiplier['source'], set(inputs))(inputs) if multiplier else 1
+            assert result[kind][0][i] == pytest.approx(scale * np.polyval(coefficients, argument))
+            # A change of at most 0.005 in each coefficient bounds the change at t=0.
+            error = .005 * abs(scale) * sum(abs(argument)**p for p in range(4))
+            assert abs(result[kind][0][i] - original[kind][i]) <= error + 1e-12
+    assert result['equation_fields']['plus'][0]['coefficients'] == [.10, -.16, .10, 0]
     assert all(0 <= ratio <= 1 for q in result['quarters'] for ratio in q['normalized'])
     p = preview(PreviewConfig(config=config, kind='plus', index=3, argument='X1'))
     assert p['degree'] == 3

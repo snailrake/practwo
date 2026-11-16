@@ -1,3 +1,16 @@
+const hundredths = new Intl.NumberFormat('en-US', {
+  useGrouping: false, maximumFractionDigits: 2,
+});
+
+export function roundCoefficient(value: number) {
+  return Number(hundredths.format(value));
+}
+
+export function coefficientText(value: number, round: boolean) {
+  return round && !Number.isInteger(value) && roundCoefficient(value) === value
+    ? value.toFixed(2) : String(value);
+}
+
 // Same term order and per-operation bounds as backend.expressions.Expression.
 // This evaluates the function curve; Python still integrates the entire ODE.
 export function polynomialSource(coefficients: number[], argument: string, multiplier?: string, preserveArgument = false) {

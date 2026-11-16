@@ -36,6 +36,16 @@ const importConfig = async config => {
 };
 try {
   await page.goto(url); await ready();
+  const first = page.getByRole('group', { name: 'Первая часть X1', exact: true });
+  const firstCubic = first.getByLabel('Коэффициент a', { exact: true });
+  const displayedA = await firstCubic.inputValue();
+  await firstCubic.focus();
+  const rounded = await exportResult();
+  const f1 = rounded.factors[0][0];
+  check('The system (4) coefficient stays at hundredths on focus and is used in the solve',
+    displayedA === '0.10' && await firstCubic.inputValue() === displayedA &&
+    rounded.config.plus[0].startsWith('(0.10)*F1**3') &&
+    Math.abs(rounded.plus[0][0] - (.10*f1**3 - .16*f1**2 + .10*f1)) < 1e-12);
   await page.getByLabel('Модельный пример', { exact: true }).selectOption({ label: 'Кубические зависимости' });
   await ready(); await tab('Зависимости'); await settled();
   const startup = await exportResult();
@@ -97,8 +107,10 @@ try {
   const edited = await exportResult();
   check('Inline coefficients reach the integrated expression', edited.config.plus[3] === '(0.25)*X1**3+(-0.1)*X1**2+(0.2)*X1+(0.3)');
   check('Editing the cubic changes actual system results', Math.abs(edited.y.at(-1)[3] - startup.y.at(-1)[3]) > 1e-6);
-  await coefficient('d').fill('0,35');
-  check('Inline inputs accept a decimal comma', (await exportResult()).config.plus[3].endsWith('(0.35)'));
+  await coefficient('d').fill('0,345');
+  await coefficient('d').press('Enter');
+  check('Inline inputs accept a decimal comma and round the number used in the solve',
+    await coefficient('d').inputValue() === '0.35' && (await exportResult()).config.plus[3].endsWith('(0.35)'));
   const beforeDraft = requests;
   await coefficient('a').fill('-'); await page.waitForTimeout(650);
   check('Incomplete inline input pauses computation and stale export', await page.getByRole('button', { name: 'Результат JSON ↓', exact: true }).isDisabled() && requests === beforeDraft);

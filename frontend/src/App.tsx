@@ -190,7 +190,8 @@ export function App() {
   const snapshots = result?.quarters ?? [];
   const timeSymbol = isSystem4 ? 't' : 'τ';
   const formulaView = tab === 1 || tab === 2;
-  const tableMode = isSystem4 && !system4Cubic || presetData.presets.some(p => p.name === scenarioDefaults?.name);
+  const roundCoefficients = system4Cubic || scenarioDefaults?.name === presetData.startup.name ||
+    scenarioDefaults?.name === 'Случайный учебный пример';
   const resultStatus = draftPending ? 'draft' : error ? 'error' : dirty || busy ? 'pending' : 'current';
   function moveTo(time: number) {
     if (!result) return;
@@ -272,7 +273,7 @@ export function App() {
               <div className="quarter-controls"><span>Четверти:</span>{snapshots.map(q => <button key={q.t} onClick={() => moveTo(q.t)}>{fmt(q.t, 3)}</button>)}</div>
               {comparison && <p className="note">Сплошная линия – текущий расчёт, пунктир – эталон.</p>}
               {allCharts && <EquationList key={'profiles-' + scenarioVersion} config={config} result={result} randomizing={randomizing}
-                tableMode={tableMode}
+                roundCoefficients={roundCoefficients}
                 onChange={array} onDraft={setDraftPending} onRandomize={randomize}
                 onUseTable={() => applyScenario(presets[0])} onUseSystem4={() => applyScenario(presetData.system4_cubic)}
                 onUseArticle={() => applyScenario(presetData.system4)} system4Cubic={system4Cubic} />}
@@ -281,7 +282,7 @@ export function App() {
             <section><h2>Характеристики при {timeSymbol} = {fmt(cursor, 3)}</h2><div className="metrics">{(allCharts ? result.profile_indices : names.map((_, i) => i)).map(i => <button title={names[i]} className={selected === i ? 'metric active-metric' : 'metric'} key={i} onClick={() => setSelected(i)}><span>{symbol('X', i)} {labels[i]}</span><strong>{fmt(values[i], 5)}</strong></button>)}</div></section>
           </>}
           {tab === 2 && <EquationList key={'factors-' + scenarioVersion} factorsOnly config={config} result={result}
-            tableMode={tableMode} comparison={comparison} onChange={array} onDraft={setDraftPending}
+            roundCoefficients={roundCoefficients} comparison={comparison} onChange={array} onDraft={setDraftPending}
             onResetFactor={index => resetEditor(index, true)} />}
           {tab === 3 && <>
             <section><h2>Четыре снимка расчёта</h2><p className="section-note radar-explanation">На всех четырёх снимках у каждого показателя одна шкала. Число под названием луча — его верхний предел в относительных единицах.</p><QuarterRadars r={result} /></section>
@@ -295,7 +296,8 @@ export function App() {
           </>}
           {tab === 1 && <>
             <FunctionEditor key={'model-' + scenarioVersion} config={config} names={names} factors={factorNames}
-              result={result} status={resultStatus} onChange={array} onDraft={setDraftPending} onReset={resetEditor} />
+              result={result} status={resultStatus} roundCoefficients={roundCoefficients}
+              onChange={array} onDraft={setDraftPending} onReset={resetEditor} />
             <details className="plain-details all-equations"><summary>Все уравнения</summary><section><h2>Система уравнений</h2><MathFormula block source={isSystem4 ? '\\frac{dX_i(t)}{dt}=\\frac{f_i^+-f_i^-}{X_i^{\\max}},\\qquad X_i(0)=X_i^0' : '\\frac{dX_i}{d\\tau}=\\frac{f_i^+-f_i^-}{S_i},\\qquad X_i(0)=X_i^0'} /><p className="section-note">{dirty || draftPending ? 'Математическая запись показывает предыдущий расчёт.' : 'Формулы ниже соответствуют выполненному расчёту.'} Изменения в полях автоматически запускают новый расчёт.</p>
               <details className="plain-details"><summary>Синтаксис формул и исходные допущения</summary>
                 <p>В выражениях доступны X1…X{names.length}, F1…F{factorNames.length}, t и константы pi, e. Операции + − * / ** и функции sqrt, exp, log, sin, cos, tanh, abs, min, max. Для внешних факторов допустимы только время и константы.</p>

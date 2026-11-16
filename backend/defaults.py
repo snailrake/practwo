@@ -1,6 +1,7 @@
 """Table 1 is transcribed from page 6 of the supplied assignment, not fitted data."""
 import ast
 from copy import deepcopy
+from decimal import Decimal, ROUND_HALF_UP
 
 from .expressions import Expression
 
@@ -77,7 +78,13 @@ SYSTEM4_CUBIC_ARGUMENTS = {
 
 
 def polynomial(argument, a, b, c, d):
-    return f'({a:.10g})*{argument}**3+({b:.10g})*{argument}**2+({c:.10g})*{argument}+({d:.10g})'
+    hundredth = Decimal('0.01')
+    # Remove floating-point noise around half-cent ties before rounding.
+    a, b, c, d = (
+        Decimal(f'{value:.10g}').quantize(hundredth, rounding=ROUND_HALF_UP)
+        for value in (a, b, c, d)
+    )
+    return f'({a})*{argument}**3+({b})*{argument}**2+({c})*{argument}+({d})'
 
 
 class UnitArgument(ast.NodeTransformer):
