@@ -71,7 +71,7 @@ export function EquationList(props: Props) {
         {fields.multiplier && <><MathFormula linkVariables source={prefix} /><span>(</span></>}
         <PolynomialFields compact={!tableMode} stateTime values={values} argument={argument} degree={degree}
           prefix={fields.multiplier ? undefined : prefix} onChange={edit} />
-        {fields.multiplier && <><span>)</span><MathFormula linkVariables source={'\\cdot ' + fields.multiplier.tex} /></>}
+        {fields.multiplier && <><span>)</span><MathFormula linkVariables source={'\\displaystyle \\cdot ' + fields.multiplier.tex} /></>}
       </span> : fields.editable && <>
         <MathFormula linkVariables source={prefix} />
         <InlineExpression compact={!tableMode} stateTime node={fields.editable.tree} values={values} onChange={edit} />

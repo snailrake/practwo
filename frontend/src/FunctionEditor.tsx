@@ -202,7 +202,7 @@ function FormulaPart({ part, name }: { part: Part; name: string }) {
         <PolynomialFields values={part.coefficients} argument={part.argument} degree={form} prefix={part.factor ? undefined : equation}
           onFocus={part.setActiveCoefficient} onBlur={part.finishCoefficient} onChange={part.editCoefficient} />
         {part.factor && <span className="polynomial-paren">)</span>}
-      </span>{part.factor && <span className="polynomial-factor"><MathFormula linkVariables source={'\\cdot ' + part.factor.tex} /></span>}</> : part.template
+      </span>{part.factor && <span className="polynomial-factor"><MathFormula linkVariables source={'\\displaystyle \\cdot ' + part.factor.tex} /></span>}</> : part.template
         ? <><MathFormula linkVariables source={equation} /><InlineExpression node={part.template.editable.tree} values={part.literals} onChange={part.editLiteral} /></>
         : <span className="formula-loading">{part.error ? 'Откройте запись формулы' : 'Подготавливаем формулу…'}</span>}
     </div>
