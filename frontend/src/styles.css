@@ -161,6 +161,20 @@ main { min-width: 0; }
 }
 .formula-links a:hover { text-decoration-style: solid; }
 .equation-row h3[id^="definition-"]:focus { outline: 2px solid #245e55; outline-offset: 4px; }
+.calculation-details { margin: 5px 0 3px; }
+.calculation-details > summary { width: fit-content; max-width: 100%; padding: 5px 9px; border: 1px solid #b8ccc7; color: #245e55; font-size: 13px; font-weight: 600; }
+.calculation-details > summary:hover, .calculation-details[open] > summary { background: #f0f5f4; border-color: #7d9d96; }
+.calculation-example { min-width: 0; margin: 0; padding: 12px clamp(10px, 1.6vw, 20px); border-inline-start: 2px solid #7d9d96; background: #f6faf9; }
+.calculation-label { font-weight: 700; }
+.calculation-values { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; margin: 8px 0; }
+.calculation-values > .math-inline { font-size: 16px; }
+.calculation-equations .math-block, .calculation-slope .math-block { font-size: clamp(18px, 15px + 0.5vw, 24px); }
+.calculation-example .katex-display, .calculation-example .katex-display > .katex { text-align: left; }
+.calculation-example .katex-display { margin: 2px 0; }
+.calculation-example .katex-display > .katex { white-space: normal; line-height: 1.5; }
+.calculation-slope, .calculation-points { border-top: 1px solid #d3e0dd; padding-top: 8px; margin-top: 8px; }
+.calculation-points { margin-bottom: 0; }
+.calculation-explanation { color: #555; font-size: 12px; margin: 8px 0 0; }
 .factor-equation-row { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: center; }
 .factor-equation-row .section-heading { flex-wrap: wrap; }
 .factor-equation-row details input { width: 100%; }

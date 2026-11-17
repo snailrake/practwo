@@ -105,7 +105,7 @@ try{
  await page.getByLabel('Функция плюс X1',{exact:true}).fill("__import__('os')");await run();
  check('Unsafe expression rejected visibly',await page.getByRole('alert').isVisible());
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();
- await selectTab('Внешние факторы');await page.locator('.factor-equation-row').nth(4).locator('summary').click();await page.getByLabel('Формула F5',{exact:true}).fill('0');await run();
+ await selectTab('Внешние факторы');await page.locator('.factor-equation-row').nth(4).getByText('Запись формулы',{exact:true}).click();await page.getByLabel('Формула F5',{exact:true}).fill('0');await run();
  check('Zero divisor rejected',await page.getByRole('alert').isVisible());
  const restored = page.waitForResponse(response => response.url().endsWith('/api/simulate') &&
    response.request().postDataJSON()?.name === 'Базовый модельный пример');

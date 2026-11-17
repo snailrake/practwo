@@ -74,7 +74,7 @@ export function App() {
   function followDefinition(event: MouseEvent<HTMLDivElement>) {
     if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey ||
         event.shiftKey || event.altKey || !(event.target instanceof Element)) return;
-    const link = event.target.closest('a[href^="#definition-"], a[href^="#divisor-"], a[href="#model-time"]');
+    const link = event.target.closest('a[href^="#definition-"], a[href^="#divisor-"], a[href^="#initial-"], a[href="#model-time"]');
     const id = link?.getAttribute('href')?.slice(1);
     if (!id) return;
     event.preventDefault();
@@ -217,7 +217,7 @@ export function App() {
             <summary>Начальные условия Xᵢ(0)</summary>
             <div className="initial-list">{names.map((n, i) => <label className={selected === i ? 'parameter selected' : 'parameter'} key={n} title={n}>
               <span><b>{symbol('X', i)}</b> {labels[i]}</span>
-              <input aria-label={'X' + (i + 1) + ' начальное условие'} type="number" step="any" min={0} value={fieldNumber(config.initial[i])} onFocus={() => setSelected(i)} onChange={e => array('initial', i, e.target.valueAsNumber)} />
+              <input id={'initial-X' + (i + 1)} aria-label={'X' + (i + 1) + ' начальное условие'} type="number" step="any" min={0} value={fieldNumber(config.initial[i])} onFocus={() => setSelected(i)} onChange={e => array('initial', i, e.target.valueAsNumber)} />
             </label>)}</div>
           </details>
           <div className="calculation-status" role="status" aria-live="polite" data-ready={!!result && !dirty && !busy && !draftPending && !error} data-busy={!error && (busy || dirty || draftPending)}><span />{draftPending ? 'Допишите коэффициент' : error ? 'Проверьте параметры' : busy || dirty || !result ? 'Пересчитываем…' : 'Расчёт обновлён'}</div>
@@ -273,7 +273,7 @@ export function App() {
               <div className="quarter-controls"><span>Четверти:</span>{snapshots.map(q => <button key={q.t} onClick={() => moveTo(q.t)}>{fmt(q.t, 3)}</button>)}</div>
               {comparison && <p className="note">Сплошная линия – текущий расчёт, пунктир – эталон.</p>}
               {allCharts && <EquationList key={'profiles-' + scenarioVersion} config={config} result={result} randomizing={randomizing}
-                roundCoefficients={roundCoefficients}
+                roundCoefficients={roundCoefficients} status={resultStatus}
                 onChange={array} onDraft={setDraftPending} onRandomize={randomize}
                 onUseTable={() => applyScenario(presets[0])} onUseSystem4={() => applyScenario(presetData.system4_cubic)}
                 onUseArticle={() => applyScenario(presetData.system4)} system4Cubic={system4Cubic} />}
@@ -282,7 +282,7 @@ export function App() {
             <section><h2>Характеристики при {timeSymbol} = {fmt(cursor, 3)}</h2><div className="metrics">{(allCharts ? result.profile_indices : names.map((_, i) => i)).map(i => <button title={names[i]} className={selected === i ? 'metric active-metric' : 'metric'} key={i} onClick={() => setSelected(i)}><span>{symbol('X', i)} {labels[i]}</span><strong>{fmt(values[i], 5)}</strong></button>)}</div></section>
           </>}
           {tab === 2 && <EquationList key={'factors-' + scenarioVersion} factorsOnly config={config} result={result}
-            roundCoefficients={roundCoefficients} comparison={comparison} onChange={array} onDraft={setDraftPending}
+            roundCoefficients={roundCoefficients} status={resultStatus} comparison={comparison} onChange={array} onDraft={setDraftPending}
             onResetFactor={index => resetEditor(index, true)} />}
           {tab === 3 && <>
             <section><h2>Четыре снимка расчёта</h2><p className="section-note radar-explanation">На всех четырёх снимках у каждого показателя одна шкала. Число под названием луча — его верхний предел в относительных единицах.</p><QuarterRadars r={result} /></section>

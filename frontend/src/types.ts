@@ -1,7 +1,7 @@
 import type { Editable } from './InlineFormula';
 
 export type EquationFields = {
-  source: string; argument: string; coefficients: number[] | null; editable: Editable | null;
+  source: string; tex: string; argument: string; coefficients: number[] | null; editable: Editable | null;
   multiplier: { source: string; tex: string } | null;
 };
 export type Config = {
@@ -22,6 +22,7 @@ export type Result = {
   diagnostics: { method: string; rtol: number; atol: number; nfev: number; njev: number;
     samples: number; elapsed_ms: number; max_step: number; scipy_success: boolean };
 };
+export type ResultStatus = 'current' | 'pending' | 'draft' | 'error';
 export type Verification = {
   checks: { name: string; error: number; limit: number; passed: boolean }[];
   passed: boolean; note: string;

@@ -46,6 +46,34 @@ try {
     displayedA === '0.10' && await firstCubic.inputValue() === displayedA &&
     rounded.config.plus[0].startsWith('(0.10)*F1**3') &&
     Math.abs(rounded.plus[0][0] - (.10*f1**3 - .16*f1**2 + .10*f1)) < 1e-12);
+  const x4 = page.locator('#definition-X4').locator('..');
+  const example = x4.locator('.calculation-details');
+  const parts = example.locator('.calculation-equations annotation');
+  const slope = example.locator('.calculation-slope annotation');
+  const display = value => String(Number(value.toPrecision(6))).replace('.', '{,}');
+  check('Worked calculations are collapsed initially', await example.getAttribute('open') === null && await parts.count() === 0);
+  await example.locator('summary').click();
+  await slope.waitFor({ state: 'attached' });
+  const [positive, negative] = await parts.allTextContents();
+  check('The X4 substitution shows the arguments and both evaluated functions from the solve',
+    positive.includes('\\left(0{,}7\\right)') && positive.endsWith(display(rounded.plus[0][3])) &&
+    negative.includes('\\left(1{,}1\\right)') && negative.endsWith(display(rounded.minus[0][3])) &&
+    await example.getByRole('link', { name: /^Внешний фактор F[134]$/ }).count() === 3);
+  check('The worked slope subtracts the negative part and uses the actual divisor',
+    (await slope.textContent()).includes('\\frac{' + display(rounded.plus[0][3]) + '-\\left(' + display(rounded.minus[0][3]) + '\\right)}{2}') &&
+    (await slope.textContent()).endsWith(display(rounded.derivatives[0][3])));
+  await example.getByRole('link', { name: 'Начальное условие X1', exact: true }).click();
+  await page.locator('#initial-X1:focus').waitFor();
+  const x4c = x4.getByRole('group', { name: 'Первая часть X4', exact: true }).getByLabel('Коэффициент c', { exact: true });
+  await x4c.fill('-');
+  await example.getByText('Допишите число в формуле.', { exact: true }).waitFor();
+  check('The worked example hides obsolete values during an incomplete edit', await parts.count() === 0);
+  await x4c.fill('3.35');
+  const recalculated = await exportResult();
+  check('The slope and chart points refresh together after editing',
+    (await slope.textContent()).endsWith(display(recalculated.derivatives[0][3])) &&
+    recalculated.derivatives[0][3] !== rounded.derivatives[0][3] &&
+    (await example.locator('.calculation-points annotation').last().textContent()).endsWith(display(recalculated.y.at(-1)[3])));
   await page.getByLabel('Модельный пример', { exact: true }).selectOption({ label: 'Кубические зависимости' });
   await ready(); await tab('Зависимости'); await settled();
   const startup = await exportResult();

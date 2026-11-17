@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
+import { CalculationDetails } from './CalculationDetails';
 import { Chart, fmt, lineOption } from './Charts';
 import { InlineExpression, PolynomialFields, numeric, replaceLiterals, validNumber, variableTex } from './InlineFormula';
 import { MathFormula } from './Math';
 import { coefficientText, polynomialSource } from './polynomial';
-import type { Config, EquationFields, Result } from './types';
+import type { Config, EquationFields, Result, ResultStatus } from './types';
 
 type Kind = keyof Result['equation_fields'];
 type Draft = { source: string; fields: EquationFields; values: string[] };
 type Props = {
-  config: Config; result: Result; roundCoefficients: boolean;
+  config: Config; result: Result; status: ResultStatus; roundCoefficients: boolean;
   onChange: (kind: Kind, index: number, source: string) => void;
   onDraft: (invalid: boolean) => void;
 } & ({
@@ -30,6 +31,7 @@ export function EquationList(props: Props) {
   const sourceEquations = result.source_equations;
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
   const invalid = Object.values(drafts).some(draft => !draft.values.every(validNumber));
+  const status = invalid ? 'draft' : props.status;
   useEffect(() => onDraft(invalid), [invalid, onDraft]);
   useEffect(() => () => onDraft(false), [onDraft]);
 
@@ -93,6 +95,7 @@ export function EquationList(props: Props) {
           }}>↺ Сброс</button>
         </div>
         {renderPart('factors', index)}
+        <CalculationDetails result={result} index={index} status={status} factor />
         <details className="expression-details">
           <summary>Запись формулы</summary>
           <input aria-label={'Формула F' + (index + 1)} maxLength={400} spellCheck={false} value={config.factors[index]}
@@ -133,11 +136,13 @@ export function EquationList(props: Props) {
       {sourceEquations && <div className="source-equation"><MathFormula block linkVariables source={sourceEquations[index].tex} /></div>}
       {renderPart('plus', index)}
       {(!sourceEquations || sourceEquations[index].has_minus) && renderPart('minus', index)}
+      <CalculationDetails result={result} index={index} status={status} />
     </div>)}
     <h3 className="factor-equations-heading">Внешние факторы</h3>
     {result.factor_names.map((name, index) => <div className="equation-row" key={name}>
       <h3 id={'definition-F' + (index + 1)} tabIndex={-1}>{name}</h3>
       {renderPart('factors', index)}
+      <CalculationDetails result={result} index={index} status={status} factor />
     </div>)}
   </section>;
 }

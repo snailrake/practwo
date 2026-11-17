@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { CalculationDetails } from './CalculationDetails';
 import { Chart, fmt, lineOption } from './Charts';
 import { MathFormula } from './Math';
 import { call } from './compute';
 import { InlineExpression, PolynomialFields, numeric, replaceLiterals, validNumber, variableTex } from './InlineFormula';
 import type { Editable } from './InlineFormula';
 import { coefficientText, polynomialSource, polynomialValue, roundCoefficient } from './polynomial';
-import type { Config, Result } from './types';
+import type { Config, Result, ResultStatus } from './types';
 
 type Kind = 'plus' | 'minus' | 'factors';
 type Points = [number, number | null][];
@@ -19,10 +20,9 @@ type Preview = {
   reference_y: number | null; coefficients: number[] | null; degree: number | null; factor: PolynomialFactor | null;
 };
 type Form = 'formula' | 0 | 1 | 2 | 3;
-type Status = 'current' | 'pending' | 'draft' | 'error';
 type Props = {
   config: Config; names: string[]; factors: string[]; external?: boolean;
-  result: Result; status: Status; roundCoefficients: boolean;
+  result: Result; status: ResultStatus; roundCoefficients: boolean;
   onChange: (key: Kind, index: number, source: string) => void;
   onDraft: (pending: boolean) => void;
   onReset: (index: number, external: boolean) => void;
@@ -276,7 +276,7 @@ const resultStatus = {
   error: 'Ошибка ввода · предыдущий расчёт',
 };
 
-function ResultPlot({ result, status, index, title }: { result: Result; status: Status; index: number; title: string }) {
+function ResultPlot({ result, status, index, title }: { result: Result; status: ResultStatus; index: number; title: string }) {
   const values = useMemo(() => result.y.map(row => row[index]), [result, index]);
   const bounds = usePlotBounds(String(result.config.t_end), values);
   const option = lineOption(result, index);
@@ -346,6 +346,7 @@ function FormulaWorkspace({ config, names, factors, external = false, result, st
       <FormulaPlot part={part} variableName={variableName(part.argument)} index={index} />
       {!external && <ResultPlot result={result} status={valid ? status : 'draft'} index={index} title={names[index]} />}
     </div>
+    <CalculationDetails result={result} index={index} status={valid ? status : 'draft'} factor={external} />
     <div className="editor-details">
       <details className="expression-details"><summary>Запись формулы</summary>
         <label className="field">Выражение<input aria-label="Формула в редакторе" maxLength={400} spellCheck={false}

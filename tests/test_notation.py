@@ -19,6 +19,7 @@ def test_notation_preserves_fraction_power_and_subtraction():
     assert to_tex('(X1-X2)**0.6') == r'{\left(X_{1}-X_{2}\right)}^{0.6}'
     assert to_tex('X1-(X2+X3)') == r'X_{1}-\left(X_{2}+X_{3}\right)'
     assert to_tex('sqrt(t)+sin(pi)') == r'\sqrt{\tau}+\operatorname{sin}\left(\pi\right)'
+    assert to_tex('0.0000999999999**2') == r'{\left(9.99999999\cdot 10^{-5}\right)}^{2}'
 
 
 def test_displayed_equations_are_derived_from_effective_configuration():
@@ -28,6 +29,8 @@ def test_displayed_equations_are_derived_from_effective_configuration():
     assert len(r['equations_tex']) == 11 and len(r['factors_tex']) == 7
     assert r['equations_tex'][0] == equation_tex(1,'2*X1','-1')
     assert r'\left(-1\right)' in r['equations_tex'][0]
+    assert r['equation_fields']['plus'][0]['tex'] == r'2\cdot X_{1}'
+    assert r['equation_fields']['minus'][0]['tex'] == '-1'
 
 
 def test_presets_use_one_model_and_vary_only_inputs():

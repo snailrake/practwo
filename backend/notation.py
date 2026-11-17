@@ -7,14 +7,19 @@ from .expressions import Expression, ModelError
 
 def to_tex(source: str, *, state_time: bool = False) -> str:
     allowed = {'t'} | {f'X{i}' for i in range(1, 14)} | {f'F{i}' for i in range(1, 9)}
-    Expression(source, allowed)  # identical grammar and limits to the solver
+    return expression_tex(Expression(source, allowed), state_time=state_time)
 
+
+def expression_tex(expression: Expression, *, state_time: bool = False) -> str:
     def walk(n):
         if isinstance(n, ast.Constant):
-            if isinstance(n.value, float) and n.value and abs(n.value) < 0.0001:
-                mantissa, power = f'{n.value:.8g}'.split('e')
+            if isinstance(n.value, float) and n.value.is_integer():
+                return str(int(n.value))
+            value = str(n.value)
+            if 'e' in value:
+                mantissa, power = value.split('e')
                 return mantissa + r'\cdot 10^{' + str(int(power)) + '}'
-            return str(n.value)
+            return value
         if isinstance(n, ast.Name):
             if n.id == 't': return r'\tau'
             if n.id == 'pi': return r'\pi'
@@ -30,7 +35,9 @@ def to_tex(source: str, *, state_time: bool = False) -> str:
             a, b = walk(n.left), walk(n.right)
             if isinstance(n.op, ast.Div): return r'\frac{' + a + '}{' + b + '}'
             if isinstance(n.op, ast.Pow):
-                if isinstance(n.left, (ast.BinOp, ast.UnaryOp)): a = r'\left(' + a + r'\right)'
+                scientific_constant = isinstance(n.left, ast.Constant) and r'\cdot' in a
+                if isinstance(n.left, (ast.BinOp, ast.UnaryOp)) or scientific_constant:
+                    a = r'\left(' + a + r'\right)'
                 return '{' + a + '}^{' + b + '}'
             if isinstance(n.op, ast.Mult):
                 if isinstance(n.left, ast.BinOp) and isinstance(n.left.op, (ast.Add, ast.Sub)): a = r'\left(' + a + r'\right)'
@@ -48,7 +55,7 @@ def to_tex(source: str, *, state_time: bool = False) -> str:
             return r'\operatorname{' + n.func.id + r'}\left(' + values + r'\right)'
         raise ValueError('Unsupported notation node')
 
-    return walk(ast.parse(source, mode='eval').body)
+    return walk(expression.tree)
 
 
 def equation_tex(i, plus, minus):
@@ -180,6 +187,7 @@ def equation_fields(expression):
     factor = polynomial_factor(expression)
     argument = factor['argument'] if factor else next(iter(expression.dependencies), '')
     coefficients = factor['coefficients'] if factor else polynomial_coefficients(expression, argument)
-    return {'source': expression.source, 'argument': argument, 'coefficients': coefficients,
+    return {'source': expression.source, 'tex': expression_tex(expression),
+            'argument': argument, 'coefficients': coefficients,
             'multiplier': {'source': factor['source'], 'tex': factor['tex']} if factor else None,
             'editable': editable_tree(expression) if coefficients is None else None}
