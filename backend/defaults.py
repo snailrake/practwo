@@ -201,8 +201,42 @@ def startup():
 
 def system4_cubic():
     config = system4()
-    config['name'] = 'Система (4) · кубический пример'
-    return with_cubic_parts(config, SYSTEM4_CUBIC_ARGUMENTS, [
-        (.6, 0, -.25), (.14, -.28, 0), (.55, 0, -.15), (-.15, .25, 0),
-        (.1, -.2, 0), (.1, -.30, 0), (-.15, .4, 0), (.16, -.1, 0),
-    ])
+    config.update(
+        name='Система (4) · кубический пример',
+        initial=[.25, .55, .90, .80, .03, .65, .12, .08, .65, .15, .45, .15, .15],
+        scales=[.10, .005, .00001, .20, .05, .05, .02, .01, .30, .50, .01, 100, .01],
+    )
+    # Classroom coefficients chosen for visibly different nonlinear trajectories.
+    coefficients = {
+        'plus': [
+            (.29, -.79, .90, -.24), (8.69, -11.57, 4.96, -.79),
+            (10.19, -11.81, 5.24, -.80), (3.06, -6.42, 4.77, -1.05),
+            (-.18, .29, -.21, .09), (-.44, 5.59, -8.69, 2.69),
+            (-.06, .44, -.11, .01), (-1.06, .57, -.74, .30),
+            (1.95, -2.62, 1.69, -.64), (8.41, -11.77, 6.10, -1.24),
+            (-.16, .26, 0, -.14), (-61.86, 32.40, -.94, -.52),
+            (-.55, 2.10, -1.64, .57),
+        ],
+        'minus': [(.01, 0, 0, 0)] * 13,
+    }
+    names = {f'X{i}' for i in range(1, 14)} | {f'F{i}' for i in range(1, 9)}
+    for kind, selections in SYSTEM4_CUBIC_ARGUMENTS.items():
+        for index, selection in enumerate(selections):
+            if selection is None:
+                continue
+            argument, _ = selection
+            original = ast.parse(config[kind][index], mode='eval')
+            multiplier = ast.unparse(UnitArgument(argument).visit(original))
+            cubic = polynomial(argument, *coefficients[kind][index])
+            config[kind][index] = (
+                f'({cubic})*({multiplier})' if Expression(multiplier, names).dependencies else cubic
+            )
+    config['factors'] = [
+        polynomial('t', *values) for values in [
+            (.60, .05, .05, .40), (.05, .05, .65, .30),
+            (.20, .20, .40, .35), (.10, -.25, -.15, 1.10),
+            (.40, -.20, .10, .50), (.05, .10, .50, .35),
+            (-.25, .80, -.60, .70), (.15, 0, .40, .30),
+        ]
+    ]
+    return config

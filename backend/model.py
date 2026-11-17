@@ -198,11 +198,12 @@ def simulate(config: SimulationConfig, *, step_divisor: int = 100):
 
 def random_scenario(use_system4=False, cubic=False):
     """Sample near the corresponding example and accept solved in-range trajectories."""
+    low, high = (.98, 1.02) if use_system4 and cubic else (.94, 1.06)
     for _ in range(5):
         candidate = (system4_cubic() if cubic else system4()) if use_system4 else startup()
         candidate["name"] = ("Система (4) · случайный кубический пример" if cubic else
                              "Система (4) · случайный пример" if use_system4 else "Случайный учебный пример")
-        candidate["initial"] = [round(x * random.uniform(.94, 1.06), 2) for x in candidate["initial"]]
+        candidate["initial"] = [round(x * random.uniform(low, high), 2) for x in candidate["initial"]]
         if use_system4 and not cubic:
             candidate["factors"] = [str(round(float(value) * random.uniform(.94, 1.06), 2))
                                     for value in candidate["factors"]]
@@ -213,7 +214,7 @@ def random_scenario(use_system4=False, cubic=False):
                     if source == '0':
                         continue
                     fields = equation_fields(Expression(source, names))
-                    weight = random.uniform(.94, 1.06)
+                    weight = random.uniform(low, high)
                     cubic = polynomial(fields['argument'], *(weight * c for c in fields['coefficients']))
                     multiplier = fields['multiplier']
                     candidate[kind][index] = f"({cubic})*({multiplier['source']})" if multiplier else cubic
@@ -223,6 +224,12 @@ def random_scenario(use_system4=False, cubic=False):
         except ModelError:
             continue
         trajectories = np.asarray(result["y"])
-        if np.all((trajectories >= 0) & (trajectories <= config.radar_limits)):
-            return config.model_dump()
+        if not np.all((trajectories >= 0) & (trajectories <= config.radar_limits)):
+            continue
+        if use_system4 and cubic:
+            profiles = trajectories[:, SYSTEM4_PROFILES]
+            chord = profiles[0] + np.asarray(result["t"])[:, None] / config.t_end * (profiles[-1] - profiles[0])
+            if np.any(np.max(np.abs(profiles - chord), axis=0) < .05 * np.ptp(profiles)):
+                continue
+        return config.model_dump()
     raise ModelError("Не удалось подобрать пример в пределах шкал. Нажмите кнопку ещё раз.")

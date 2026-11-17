@@ -42,10 +42,11 @@ try {
   await firstCubic.focus();
   const rounded = await exportResult();
   const f1 = rounded.factors[0][0];
+  const firstCoefficients = rounded.equation_fields.plus[0].coefficients;
   check('The system (4) coefficient stays at hundredths on focus and is used in the solve',
-    displayedA === '0.10' && await firstCubic.inputValue() === displayedA &&
-    rounded.config.plus[0].startsWith('(0.10)*F1**3') &&
-    Math.abs(rounded.plus[0][0] - (.10*f1**3 - .16*f1**2 + .10*f1)) < 1e-12);
+    displayedA === firstCoefficients[0].toFixed(2) && await firstCubic.inputValue() === displayedA &&
+    rounded.config.plus[0].startsWith('(' + displayedA + ')*F1**3') &&
+    Math.abs(rounded.plus[0][0] - polynomialValue(firstCoefficients, f1)) < 1e-12);
   const x4 = page.locator('#definition-X4').locator('..');
   const example = x4.locator('.calculation-details');
   const parts = example.locator('.calculation-equations annotation');
@@ -55,20 +56,23 @@ try {
   await example.locator('summary').click();
   await slope.waitFor({ state: 'attached' });
   const [positive, negative] = await parts.allTextContents();
+  const [plusText, minusText] = [positive, negative].map(text => text.split('\\nobreak ').at(-1));
+  const partNumber = text => Number(text.replace('{,}', '.'));
   check('The X4 substitution shows the arguments and both evaluated functions from the solve',
-    positive.includes('\\left(0{,}7\\right)') && positive.endsWith(display(rounded.plus[0][3])) &&
-    negative.includes('\\left(1{,}1\\right)') && negative.endsWith(display(rounded.minus[0][3])) &&
+    positive.includes('\\left(' + display(rounded.y[0][0]) + '\\right)') && Math.abs(partNumber(plusText) - rounded.plus[0][3]) < 1e-6 &&
+    negative.includes('\\left(' + display(rounded.factors[0][3]) + '\\right)') && Math.abs(partNumber(minusText) - rounded.minus[0][3]) < 1e-6 &&
     await example.getByRole('link', { name: /^Внешний фактор F[134]$/ }).count() === 3);
   check('The worked slope subtracts the negative part and uses the actual divisor',
-    (await slope.textContent()).includes('\\frac{' + display(rounded.plus[0][3]) + '-\\left(' + display(rounded.minus[0][3]) + '\\right)}{2}') &&
+    (await slope.textContent()).includes('\\frac{' + plusText + '-\\left(' + minusText + '\\right)}{' + display(rounded.config.scales[3]) + '}') &&
     (await slope.textContent()).endsWith(display(rounded.derivatives[0][3])));
   await example.getByRole('link', { name: 'Начальное условие X1', exact: true }).click();
   await page.locator('#initial-X1:focus').waitFor();
   const x4c = x4.getByRole('group', { name: 'Первая часть X4', exact: true }).getByLabel('Коэффициент c', { exact: true });
+  const nextC = Number((Number(await x4c.inputValue()) + .05).toFixed(2));
   await x4c.fill('-');
   await example.getByText('Допишите число в формуле.', { exact: true }).waitFor();
   check('The worked example hides obsolete values during an incomplete edit', await parts.count() === 0);
-  await x4c.fill('3.35');
+  await x4c.fill(String(nextC));
   const recalculated = await exportResult();
   check('The slope and chart points refresh together after editing',
     (await slope.textContent()).endsWith(display(recalculated.derivatives[0][3])) &&

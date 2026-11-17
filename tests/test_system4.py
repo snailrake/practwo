@@ -79,7 +79,6 @@ def test_system4_cubic_has_nonzero_cubes_and_preserves_figure_arguments():
     config = SimulationConfig(**system4_cubic())
     result = simulate(config)  # Checks every part against the figure.
     kinds = ('plus', 'minus', 'factors')
-    original = dict(zip(kinds, Dynamics(exact).components(0, exact.initial)))
     inputs = {'t': 0., **{f'X{i}': v for i, v in enumerate(config.initial, 1)},
               **{f'F{i}': v for i, v in enumerate(result['factors'][0], 1)}}
     for kind in kinds:
@@ -93,14 +92,24 @@ def test_system4_cubic_has_nonzero_cubes_and_preserves_figure_arguments():
             multiplier = fields['multiplier']
             scale = Expression(multiplier['source'], set(inputs))(inputs) if multiplier else 1
             assert result[kind][0][i] == pytest.approx(scale * np.polyval(coefficients, argument))
-            # A change of at most 0.005 in each coefficient bounds the change at t=0.
-            error = .005 * abs(scale) * sum(abs(argument)**p for p in range(4))
-            assert abs(result[kind][0][i] - original[kind][i]) <= error + 1e-12
-    assert result['equation_fields']['plus'][0]['coefficients'] == [.10, -.16, .10, 0]
-    assert all(0 <= ratio <= 1 for q in result['quarters'] for ratio in q['normalized'])
+    trajectory = np.asarray(result['y'])
+    assert np.all((trajectory >= 0) & (trajectory <= config.radar_limits))
+    curves = trajectory[:, result['profile_indices']]
+    chord = curves[0] + np.asarray(result['t'])[:, None] / config.t_end * (curves[-1] - curves[0])
+    assert np.all(np.max(np.abs(curves - chord), axis=0) > .07 * np.ptp(curves))
+    changes = np.diff(curves, axis=0)
+    assert np.count_nonzero((changes.min(axis=0) < -.00001) & (changes.max(axis=0) > .00001)) >= 4
     p = preview(PreviewConfig(config=config, kind='plus', index=3, argument='X1'))
     assert p['degree'] == 3
     assert abs(p['points'][100][1] - (p['points'][0][1] + p['points'][-1][1]) / 2) > .1
+
+
+@pytest.mark.parametrize('method', ['RK45', 'Radau'])
+def test_nonlinear_system4_example_matches_independent_solvers(method):
+    config = system4_cubic()
+    reference = simulate(SimulationConfig(**config))
+    checked = simulate(SimulationConfig(**{**config, 'method': method}))
+    np.testing.assert_allclose(checked['y'], reference['y'], rtol=1e-7, atol=1e-9)
 
 
 def test_system4_rejects_mixed_dimensions_or_missing_dependencies():
