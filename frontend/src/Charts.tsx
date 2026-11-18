@@ -121,7 +121,7 @@ export function AllProfiles({ r, cursor, comparison }: { r: Result; cursor: numb
       ...(reference ? [{ ...reference, name: label, itemStyle: { color }, lineStyle: { color, type: 'dashed', width: 1 } }] : []),
     ];
   });
-  return <Chart label="Все 11 временных зависимостей" height="clamp(360px, 48dvh, 540px)" option={{
+  return <Chart label="Все 11 временных зависимостей" height="var(--overview-chart-height, clamp(260px, 42dvh, 430px))" option={{
     ...base, series,
     grid: { ...base.grid, bottom: 48 },
     legend: { bottom: 8, left: 12, right: 12, formatter: (name: string) => name.split(' · ')[0] },

@@ -204,39 +204,48 @@ def system4_cubic():
     config.update(
         name='Система (4) · кубический пример',
         initial=[.25, .55, .90, .80, .03, .65, .12, .08, .65, .15, .45, .15, .15],
-        scales=[.10, .005, .00001, .20, .05, .05, .02, .01, .30, .50, .01, 100, .01],
+        scales=SYSTEM4_RADAR_LIMITS.copy(),
     )
     # Classroom coefficients chosen for visibly different nonlinear trajectories.
     coefficients = {
         'plus': [
-            (.29, -.79, .90, -.24), (8.69, -11.57, 4.96, -.79),
-            (10.19, -11.81, 5.24, -.80), (3.06, -6.42, 4.77, -1.05),
-            (-.18, .29, -.21, .09), (-.44, 5.59, -8.69, 2.69),
+            (2.92, -7.92, 8.97, -2.36), (8.69, -11.57, 4.96, -.79),
+            (10.49, -12.47, 5.61, -.87), (19.09, -40.12, 29.81, -6.57),
+            (-.41, .77, -.52, .15), (-12.39, 30.50, -24.57, 5.56),
             (-.06, .44, -.11, .01), (-1.06, .57, -.74, .30),
-            (1.95, -2.62, 1.69, -.64), (8.41, -11.77, 6.10, -1.24),
-            (-.16, .26, 0, -.14), (-61.86, 32.40, -.94, -.52),
-            (-.55, 2.10, -1.64, .57),
+            (6.51, -8.74, 5.63, -2.15), (8.41, -11.77, 6.10, -1.24),
+            (-.09, .22, -.02, -.13), (-40.77, 17.39, 1.91, -.67),
+            (.07, .29, -.22, .30),
         ],
         'minus': [(.01, 0, 0, 0)] * 13,
     }
-    names = {f'X{i}' for i in range(1, 14)} | {f'F{i}' for i in range(1, 9)}
+    multipliers = {
+        'plus': [
+            None, '30*(X7+X8)*X9*F1**0.8', '-0.22*F1**0.8*F4/X1**2.9',
+            None, '0.15/X1**2.1', '0.75*F5', '26.25*(X5+X6)**0.6',
+            '18.75*(X5+X6)**0.7*X13', None, '2.30*X9**0.2',
+            '3*sqrt(F6)', '3.06*F7/F6', '1.25*X3**0.5*F6',
+        ],
+        'minus': [
+            '-0.50*X11/(F3*F4)', '-77.50*X11', None, '-0.44*F1**0.8*F3',
+            None, '1.20/(X11*X12*F7)', None, None, '2.50*X11',
+            None, None, None, None,
+        ],
+    }
     for kind, selections in SYSTEM4_CUBIC_ARGUMENTS.items():
         for index, selection in enumerate(selections):
             if selection is None:
                 continue
             argument, _ = selection
-            original = ast.parse(config[kind][index], mode='eval')
-            multiplier = ast.unparse(UnitArgument(argument).visit(original))
+            multiplier = multipliers[kind][index]
             cubic = polynomial(argument, *coefficients[kind][index])
-            config[kind][index] = (
-                f'({cubic})*({multiplier})' if Expression(multiplier, names).dependencies else cubic
-            )
+            config[kind][index] = f'({cubic})*({multiplier})' if multiplier else cubic
     config['factors'] = [
         polynomial('t', *values) for values in [
-            (.60, .05, .05, .40), (.05, .05, .65, .30),
-            (.20, .20, .40, .35), (.10, -.25, -.15, 1.10),
-            (.40, -.20, .10, .50), (.05, .10, .50, .35),
-            (-.25, .80, -.60, .70), (.15, 0, .40, .30),
+            (.60, .05, .05, .40), (.50, .10, .15, .30),
+            (.20, .20, .40, .35), (.10, -.40, 0, 1.10),
+            (.40, -.20, .10, .50), (.35, .15, .15, .35),
+            (-.25, .80, -.60, .70), (.40, -.15, .30, .30),
         ]
     ]
     return config

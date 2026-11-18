@@ -27,6 +27,19 @@
       1,
       500
     ],
+    "radar_limits": [
+      1,
+      1.25,
+      1,
+      1.25,
+      0.25,
+      0.75,
+      0.75,
+      1,
+      1,
+      0.5,
+      1
+    ],
     "factors": [
       "0.8",
       "0.5",
@@ -24944,17 +24957,17 @@
     ]
   ],
   "radar_scales": [
-    0.7426940092298179,
-    0.7782907824098051,
-    0.8,
-    0.8361966640604279,
-    0.11443377006288165,
-    0.27941039817604835,
-    0.23426151662960804,
-    0.8497561166021296,
-    0.706042389278878,
-    0.34067419118010034,
-    0.6303286994456123
+    1,
+    1.25,
+    1,
+    1.25,
+    0.25,
+    0.75,
+    0.75,
+    1,
+    1,
+    0.5,
+    1
   ],
   "quarters": [
     {
@@ -24973,17 +24986,17 @@
         0.49292889147077473
       ],
       "normalized": [
-        0.9560917306498626,
-        0.8131954626257903,
-        0.9773042554896575,
-        0.6963406572123189,
-        0.9068686931159332,
-        0.6501029940621244,
-        0.48180560205090045,
-        0.691690088249089,
-        0.6712080917780303,
-        0.9109593969566522,
-        0.7820187973422698
+        0.7100836006278216,
+        0.5063220262873038,
+        0.7818434043917261,
+        0.46582218768846956,
+        0.41510561402101875,
+        0.24219404856845247,
+        0.15049134807611378,
+        0.5877678832827301,
+        0.47390136482227696,
+        0.6206807115122389,
+        0.49292889147077473
       ]
     },
     {
@@ -25002,17 +25015,17 @@
         0.5373040186131879
       ],
       "normalized": [
-        0.9700874905529311,
-        0.8649075250778645,
-        0.9555370436369248,
-        0.7961121248211329,
-        0.9388861580342716,
-        0.7657572517916356,
-        0.638164823531794,
-        0.7945756091655929,
-        0.7785662603048352,
-        0.9409688263248506,
-        0.8524187762444553
+        0.7204781676624494,
+        0.5385196435239834,
+        0.7644296349095399,
+        0.5325650423947923,
+        0.4297611308948648,
+        0.28528071817239653,
+        0.19932994589363232,
+        0.6751954839913257,
+        0.5497007826375467,
+        0.6411275876678135,
+        0.5373040186131879
       ]
     },
     {
@@ -25031,17 +25044,17 @@
         0.5831091856079934
       ],
       "normalized": [
-        0.9846636810054509,
-        0.9268953539207362,
-        0.9346787988399752,
-        0.8973096305860236,
-        0.9699297462604886,
-        0.882668225640855,
-        0.8108327446250602,
-        0.8972754118025988,
-        0.8882551422958306,
-        0.9706455077521551,
-        0.9250874759801521
+        0.7313038169889288,
+        0.5771152881719864,
+        0.7477430390719801,
+        0.6002618557802623,
+        0.44397087024288756,
+        0.32883557384487655,
+        0.25326254465175235,
+        0.762465269455953,
+        0.6271457829557979,
+        0.6613477465521265,
+        0.5831091856079934
       ]
     },
     {
@@ -25060,17 +25073,17 @@
         0.6303286994456123
       ],
       "normalized": [
-        1,
-        1,
-        0.914718215915386,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1,
-        1
+        0.7426940092298179,
+        0.6226326259278441,
+        0.7317745727323088,
+        0.6689573312483423,
+        0.4577350802515266,
+        0.3725471975680645,
+        0.31234868883947736,
+        0.8497561166021296,
+        0.706042389278878,
+        0.6813483823602007,
+        0.6303286994456123
       ]
     }
   ],
@@ -25096,6 +25109,20 @@
     "Население",
     "Убежища"
   ],
+  "profile_indices": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "source_equations": null,
   "equations_tex": [
     "S_{1}\\frac{dX_{1}}{d\\tau}=0.0186\\cdot X_{2}\\cdot {F_{1}}^{0.8}-\\left(\\frac{0.01\\cdot X_{9}\\cdot X_{10}}{F_{3}\\cdot F_{4}}\\right)",
     "S_{2}\\frac{dX_{2}}{d\\tau}=\\frac{0.085\\cdot X_{3}\\cdot X_{7}\\cdot X_{8}\\cdot {F_{1}}^{0.8}}{F_{5}}-\\left(\\left(-0.95\\right)\\cdot X_{9}\\cdot X_{10}\\right)",
@@ -25109,6 +25136,966 @@
     "S_{10}\\frac{dX_{10}}{d\\tau}=0.052\\cdot \\sqrt{X_{3}\\cdot F_{6}}",
     "S_{11}\\frac{dX_{11}}{d\\tau}=\\frac{375.1\\cdot X_{10}\\cdot F_{7}}{F_{6}}-\\left(\\frac{-0.0018}{F_{5}}\\right)"
   ],
+  "equation_fields": {
+    "plus": [
+      {
+        "source": "0.0186*X2*F1**0.8",
+        "tex": "0.0186\\cdot X_{2}\\cdot {F_{1}}^{0.8}",
+        "argument": "F1",
+        "coefficients": null,
+        "multiplier": null,
+        "editable": {
+          "tree": {
+            "kind": "binary",
+            "op": "*",
+            "left": {
+              "kind": "binary",
+              "op": "*",
+              "left": {
+                "kind": "number",
+                "index": 0
+              },
+              "right": {
+                "kind": "name",
+                "name": "X2"
+              }
+            },
+            "right": {
+              "kind": "binary",
+              "op": "**",
+              "left": {
+                "kind": "name",
+                "name": "F1"
+              },
+              "right": {
+                "kind": "number",
+                "index": 1
+              }
+            }
+          },
+          "literals": [
+            {
+              "start": 0,
+              "end": 6,
+              "text": "0.0186"
+            },
+            {
+              "start": 14,
+              "end": 17,
+              "text": "0.8"
+            }
+          ]
+        }
+      },
+      {
+        "source": "0.085*X3*X7*X8*F1**0.8/F5",
+        "tex": "\\frac{0.085\\cdot X_{3}\\cdot X_{7}\\cdot X_{8}\\cdot {F_{1}}^{0.8}}{F_{5}}",
+        "argument": "F1",
+        "coefficients": null,
+        "multiplier": null,
+        "editable": {
+          "tree": {
+            "kind": "binary",
+            "op": "/",
+            "left": {
+              "kind": "binary",
+              "op": "*",
+              "left": {
+                "kind": "binary",
+                "op": "*",
+                "left": {
+                  "kind": "binary",
+                  "op": "*",
+                  "left": {
+                    "kind": "binary",
+                    "op": "*",
+                    "left": {
+                      "kind": "number",
+                      "index": 0
+                    },
+                    "right": {
+                      "kind": "name",
+                      "name": "X3"
+                    }
+                  },
+                  "right": {
+                    "kind": "name",
+                    "name": "X7"
+                  }
+                },
+                "right": {
+                  "kind": "name",
+                  "name": "X8"
+                }
+              },
+              "right": {
+                "kind": "binary",
+                "op": "**",
+                "left": {
+                  "kind": "name",
+                  "name": "F1"
+                },
+                "right": {
+                  "kind": "number",
+                  "index": 1
+                }
+              }
+            },
+            "right": {
+              "kind": "name",
+              "name": "F5"
+            }
+          },
+          "literals": [
+            {
+              "start": 0,
+              "end": 5,
+              "text": "0.085"
+            },
+            {
+              "start": 19,
+              "end": 22,
+              "text": "0.8"
+            }
+          ]
+        }
+      },
+      {
+        "source": "-3.58e-6*F1**0.8*F3*F4/X1**2.9",
+        "tex": "\\frac{\\left(-3.58\\cdot 10^{-6}\\right)\\cdot {F_{1}}^{0.8}\\cdot F_{3}\\cdot F_{4}}{{X_{1}}^{2.9}}",
+        "argument": "F1",
+        "coefficients": null,
+        "multiplier": null,
+        "editable": {
+          "tree": {
+            "kind": "binary",
+            "op": "/",
+            "left": {
+              "kind": "binary",
+              "op": "*",
+              "left": {
+                "kind": "binary",
+                "op": "*",
+                "left": {
+                  "kind": "binary",
+                  "op": "*",
+                  "left": {
+                    "kind": "unary",
+                    "op": "-",
+                    "child": {
+                      "kind": "number",
+                      "index": 0
+                    }
+                  },
+                  "right": {
+                    "kind": "binary",
+                    "op": "**",
+                    "left": {
+                      "kind": "name",
+                      "name": "F1"
+                    },
+                    "right": {
+                      "kind": "number",
+                      "index": 1
+                    }
+                  }
+                },
+                "right": {
+                  "kind": "name",
+                  "name": "F3"
+                }
+              },
+              "right": {
+                "kind": "name",
+                "name": "F4"
+              }
+            },
+            "right": {
+              "kind": "binary",
+              "op": "**",
+              "left": {
+                "kind": "name",
+                "name": "X1"
+              },
+              "right": {
+                "kind": "number",
+                "index": 2
+              }
+            }
+          },
+          "literals": [
+            {
+              "start": 1,
+              "end": 8,
+              "text": "3.58e-6"
+            },
+            {
+              "start": 13,
+              "end": 16,
+              "text": "0.8"
+            },
+            {
+              "start": 27,
+              "end": 30,
+              "text": "2.9"
+            }
+          ]
+        }
+      },
+      {
+        "source": "0.9*X1",
+        "tex": "0.9\\cdot X_{1}",
+        "argument": "X1",
+        "coefficients": [
+          0,
+          0,
+          0.9,
+          0
+        ],
+        "multiplier": null,
+        "editable": null
+      },
+      {
+        "source": "0.0145*F2/X1**2.1",
+        "tex": "\\frac{0.0145\\cdot F_{2}}{{X_{1}}^{2.1}}",
+        "argument": "F2",
+        "coefficients": null,
+        "multiplier": null,
+        "editable": {
+          "tree": {
+            "kind": "binary",
+            "op": "/",
+            "left": {
+              "kind": "binary",
+              "op": "*",
+              "left": {
+                "kind": "number",
+                "index": 0
+              },
+              "right": {
+                "kind": "name",
+                "name": "F2"
+              }
+            },
+            "right": {
+              "kind": "binary",
+              "op": "**",
+              "left": {
+                "kind": "name",
+                "name": "X1"
+              },
+              "right": {
+                "kind": "number",
+                "index": 1
+              }
+            }
+          },
+          "literals": [
+            {
+              "start": 0,
+              "end": 6,
+              "text": "0.0145"
+            },
+            {
+              "start": 14,
+              "end": 17,
+              "text": "2.1"
+            }
+          ]
+        }
+      },
+      {
+        "source": "0.002*X2*F5*F6",
+        "tex": "0.002\\cdot X_{2}\\cdot F_{5}\\cdot F_{6}",
+        "argument": "F5",
+        "coefficients": null,
+        "multiplier": null,
+        "editable": {
+          "tree": {
+            "kind": "binary",
+            "op": "*",
+            "left": {
+              "kind": "binary",
+              "op": "*",
+              "left": {
+                "kind": "binary",
+                "op": "*",
+                "left": {
+                  "kind": "number",
+                  "index": 0
+                },
+                "right": {
+                  "kind": "name",
+                  "name": "X2"
+                }
+              },
+              "right": {
+                "kind": "name",
+                "name": "F5"
+              }
+            },
+            "right": {
+              "kind": "name",
+              "name": "F6"
+            }
+          },
+          "literals": [
+            {
+              "start": 0,
+              "end": 5,
+              "text": "0.002"
+            }
+          ]
+        }
+      },
+      {
+        "source": "0.95*(X5+X6)**0.6*X10",
+        "tex": "0.95\\cdot {\\left(X_{5}+X_{6}\\right)}^{0.6}\\cdot X_{10}",
+        "argument": "X10",
+        "coefficients": null,
+        "multiplier": null,
+        "editable": {
+          "tree": {
+            "kind": "binary",
+            "op": "*",
+            "left": {
+              "kind": "binary",
+              "op": "*",
+              "left": {
+                "kind": "number",
+                "index": 0
+              },
+              "right": {
+                "kind": "binary",
+                "op": "**",
+                "left": {
+                  "kind": "binary",
+                  "op": "+",
+                  "left": {
+                    "kind": "name",
+                    "name": "X5"
+                  },
+                  "right": {
+                    "kind": "name",
+                    "name": "X6"
+                  }
+                },
+                "right": {
+                  "kind": "number",
+                  "index": 1
+                }
+              }
+            },
+            "right": {
+              "kind": "name",
+              "name": "X10"
+            }
+          },
+          "literals": [
+            {
+              "start": 0,
+              "end": 4,
+              "text": "0.95"
+            },
+            {
+              "start": 14,
+              "end": 17,
+              "text": "0.6"
+            }
+          ]
+        }
+      },
+      {
+        "source": "0.817*X3",
+        "tex": "0.817\\cdot X_{3}",
+        "argument": "X3",
+        "coefficients": [
+          0,
+          0,
+          0.817,
+          0
+        ],
+        "multiplier": null,
+        "editable": null
+      },
+      {
+        "source": "1.4*(X3*X8)**0.2",
+        "tex": "1.4\\cdot {\\left(X_{3}\\cdot X_{8}\\right)}^{0.2}",
+        "argument": "X3",
+        "coefficients": null,
+        "multiplier": null,
+        "editable": {
+          "tree": {
+            "kind": "binary",
+            "op": "*",
+            "left": {
+              "kind": "number",
+              "index": 0
+            },
+            "right": {
+              "kind": "binary",
+              "op": "**",
+              "left": {
+                "kind": "binary",
+                "op": "*",
+                "left": {
+                  "kind": "name",
+                  "name": "X3"
+                },
+                "right": {
+                  "kind": "name",
+                  "name": "X8"
+                }
+              },
+              "right": {
+                "kind": "number",
+                "index": 1
+              }
+            }
+          },
+          "literals": [
+            {
+              "start": 0,
+              "end": 3,
+              "text": "1.4"
+            },
+            {
+              "start": 13,
+              "end": 16,
+              "text": "0.2"
+            }
+          ]
+        }
+      },
+      {
+        "source": "0.052*sqrt(X3*F6)",
+        "tex": "0.052\\cdot \\sqrt{X_{3}\\cdot F_{6}}",
+        "argument": "F6",
+        "coefficients": null,
+        "multiplier": null,
+        "editable": {
+          "tree": {
+            "kind": "binary",
+            "op": "*",
+            "left": {
+              "kind": "number",
+              "index": 0
+            },
+            "right": {
+              "kind": "call",
+              "name": "sqrt",
+              "args": [
+                {
+                  "kind": "binary",
+                  "op": "*",
+                  "left": {
+                    "kind": "name",
+                    "name": "X3"
+                  },
+                  "right": {
+                    "kind": "name",
+                    "name": "F6"
+                  }
+                }
+              ]
+            }
+          },
+          "literals": [
+            {
+              "start": 0,
+              "end": 5,
+              "text": "0.052"
+            }
+          ]
+        }
+      },
+      {
+        "source": "375.1*X10*F7/F6",
+        "tex": "\\frac{375.1\\cdot X_{10}\\cdot F_{7}}{F_{6}}",
+        "argument": "F6",
+        "coefficients": null,
+        "multiplier": null,
+        "editable": {
+          "tree": {
+            "kind": "binary",
+            "op": "/",
+            "left": {
+              "kind": "binary",
+              "op": "*",
+              "left": {
+                "kind": "binary",
+                "op": "*",
+                "left": {
+                  "kind": "number",
+                  "index": 0
+                },
+                "right": {
+                  "kind": "name",
+                  "name": "X10"
+                }
+              },
+              "right": {
+                "kind": "name",
+                "name": "F7"
+              }
+            },
+            "right": {
+              "kind": "name",
+              "name": "F6"
+            }
+          },
+          "literals": [
+            {
+              "start": 0,
+              "end": 5,
+              "text": "375.1"
+            }
+          ]
+        }
+      }
+    ],
+    "minus": [
+      {
+        "source": "0.01*X9*X10/(F3*F4)",
+        "tex": "\\frac{0.01\\cdot X_{9}\\cdot X_{10}}{F_{3}\\cdot F_{4}}",
+        "argument": "F3",
+        "coefficients": null,
+        "multiplier": null,
+        "editable": {
+          "tree": {
+            "kind": "binary",
+            "op": "/",
+            "left": {
+              "kind": "binary",
+              "op": "*",
+              "left": {
+                "kind": "binary",
+                "op": "*",
+                "left": {
+                  "kind": "number",
+                  "index": 0
+                },
+                "right": {
+                  "kind": "name",
+                  "name": "X9"
+                }
+              },
+              "right": {
+                "kind": "name",
+                "name": "X10"
+              }
+            },
+            "right": {
+              "kind": "binary",
+              "op": "*",
+              "left": {
+                "kind": "name",
+                "name": "F3"
+              },
+              "right": {
+                "kind": "name",
+                "name": "F4"
+              }
+            }
+          },
+          "literals": [
+            {
+              "start": 0,
+              "end": 4,
+              "text": "0.01"
+            }
+          ]
+        }
+      },
+      {
+        "source": "-0.95*X9*X10",
+        "tex": "\\left(-0.95\\right)\\cdot X_{9}\\cdot X_{10}",
+        "argument": "X10",
+        "coefficients": null,
+        "multiplier": null,
+        "editable": {
+          "tree": {
+            "kind": "binary",
+            "op": "*",
+            "left": {
+              "kind": "binary",
+              "op": "*",
+              "left": {
+                "kind": "unary",
+                "op": "-",
+                "child": {
+                  "kind": "number",
+                  "index": 0
+                }
+              },
+              "right": {
+                "kind": "name",
+                "name": "X9"
+              }
+            },
+            "right": {
+              "kind": "name",
+              "name": "X10"
+            }
+          },
+          "literals": [
+            {
+              "start": 1,
+              "end": 5,
+              "text": "0.95"
+            }
+          ]
+        }
+      },
+      {
+        "source": "0",
+        "tex": "0",
+        "argument": "",
+        "coefficients": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "multiplier": null,
+        "editable": null
+      },
+      {
+        "source": "-0.0322*F1**0.8*F3*F4",
+        "tex": "\\left(-0.0322\\right)\\cdot {F_{1}}^{0.8}\\cdot F_{3}\\cdot F_{4}",
+        "argument": "F1",
+        "coefficients": null,
+        "multiplier": null,
+        "editable": {
+          "tree": {
+            "kind": "binary",
+            "op": "*",
+            "left": {
+              "kind": "binary",
+              "op": "*",
+              "left": {
+                "kind": "binary",
+                "op": "*",
+                "left": {
+                  "kind": "unary",
+                  "op": "-",
+                  "child": {
+                    "kind": "number",
+                    "index": 0
+                  }
+                },
+                "right": {
+                  "kind": "binary",
+                  "op": "**",
+                  "left": {
+                    "kind": "name",
+                    "name": "F1"
+                  },
+                  "right": {
+                    "kind": "number",
+                    "index": 1
+                  }
+                }
+              },
+              "right": {
+                "kind": "name",
+                "name": "F3"
+              }
+            },
+            "right": {
+              "kind": "name",
+              "name": "F4"
+            }
+          },
+          "literals": [
+            {
+              "start": 1,
+              "end": 7,
+              "text": "0.0322"
+            },
+            {
+              "start": 12,
+              "end": 15,
+              "text": "0.8"
+            }
+          ]
+        }
+      },
+      {
+        "source": "0",
+        "tex": "0",
+        "argument": "",
+        "coefficients": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "multiplier": null,
+        "editable": null
+      },
+      {
+        "source": "-0.606*X4/(X10*X11*F7)",
+        "tex": "\\frac{\\left(-0.606\\right)\\cdot X_{4}}{X_{10}\\cdot X_{11}\\cdot F_{7}}",
+        "argument": "F7",
+        "coefficients": null,
+        "multiplier": null,
+        "editable": {
+          "tree": {
+            "kind": "binary",
+            "op": "/",
+            "left": {
+              "kind": "binary",
+              "op": "*",
+              "left": {
+                "kind": "unary",
+                "op": "-",
+                "child": {
+                  "kind": "number",
+                  "index": 0
+                }
+              },
+              "right": {
+                "kind": "name",
+                "name": "X4"
+              }
+            },
+            "right": {
+              "kind": "binary",
+              "op": "*",
+              "left": {
+                "kind": "binary",
+                "op": "*",
+                "left": {
+                  "kind": "name",
+                  "name": "X10"
+                },
+                "right": {
+                  "kind": "name",
+                  "name": "X11"
+                }
+              },
+              "right": {
+                "kind": "name",
+                "name": "F7"
+              }
+            }
+          },
+          "literals": [
+            {
+              "start": 1,
+              "end": 6,
+              "text": "0.606"
+            }
+          ]
+        }
+      },
+      {
+        "source": "0",
+        "tex": "0",
+        "argument": "",
+        "coefficients": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "multiplier": null,
+        "editable": null
+      },
+      {
+        "source": "-0.42*X9*X10",
+        "tex": "\\left(-0.42\\right)\\cdot X_{9}\\cdot X_{10}",
+        "argument": "X10",
+        "coefficients": null,
+        "multiplier": null,
+        "editable": {
+          "tree": {
+            "kind": "binary",
+            "op": "*",
+            "left": {
+              "kind": "binary",
+              "op": "*",
+              "left": {
+                "kind": "unary",
+                "op": "-",
+                "child": {
+                  "kind": "number",
+                  "index": 0
+                }
+              },
+              "right": {
+                "kind": "name",
+                "name": "X9"
+              }
+            },
+            "right": {
+              "kind": "name",
+              "name": "X10"
+            }
+          },
+          "literals": [
+            {
+              "start": 1,
+              "end": 5,
+              "text": "0.42"
+            }
+          ]
+        }
+      },
+      {
+        "source": "0",
+        "tex": "0",
+        "argument": "",
+        "coefficients": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "multiplier": null,
+        "editable": null
+      },
+      {
+        "source": "0",
+        "tex": "0",
+        "argument": "",
+        "coefficients": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "multiplier": null,
+        "editable": null
+      },
+      {
+        "source": "-0.0018/F5",
+        "tex": "\\frac{-0.0018}{F_{5}}",
+        "argument": "F5",
+        "coefficients": null,
+        "multiplier": null,
+        "editable": {
+          "tree": {
+            "kind": "binary",
+            "op": "/",
+            "left": {
+              "kind": "unary",
+              "op": "-",
+              "child": {
+                "kind": "number",
+                "index": 0
+              }
+            },
+            "right": {
+              "kind": "name",
+              "name": "F5"
+            }
+          },
+          "literals": [
+            {
+              "start": 1,
+              "end": 7,
+              "text": "0.0018"
+            }
+          ]
+        }
+      }
+    ],
+    "factors": [
+      {
+        "source": "0.8",
+        "tex": "0.8",
+        "argument": "",
+        "coefficients": [
+          0,
+          0,
+          0,
+          0.8
+        ],
+        "multiplier": null,
+        "editable": null
+      },
+      {
+        "source": "0.5",
+        "tex": "0.5",
+        "argument": "",
+        "coefficients": [
+          0,
+          0,
+          0,
+          0.5
+        ],
+        "multiplier": null,
+        "editable": null
+      },
+      {
+        "source": "0.8",
+        "tex": "0.8",
+        "argument": "",
+        "coefficients": [
+          0,
+          0,
+          0,
+          0.8
+        ],
+        "multiplier": null,
+        "editable": null
+      },
+      {
+        "source": "1.1",
+        "tex": "1.1",
+        "argument": "",
+        "coefficients": [
+          0,
+          0,
+          0,
+          1.1
+        ],
+        "multiplier": null,
+        "editable": null
+      },
+      {
+        "source": "0.6",
+        "tex": "0.6",
+        "argument": "",
+        "coefficients": [
+          0,
+          0,
+          0,
+          0.6
+        ],
+        "multiplier": null,
+        "editable": null
+      },
+      {
+        "source": "0.8",
+        "tex": "0.8",
+        "argument": "",
+        "coefficients": [
+          0,
+          0,
+          0,
+          0.8
+        ],
+        "multiplier": null,
+        "editable": null
+      },
+      {
+        "source": "0.6",
+        "tex": "0.6",
+        "argument": "",
+        "coefficients": [
+          0,
+          0,
+          0,
+          0.6
+        ],
+        "multiplier": null,
+        "editable": null
+      }
+    ]
+  },
   "factors_tex": [
     "0.8",
     "0.5",
@@ -25220,8 +26207,7 @@
     }
   ],
   "warnings": [
-    "Учебная агрегированная модель. Нет калибровки для объекта, вещества, физических единиц и реальных потерь.",
-    "В задании рисунок системы содержит X12 и X13, но перечень и таблица функций задают 11 характеристик. Использована таблица 1."
+    "Учебная агрегированная модель. Нет калибровки для объекта, вещества, физических единиц и реальных потерь."
   ],
   "diagnostics": {
     "method": "DOP853",
@@ -25231,7 +26217,7 @@
     "njev": 0,
     "samples": 401,
     "max_step": 0.01,
-    "elapsed_ms": 873.8779999985127,
+    "elapsed_ms": 487.61430000013206,
     "scipy_success": true
   }
 }

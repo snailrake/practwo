@@ -1,0 +1,86 @@
+{
+  "url": "http://127.0.0.1:8022/pages-dist/",
+  "checks": [
+    {
+      "name": "Default normalization equals the declared radar bounds",
+      "passed": true
+    },
+    {
+      "name": "All 11 computed curves bend by at least seven percent of the common vertical span",
+      "passed": true
+    },
+    {
+      "name": "Every state stays positive and below its selected maximum on the whole output grid",
+      "passed": true
+    },
+    {
+      "name": "All eight cubic factor curves have visible curvature",
+      "passed": true
+    },
+    {
+      "name": "The combined graph stays visible above an edited coefficient at 1366",
+      "passed": true
+    },
+    {
+      "name": "Exactly one combined plot at 1366",
+      "passed": true
+    },
+    {
+      "name": "No page overflow at 1366",
+      "passed": true
+    },
+    {
+      "name": "The combined graph stays visible above an edited coefficient at 1280",
+      "passed": true
+    },
+    {
+      "name": "Exactly one combined plot at 1280",
+      "passed": true
+    },
+    {
+      "name": "No page overflow at 1280",
+      "passed": true
+    },
+    {
+      "name": "The combined graph stays visible above an edited coefficient at 390",
+      "passed": true
+    },
+    {
+      "name": "Exactly one combined plot at 390",
+      "passed": true
+    },
+    {
+      "name": "No page overflow at 390",
+      "passed": true
+    },
+    {
+      "name": "Editing the visible coefficient runs a new solution",
+      "passed": true
+    },
+    {
+      "name": "The worked calculation is available under X4",
+      "passed": true
+    },
+    {
+      "name": "All eight editable factor rows and adjacent plots are present",
+      "passed": true
+    },
+    {
+      "name": "Four quarter diagrams use the supplied limits",
+      "passed": true
+    },
+    {
+      "name": "Radar limits have their own R labels",
+      "passed": true
+    },
+    {
+      "name": "The new default passes all five numerical checks",
+      "passed": true
+    },
+    {
+      "name": "No uncaught browser errors",
+      "passed": true
+    }
+  ],
+  "errors": []
+}

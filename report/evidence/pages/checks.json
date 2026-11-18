@@ -1,8 +1,20 @@
 {
-  "url": "http://127.0.0.1:8013/pages-dist/",
+  "url": "http://127.0.0.1:8022/pages-dist/",
   "checks": [
     {
-      "name": "All results starts with the eleven plots",
+      "name": "All results starts with the combined plot",
+      "passed": true
+    },
+    {
+      "name": "Browser Python starts with the 13 equations of system (4)",
+      "passed": true
+    },
+    {
+      "name": "System (4) has editable cubic functions and 8 cubic factor profiles",
+      "passed": true
+    },
+    {
+      "name": "All 11 selected results use the original figure indices",
       "passed": true
     },
     {
@@ -34,7 +46,7 @@
       "passed": true
     },
     {
-      "name": "Eleven state charts are available",
+      "name": "All eleven characteristics share one plot",
       "passed": true
     },
     {
@@ -146,6 +158,6 @@
     "platform": "emscripten",
     "engine": "WebAssembly"
   },
-  "load_ms": 13955.5646,
+  "load_ms": 14881.8928,
   "max_scaled_difference": 1.8554545494496828e-16
 }

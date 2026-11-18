@@ -34,9 +34,9 @@ The old body, figures, code listings, tables and bibliography are replaced
 because the user explicitly requests complete subject adaptation. New body
 has the same nine major roles: task, domain, model, numerical method,
 implementation, interface, verification/results, limitations, conclusion.
-Add only subheadings needed to explain the 11-state model and the requested
+Add only subheadings needed to explain the selected model and the requested
 four quarter-interval radar plots. Include actual UI screenshots, figures
-recomputed by `scripts/reproduce.py`, and test evidence, never stock images.
+recomputed by `scripts/reproduce_system4.py`, and test evidence, never stock images.
 
 The contents page is regenerated with actual heading page numbers. All table
 and figure captions receive textual cross references. No copied template
@@ -44,16 +44,18 @@ facts, wave screenshots, formula pictures or author names remain.
 
 ## Source and validation contract
 
-The supplied assignment defines 11 indicators and Table 1 functions while
-its system image contains 13 indicators and inconsistent dependencies.
-Implement the complete 11-row table, explicitly documenting the discrepancy.
-The only model is (f+ - f-)/S with original signs preserved; there is no
-alternate sign convention selector. Missing tabular functions are zero. Initial values,
-S parameters and factor levels are illustrative dimensionless assumptions,
-not measured or calibrated data. No conversion to casualties, km² or hours.
+The user's later clarification selects figure (4) as the primary model:
+13 states, 8 factors and complete argument lists. All 19 present parts and
+eight factor profiles are cubic in the demonstration. Table 1 and the
+article's original expressions remain separate reference scenarios.
+The model is (f+ - f-)/Xmax with algebraic signs preserved. Missing parts
+are zero. Numerical coefficients, initial values and normalization are
+illustrative dimensionless assumptions. Xmax initially equals the declared
+radar bound R; the parameters have separate purposes. No conversion to
+casualties, km² or hours is claimed.
 
-Numerical report values come from `report/evidence/summary.json` and
-`verification.json`. Test counts come from the generated pytest XML and UI
+Numerical report values come from `report/evidence/system4-experiments.json`
+and `system4-verification.json`. Test counts come from the generated pytest XML and UI
 checks JSON, not from a manually typed claim. Every report equation is built
 from the production formula strings. Retained reference hashes, page/style
 and package inventories are captured in `report/evidence/template-audit.json`.

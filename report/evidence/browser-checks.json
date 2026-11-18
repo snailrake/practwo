@@ -1,7 +1,43 @@
 {
   "checks": [
     {
-      "name": "All results starts with the eleven plots",
+      "name": "All results starts with the combined plot",
+      "passed": true
+    },
+    {
+      "name": "System (4) is the default and displays all 13 source equations",
+      "passed": true
+    },
+    {
+      "name": "System (4) opens with a nonzero X4 cubic coefficient",
+      "passed": true
+    },
+    {
+      "name": "X2 shows both signed functions with the indices of the figure",
+      "passed": true
+    },
+    {
+      "name": "A variable opens its equation",
+      "passed": true
+    },
+    {
+      "name": "A factor opens its editable definition",
+      "passed": true
+    },
+    {
+      "name": "System (4) exposes F8 with four editable coefficients",
+      "passed": true
+    },
+    {
+      "name": "Four radars retain the 11 required characteristics, including alerting as X12",
+      "passed": true
+    },
+    {
+      "name": "An edit under the combined plot reaches the solver with all formulas on one page",
+      "passed": true
+    },
+    {
+      "name": "Random example solves on the same page",
       "passed": true
     },
     {
@@ -45,7 +81,7 @@
       "passed": true
     },
     {
-      "name": "All eleven characteristic graphs",
+      "name": "All eleven characteristics share one plot",
       "passed": true
     },
     {
@@ -62,6 +98,10 @@
     },
     {
       "name": "Quarter table includes all eleven rows",
+      "passed": true
+    },
+    {
+      "name": "Values beyond the configured scale remain in the table",
       "passed": true
     },
     {
@@ -102,6 +142,10 @@
     },
     {
       "name": "JSON contains actual solver result",
+      "passed": true
+    },
+    {
+      "name": "Older scenarios receive the default limits and stay exportable",
       "passed": true
     },
     {

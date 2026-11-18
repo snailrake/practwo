@@ -123,15 +123,15 @@ export function EquationList(props: Props) {
     {sourceEquations ? <details className="plain-details system4-source">
       <summary>Источник формул и обозначения</summary>
       <p>Аргументы и индексы взяты с рисунка (4) задания. {props.system4Cubic
-        ? 'В каждой части один исходный множитель заменён кубическим полиномом. Коэффициенты, начальные условия и делители подобраны для наглядного учебного примера с нелинейными траекториями.'
+        ? 'В каждой части один исходный множитель заменён кубическим полиномом. Коэффициенты полиномов и остальных множителей, начальные условия и параметры нормирования подобраны для наглядного учебного примера с нелинейными траекториями.'
         : 'Исходные выражения и коэффициенты взяты из таблицы 2 статьи Цвиркуна и соавторов.'}</p>
-      <p>В строке X₃ делитель X₃₁ᵐᵃˣ прочитан как X₃ᵐᵃˣ. В строке f₁₃⁺ использован коэффициент k₁₃⁺ = 0,025, указанный в таблице для этой функции.</p>
+      <p>В строке X₃ делитель X₃₁ᵐᵃˣ прочитан как X₃ᵐᵃˣ.{!props.system4Cubic && ' В строке f₁₃⁺ использован коэффициент k₁₃⁺ = 0,025, указанный в таблице для этой функции.'}</p>
       <p>Начальные значения, делители и профили F(t) заданы для учебного расчёта.</p>
       <a href="https://hi-tech.asu-edu.ru/files/1%2845%29/137-154.pdf#page=8" target="_blank" rel="noreferrer">Статья, таблица 2 ↗</a>
     </details> : <MathFormula source="\frac{dX_i(t)}{dt}=\frac{f_i^+-f_i^-}{S_i}" />}
     {result.state_names.map((name, index) => <div className="equation-row" key={name}>
       <h3 id={'definition-X' + (index + 1)} tabIndex={-1}><MathFormula source={variableTex('X' + (index + 1))} /> {name}
-        <span>Делитель <MathFormula linkVariables source={(sourceEquations ? 'X' : 'S') + '_{' + (index + 1) + '}' + (sourceEquations ? '^{\\max}' : '')} /> = {fmt(config.scales[index], 5)}</span>
+        <span>Нормирование <MathFormula linkVariables source={(sourceEquations ? 'X' : 'S') + '_{' + (index + 1) + '}' + (sourceEquations ? '^{\\max}' : '')} /> = {fmt(config.scales[index], 5)}</span>
       </h3>
       {sourceEquations && <div className="source-equation"><MathFormula block linkVariables source={sourceEquations[index].tex} /></div>}
       {renderPart('plus', index)}

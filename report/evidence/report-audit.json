@@ -5,7 +5,7 @@
       "passed": true
     },
     {
-      "name": "17 native editable equations",
+      "name": "All formulas are native editable Office Math",
       "passed": true
     },
     {
@@ -73,7 +73,63 @@
       "passed": true
     },
     {
-      "name": "All production equations have provenance records",
+      "name": "Exact figure argument list for X1",
+      "passed": true
+    },
+    {
+      "name": "Exact figure argument list for X2",
+      "passed": true
+    },
+    {
+      "name": "Exact figure argument list for X3",
+      "passed": true
+    },
+    {
+      "name": "Exact figure argument list for X4",
+      "passed": true
+    },
+    {
+      "name": "Exact figure argument list for X5",
+      "passed": true
+    },
+    {
+      "name": "Exact figure argument list for X6",
+      "passed": true
+    },
+    {
+      "name": "Exact figure argument list for X7",
+      "passed": true
+    },
+    {
+      "name": "Exact figure argument list for X8",
+      "passed": true
+    },
+    {
+      "name": "Exact figure argument list for X9",
+      "passed": true
+    },
+    {
+      "name": "Exact figure argument list for X10",
+      "passed": true
+    },
+    {
+      "name": "Exact figure argument list for X11",
+      "passed": true
+    },
+    {
+      "name": "Exact figure argument list for X12",
+      "passed": true
+    },
+    {
+      "name": "Exact figure argument list for X13",
+      "passed": true
+    },
+    {
+      "name": "All 19 cubic coefficient rows match the integrated model",
+      "passed": true
+    },
+    {
+      "name": "Report configuration matches the current numerical evidence",
       "passed": true
     },
     {
@@ -101,20 +157,24 @@
       "passed": true
     },
     {
+      "name": "Current interface fixes passed browser QA",
+      "passed": true
+    },
+    {
       "name": "Pages Python QA passed",
       "passed": true
     }
   ],
-  "pages": 37,
+  "pages": 39,
   "passed": true,
   "files": {
     "Практическая_работа_2_Химический_выброс.docx": {
-      "bytes": 1374373,
-      "sha256": "14b4833922d7b996da2ecd4747dc5f73c20313862f8fa9b269d66ee2b190b742"
+      "bytes": 1507971,
+      "sha256": "938191c969b26689a6154278c5aa3f47307c62095bb0c88ac83386c014ba1897"
     },
     "Практическая_работа_2_Химический_выброс.pdf": {
-      "bytes": 1631335,
-      "sha256": "4d927995a6a513be2e1c1f869e8a87a6d3611d523d55dd5794df1913c80f492b"
+      "bytes": 1827749,
+      "sha256": "565546fe4f284f947c3823e91891d5ac4dc64d69bad031bbe46b4ac3d527da3c"
     }
   },
   "visual_review": "Each final rendered page separately reviewed; no clipping or detached captions accepted."

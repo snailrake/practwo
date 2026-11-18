@@ -126,6 +126,9 @@ details[open] > summary { margin-bottom: 8px; }
 .scale-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin: 12px 0; }
 .scale-inputs label { display: flex; align-items: center; gap: 8px; font-size: 11px; }
 .scale-inputs input { font-size: 11px; padding: 5px; }
+.radar-limit-input { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.radar-limit-input > .math-inline { flex-shrink: 0; }
+.radar-limit-input > input { margin-top: 0; }
 .button-row { display: flex; flex-wrap: wrap; gap: 7px; }
 .button-row button { font-size: 10px; padding: 7px 8px; }
 main { min-width: 0; }
@@ -138,6 +141,9 @@ main { min-width: 0; }
 .section-heading h2 { margin: 4px 0 0; white-space: nowrap; }
 .section-heading select { max-width: 350px; font-size: 11px; }
 .profile-title { font-weight: 400; margin-bottom: 5px; color: #555; }
+.profile { --overview-chart-height: clamp(260px, 42dvh, 430px); }
+.overview-chart { position: sticky; top: 0; z-index: 3; padding-top: 6px; background: #fff; border-bottom: 1px solid #ddd; }
+.profile .equation-row h3, .profile .number-slot input { scroll-margin-top: calc(var(--overview-chart-height) + 20px); }
 .equation-editor { margin-top: 16px; padding-top: 12px; border-top: 1px solid #ddd; }
 .equation-editor .section-heading, .equation-editor .button-row { flex-wrap: wrap; }
 .equation-row { padding: 12px 0; border-bottom: 1px solid #ddd; }
@@ -259,6 +265,7 @@ footer { display: flex; justify-content: space-between; gap: 16px; padding: 24px
   .editor-result-plot { border-left: 0; border-top: 1px solid #ddd; padding: 9px 0 0; }
 }
 @media(max-width: 800px) {
+  .profile { --overview-chart-height: clamp(210px, 32dvh, 280px); }
   .app { padding: 20px 16px 0; }
   h1 { font-size: 19px; letter-spacing: -.5px; }
   .workbench { display: flex; flex-direction: column; gap: 24px; padding-top: 20px; }

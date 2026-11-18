@@ -239,8 +239,8 @@ export function App() {
             </label>)}</div>
           </details>
           <details>
-            <summary>Нормировочные делители {isSystem4 ? <MathFormula source="X_i^{\max}" /> : 'Sᵢ'}</summary>
-            <p className="note">Положительные делители правых частей. Не переводят модельные значения в физические единицы.</p>
+            <summary>Нормирование {isSystem4 ? <MathFormula source="X_i^{\max}" /> : 'Sᵢ'}</summary>
+            <p className="note">{isSystem4 ? 'Обозначение Xᵢᵐᵃˣ повторяет рисунок (4). Эти положительные параметры приняты для учебного примера и делят правые части уравнений.' : 'Sᵢ — положительные параметры нормирования правых частей.'} При увеличении параметра скорость изменения соответствующего X уменьшается. Исходный кубический пример использует эти же значения как верхние границы показателей. Масштаб лучей Rᵢ настраивается во вкладке лепестковых диаграмм.</p>
             <div className="scale-inputs">{names.map((n, i) => <label key={n}><MathFormula source={divisorTex(i, isSystem4)} /><input id={'divisor-X' + (i + 1)} aria-label={'S' + (i + 1) + ' делитель'} type="number" min={1e-8} step="any" value={fieldNumber(config.scales[i])} onChange={e => array('scales', i, e.target.valueAsNumber)} /></label>)}</div>
           </details>
           </details>
@@ -260,7 +260,7 @@ export function App() {
               <div className="results-view" role="group" aria-label="Отображение результатов"><button aria-pressed={!allCharts} onClick={() => setAllCharts(false)}>Один график</button><button aria-pressed={allCharts} onClick={() => setAllCharts(true)}>Все 11 графиков</button></div>
               {allCharts ? <><h2>Все 11 временных зависимостей</h2>
                 {isSystem4 && <p className="section-note">11 показателей задания в нумерации системы (4). Амбулаторная помощь X₇ и фоновое воздействие X₁₃ доступны в режиме «Один график».</p>}
-                <AllProfiles key={names.length} r={result} cursor={cursor} comparison={comparison} /></> : <>
+                <div className="overview-chart"><AllProfiles key={names.length} r={result} cursor={cursor} comparison={comparison} /></div></> : <>
               <div className="section-heading"><h2>Временной профиль</h2><select aria-label="Характеристика на основном графике" value={selected} onChange={e => setSelected(+e.target.value)}>{names.map((n, i) => <option key={n} value={i}>{'X' + (i + 1)} · {n}</option>)}</select></div>
               <h3 className="profile-title">{symbol('X', selected)} {names[selected]}</h3>
               <Chart label={'Временной профиль X' + (selected + 1)} height={360} option={lineOption(result, selected, cursor, comparison)} />
@@ -287,11 +287,11 @@ export function App() {
           {tab === 3 && <>
             <section><h2>Четыре снимка расчёта</h2><p className="section-note radar-explanation">На всех четырёх снимках у каждого показателя одна шкала. Число под названием луча — его верхний предел в относительных единицах.</p><QuarterRadars r={result} /></section>
             <section><h2>Численные значения срезов</h2><div className="table-scroll"><table><thead><tr><th>Характеристика</th>{snapshots.map(q => <th key={q.t}>{timeSymbol} = {fmt(q.t, 3)}</th>)}{comparison && <><th>Эталон, {timeSymbol} = {fmt(comparison.config.t_end)}</th><th>Разность</th></>}</tr></thead><tbody>{result.profile_indices.map(i => <tr key={i}><th scope="row">{symbol('X', i)} {labels[i]}</th>{snapshots.map(q => <td key={q.t}>{fmt(q.values[i], 6)}</td>)}{comparison && <><td>{fmt(comparison.y.at(-1)![i], 6)}</td><td>{fmt(result.y.at(-1)![i] - comparison.y.at(-1)![i], 6)}</td></>}</tr>)}</tbody></table></div></section>
-            <details className="plain-details"><summary>Пределы шкал</summary><p>Задайте верхнюю границу каждого луча. По умолчанию используются пределы учебного сценария.</p><div className="scale-values">{result.profile_indices.map(i => {
+            <details className="plain-details"><summary>Пределы шкал</summary><p>Верхняя граница луча Rᵢ задаёт масштаб изображения. Во всех четырёх четвертях используется одно значение Rᵢ. В исходном кубическом примере принято Rᵢ = Xᵢᵐᵃˣ. Параметры уравнений доступны в настройках нормирования.</p><div className="scale-values">{result.profile_indices.map(i => {
               const limits = config.radar_limits ?? result.radar_scales;
               return <label className="field" key={i}>
-              {symbol('X', i)} {labels[i]}<input type="number" min={1e-9} max={1e8} step="any" aria-label={'Предел X' + (i + 1)}
-                value={fieldNumber(limits[i])} onChange={e => update('radar_limits', limits.map((v, j) => j === i ? e.target.valueAsNumber : v))} /></label>;
+              {symbol('X', i)} {labels[i]}<span className="radar-limit-input"><MathFormula source={'R_{' + (i + 1) + '}='} /><input type="number" min={1e-9} max={1e8} step="any" aria-label={'Предел X' + (i + 1)}
+                value={fieldNumber(limits[i])} onChange={e => update('radar_limits', limits.map((v, j) => j === i ? e.target.valueAsNumber : v))} /></span></label>;
             })}</div></details>
           </>}
           {tab === 1 && <>

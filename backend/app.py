@@ -17,7 +17,7 @@ workers = threading.BoundedSemaphore(2)
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "model": "assignment-table-1-11-states", "version": "2.0.0"}
+    return {"status": "ok", "model": "assignment-system-4-and-table-1", "version": "2.0.0"}
 
 
 @app.get("/api/presets")

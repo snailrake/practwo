@@ -313,7 +313,7 @@ function FormulaWorkspace({ config, names, factors, external = false, result, st
           {(!sourceEquation || sourceEquation.has_minus) && <button type="button" aria-pressed={side === 'minus'} onClick={() => setSide('minus')}>Вычитаемая часть</button>}
         </div>
         <FormulaPart key={side} part={part} name={side === 'plus' ? 'Первая часть' : 'Вычитаемая часть'} roundCoefficients={roundCoefficients} />
-        <div className="equation-divisor"><span>Делитель</span> <MathFormula linkVariables source={sourceEquation ? 'X_{' + (index + 1) + '}^{\\max}' : 'S_{' + (index + 1) + '}'} /> = {fmt(config.scales[index], 6)}</div>
+        <div className="equation-divisor"><span>Нормирование</span> <MathFormula linkVariables source={sourceEquation ? 'X_{' + (index + 1) + '}^{\\max}' : 'S_{' + (index + 1) + '}'} /> = {fmt(config.scales[index], 6)}</div>
       </>}
       <div className="formula-toolbar">
         {!sourceEquation && <label className="field">Вид формулы<select aria-label="Вид формулы" value={part.form ?? 'formula'}

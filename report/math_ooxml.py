@@ -31,11 +31,12 @@ def group(nodes):
     return el('d',pr,el('e',nodes))
 
 
-def expression(source):
+def expression(source, state_time=False, time_symbol='τ'):
     def walk(n):
         if isinstance(n,ast.Name):
-            if n.id.startswith(('X','F','S')) and n.id[1:].isdigit():return [sub(n.id[0],n.id[1:])]
-            return [run('τ' if n.id=='t' else n.id)]
+            if n.id.startswith(('X','F','S')) and n.id[1:].isdigit():
+                return [sub(n.id[0],n.id[1:])] + ([group([run(time_symbol)])] if state_time and n.id.startswith('X') else [])
+            return [run(time_symbol if n.id=='t' else n.id)]
         if isinstance(n,ast.Constant):
             v=n.value
             if isinstance(v,float) and v!=0 and abs(v)<.0001:
@@ -43,6 +44,13 @@ def expression(source):
             return [run(str(v).replace('.',','))]
         if isinstance(n,ast.UnaryOp):return [run('−' if isinstance(n.op,ast.USub) else '+'),*walk(n.operand)]
         if isinstance(n,ast.BinOp):
+            if isinstance(n.op,ast.Add):
+                right=n.right
+                if isinstance(right,ast.UnaryOp) and isinstance(right.op,ast.USub):
+                    return [*walk(n.left),run('−'),*walk(right.operand)]
+                if isinstance(right,ast.BinOp) and isinstance(right.op,ast.Mult) and isinstance(right.left,ast.UnaryOp) and isinstance(right.left.op,ast.USub):
+                    positive=ast.BinOp(left=right.left.operand,op=ast.Mult(),right=right.right)
+                    return [*walk(n.left),run('−'),*walk(positive)]
             left,right=walk(n.left),walk(n.right)
             if isinstance(n.op,ast.Div):return [frac(left,right)]
             if isinstance(n.op,ast.Pow):

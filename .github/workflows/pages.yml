@@ -46,6 +46,7 @@ jobs:
           done
           node scripts/qa_pages.mjs
           EDITOR_URL=http://127.0.0.1:8002/pages-dist/ EDITOR_EVIDENCE=report/evidence/pages/editor node scripts/qa_editor.mjs
+          REVIEW_URL=http://127.0.0.1:8002/pages-dist/ REVIEW_EVIDENCE=report/evidence/pages/review node scripts/qa_review_fixes.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

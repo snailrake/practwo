@@ -76,7 +76,7 @@ class SimulationConfig(BaseModel):
 
 
 class Dynamics:
-    def __init__(self, config: SimulationConfig):
+    def __init__(self, config: SimulationConfig, *, time_limit: float = 12):
         self.config = config
         self.factors = [Expression(x, {"t"}) for x in config.factors]
         names = config.variables
@@ -85,7 +85,7 @@ class Dynamics:
         if config.is_system4:
             self.check_system4()
         self.evaluations = 0
-        self.deadline = time.monotonic() + 12
+        self.deadline = time.monotonic() + time_limit
         self.components(0.0, np.array(config.initial))
 
     def check_system4(self):
@@ -121,7 +121,7 @@ class Dynamics:
     def rhs(self, t, y):
         self.evaluations += 1
         if self.evaluations > 150000 or time.monotonic() > self.deadline:
-            raise ModelError("Превышен лимит расчёта; проверьте жёсткость, формулы и делители S")
+            raise ModelError("Превышен лимит расчёта; проверьте жёсткость, формулы и параметры нормирования")
         p, m, _ = self.components(t, y)
         dy = (p - m) / np.array(self.config.scales)
         if not np.all(np.isfinite(dy)) or np.max(np.abs(y)) > 1e8:
@@ -131,7 +131,10 @@ class Dynamics:
 
 def simulate(config: SimulationConfig, *, step_divisor: int = 100):
     started = time.perf_counter()
-    dynamics = Dynamics(config)
+    # The refined verification reference uses ten times more integration steps.
+    # Give that internal operation enough time in WebAssembly as well as native
+    # Python; the RHS evaluation limit and all domain checks stay in force.
+    dynamics = Dynamics(config, time_limit=60 if step_divisor > 100 else 12)
     # Include exact quarter endpoints independently of requested plot resolution.
     quarters = np.arange(1, 5) * config.t_end / 4
     times = np.unique(np.concatenate([np.linspace(0, config.t_end, config.samples), quarters]))

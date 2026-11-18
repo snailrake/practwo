@@ -1,6 +1,30 @@
 {
-  "url": "http://127.0.0.1:8014/",
+  "url": "http://127.0.0.1:8020/",
   "checks": [
+    {
+      "name": "The system (4) coefficient stays at hundredths on focus and is used in the solve",
+      "passed": true
+    },
+    {
+      "name": "Worked calculations are collapsed initially",
+      "passed": true
+    },
+    {
+      "name": "The X4 substitution shows the arguments and both evaluated functions from the solve",
+      "passed": true
+    },
+    {
+      "name": "The worked slope subtracts the negative part and uses the actual divisor",
+      "passed": true
+    },
+    {
+      "name": "The worked example hides obsolete values during an incomplete edit",
+      "passed": true
+    },
+    {
+      "name": "The slope and chart points refresh together after editing",
+      "passed": true
+    },
     {
       "name": "First screen is the inline cubic editor without an extra click",
       "passed": true
@@ -10,11 +34,11 @@
       "passed": true
     },
     {
-      "name": "Both parts are visible together with subtraction and the divisor",
+      "name": "The first part is the only formula visible by default",
       "passed": true
     },
     {
-      "name": "One reset and no separate equation-part selector",
+      "name": "One reset and two equation-part buttons",
       "passed": true
     },
     {
@@ -34,7 +58,7 @@
       "passed": true
     },
     {
-      "name": "Editing the second cubic selects it and preserves its other factors in the solver",
+      "name": "Editing the second cubic preserves its other arguments",
       "passed": true
     },
     {
@@ -74,7 +98,7 @@
       "passed": true
     },
     {
-      "name": "Inline inputs accept a decimal comma",
+      "name": "Inline inputs accept a decimal comma and round the number used in the solve",
       "passed": true
     },
     {
@@ -338,31 +362,31 @@
       "passed": true
     },
     {
-      "name": "F1 uses its own number of fields and time argument",
+      "name": "F1 uses four fields and the time argument",
       "passed": true
     },
     {
-      "name": "F2 uses its own number of fields and time argument",
+      "name": "F2 uses four fields and the time argument",
       "passed": true
     },
     {
-      "name": "F3 uses its own number of fields and time argument",
+      "name": "F3 uses four fields and the time argument",
       "passed": true
     },
     {
-      "name": "F4 uses its own number of fields and time argument",
+      "name": "F4 uses four fields and the time argument",
       "passed": true
     },
     {
-      "name": "F5 uses its own number of fields and time argument",
+      "name": "F5 uses four fields and the time argument",
       "passed": true
     },
     {
-      "name": "F6 uses its own number of fields and time argument",
+      "name": "F6 uses four fields and the time argument",
       "passed": true
     },
     {
-      "name": "F7 uses its own number of fields and time argument",
+      "name": "F7 uses four fields and the time argument",
       "passed": true
     },
     {

@@ -93,10 +93,14 @@ def test_system4_cubic_has_nonzero_cubes_and_preserves_figure_arguments():
             scale = Expression(multiplier['source'], set(inputs))(inputs) if multiplier else 1
             assert result[kind][0][i] == pytest.approx(scale * np.polyval(coefficients, argument))
     trajectory = np.asarray(result['y'])
+    assert config.scales == config.radar_limits
     assert np.all((trajectory >= 0) & (trajectory <= config.radar_limits))
     curves = trajectory[:, result['profile_indices']]
     chord = curves[0] + np.asarray(result['t'])[:, None] / config.t_end * (curves[-1] - curves[0])
     assert np.all(np.max(np.abs(curves - chord), axis=0) > .07 * np.ptp(curves))
+    factors = np.asarray(result['factors'])
+    factor_chord = factors[0] + np.asarray(result['t'])[:, None] / config.t_end * (factors[-1] - factors[0])
+    assert np.all(np.max(np.abs(factors - factor_chord), axis=0) > .15 * np.ptp(factors, axis=0))
     changes = np.diff(curves, axis=0)
     assert np.count_nonzero((changes.min(axis=0) < -.00001) & (changes.max(axis=0) > .00001)) >= 4
     p = preview(PreviewConfig(config=config, kind='plus', index=3, argument='X1'))
