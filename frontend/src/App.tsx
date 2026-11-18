@@ -1,11 +1,12 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
-import { AllProfiles, Chart, DependencyGraph, QuarterRadars, fmt, lineOption, short } from './Charts';
+import { useEffect, useRef, useState, type FocusEvent, type MouseEvent } from 'react';
+import { Chart, DependencyGraph, QuarterRadars, fmt, lineOption, short } from './Charts';
 import { MathFormula } from './Math';
 import type { Config, Result, Verification } from './types';
 import { browserPython, call, onRuntimeProgress, reportURL } from './compute';
 import { FunctionEditor } from './FunctionEditor';
 import { EquationList } from './EquationList';
 import { useSimulation } from './useSimulation';
+import { OverviewChart } from './OverviewChart';
 
 const tabs = ['Все результаты', 'Зависимости', 'Внешние факторы', 'Лепестковые диаграммы'];
 const clone = <T,>(value: T): T => structuredClone(value);
@@ -36,6 +37,7 @@ export function App() {
   const [reference, setReference] = useState<Result | null>(null);
   const [tab, setTab] = useState(0);
   const [selected, setSelected] = useState(2);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [frame, setFrame] = useState(400);
   const [allCharts, setAllCharts] = useState(true);
   const [definitionJump, setDefinitionJump] = useState<{ id: string } | null>(null);
@@ -45,6 +47,8 @@ export function App() {
   const [initialOpen, setInitialOpen] = useState(() => window.matchMedia('(min-width: 801px)').matches);
   const [runtimeProgress, setRuntimeProgress] = useState('Загрузка Python в браузер…');
   const fileInput = useRef<HTMLInputElement>(null);
+  const sidebar = useRef<HTMLElement>(null);
+  const sidebarEnd = useRef<HTMLDivElement>(null);
   const loaded = useRef(false);
   const latestConfig = useRef(config);
   latestConfig.current = config;
@@ -124,6 +128,7 @@ export function App() {
     if (!external) setDraftPending(false);
   }
   function applyScenario(next: Config) {
+    setPreviewIndex(null);
     setDraftPending(false);
     setScenarioVersion(n => n + 1);
     setScenarioDefaults(clone(next));
@@ -198,13 +203,22 @@ export function App() {
     setFrame(result.t.reduce((best, t, i) => Math.abs(t - time) < Math.abs(result.t[best] - time) ? i : best, 0));
   }
 
-  return <div className={formulaView ? 'app formula-view' : 'app'} onClick={followDefinition}>
+  function followEditorFocus(event: FocusEvent<HTMLDivElement>) {
+    // Let a variable link finish its click before highlighting the destination.
+    if (event.target.closest('a')) return;
+    const heading = event.target.closest('.equation-editor .equation-row')?.querySelector('h3[id]');
+    const match = heading?.id.match(/^definition-X(\d+)$/);
+    if (match) { setPreviewIndex(Number(match[1]) - 1); setSelected(Number(match[1]) - 1); }
+    else if (heading?.id.startsWith('definition-F')) setPreviewIndex(null);
+  }
+
+  return <div className={formulaView ? 'app formula-view' : 'app'} onClick={followDefinition} onFocusCapture={followEditorFocus}>
     <header className="header">
       <div><h1>Моделирование химического выброса</h1><p className="subtitle">Системная динамика · 11 характеристик · Python / SciPy{browserPython ? ' · В браузере' : ''}</p></div>
       <div className="header-links"><a href={reportURL('docx')}>Отчёт DOCX ↓</a><a href={reportURL('pdf')}>PDF ↓</a></div>
     </header>
     <div className="workbench">
-      <aside className="sidebar">
+      <aside className="sidebar" ref={sidebar}>
         <section>
           <h2>Исходные данные</h2>
           <label className="field">Сценарий
@@ -246,6 +260,7 @@ export function App() {
           </details>
         </section>
         <p className="scope-note">Учебная модель в относительной шкале. Для прогноза реальной аварии нужна калибровка по данным объекта.</p>
+        <div ref={sidebarEnd} />
       </aside>
       <main>
         <nav className="tabs" aria-label="Разделы приложения">{tabs.map((name, i) => <button className={tab === i ? 'active' : ''} key={name} onClick={() => setTab(i)} aria-current={tab === i ? 'page' : undefined}>{name}</button>)}</nav>
@@ -260,7 +275,8 @@ export function App() {
               <div className="results-view" role="group" aria-label="Отображение результатов"><button aria-pressed={!allCharts} onClick={() => setAllCharts(false)}>Один график</button><button aria-pressed={allCharts} onClick={() => setAllCharts(true)}>Все 11 графиков</button></div>
               {allCharts ? <><h2>Все 11 временных зависимостей</h2>
                 {isSystem4 && <p className="section-note">11 показателей задания в нумерации системы (4). Амбулаторная помощь X₇ и фоновое воздействие X₁₃ доступны в режиме «Один график».</p>}
-                <div className="overview-chart"><AllProfiles key={names.length} r={result} cursor={cursor} comparison={comparison} /></div></> : <>
+                <OverviewChart key={names.length + '-' + scenarioVersion} r={result} cursor={cursor} comparison={comparison}
+                  activeIndex={previewIndex} status={resultStatus} sidebar={sidebar} sidebarEnd={sidebarEnd} /></> : <>
               <div className="section-heading"><h2>Временной профиль</h2><select aria-label="Характеристика на основном графике" value={selected} onChange={e => setSelected(+e.target.value)}>{names.map((n, i) => <option key={n} value={i}>{'X' + (i + 1)} · {n}</option>)}</select></div>
               <h3 className="profile-title">{symbol('X', selected)} {names[selected]}</h3>
               <Chart label={'Временной профиль X' + (selected + 1)} height={360} option={lineOption(result, selected, cursor, comparison)} />

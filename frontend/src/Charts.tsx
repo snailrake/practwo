@@ -98,33 +98,46 @@ export function QuarterRadars({ r }: { r: Result }) {
   })}</div>;
 }
 
-export function AllProfiles({ r, cursor, comparison }: { r: Result; cursor: number; comparison: Result | null }) {
+export function AllProfiles({ r, cursor, comparison, compact = false, activeIndex = null, height = 380 }: {
+  r: Result; cursor: number; comparison: Result | null; compact?: boolean; activeIndex?: number | null; height?: number | string;
+}) {
   const colors = ['#245e55', '#b34429', '#4169b1', '#773d8a', '#956600', '#0b748b',
     '#a32763', '#557219', '#394658', '#aa5819', '#383284'];
   const base = lineOption(r, 0, cursor);
-  const values = r.y.flatMap(row => r.profile_indices.map(index => row[index]));
+    const indices = activeIndex !== null && !r.profile_indices.includes(activeIndex) ? [...r.profile_indices, activeIndex] : r.profile_indices;
+    const values = r.y.flatMap(row => indices.map(index => row[index]));
   const span = Math.max(...values) - Math.min(...values);
   const start = r.y[0];
   const end = r.y.at(-1)!;
   // Emphasize deviations large enough to see on the shared vertical scale.
-  const curved = r.profile_indices.map(index => r.y.some((row, frame) => {
+    const curved = indices.map(index => r.y.some((row, frame) => {
     const chord = start[index] + (end[index] - start[index]) * r.t[frame] / r.config.t_end;
     return Math.abs(row[index] - chord) > .03 * span;
   }));
-  const series = r.profile_indices.flatMap((index, position) => {
+    const series = indices.flatMap((index, position) => {
     const label = 'X' + (index + 1) + ' · ' + r.state_names[index];
     const [current, reference] = lineOption(r, index, index === 0 ? cursor : undefined, comparison).series;
-    const color = colors[position];
+      const color = colors[position] ?? '#245e55';
+      const focused = activeIndex === index;
+      const subdued = activeIndex !== null && !focused;
     return [
-      { ...current, name: label, itemStyle: { color }, z: curved[position] ? 3 : 2,
-        lineStyle: { color, width: curved[position] ? 3 : 1.6, opacity: curved[position] ? 1 : .65 } },
+        { ...current, name: label, itemStyle: { color }, z: focused ? 5 : curved[position] ? 3 : 2,
+          lineStyle: { color, width: focused ? 3 : compact ? 1.4 : curved[position] ? 3 : 1.6,
+            opacity: subdued ? compact ? .22 : .5 : curved[position] ? 1 : .65 } },
       ...(reference ? [{ ...reference, name: label, itemStyle: { color }, lineStyle: { color, type: 'dashed', width: 1 } }] : []),
     ];
   });
-  return <Chart label="Все 11 временных зависимостей" height="var(--overview-chart-height, clamp(260px, 42dvh, 430px))" option={{
+  return <Chart label={indices.length === 11 ? 'Все 11 временных зависимостей' : 'Временные зависимости'} height={height} option={{
     ...base, series,
-    grid: { ...base.grid, bottom: 48 },
-    legend: { bottom: 8, left: 12, right: 12, formatter: (name: string) => name.split(' · ')[0] },
+      grid: { ...base.grid, ...(compact ? { top: 12, bottom: 20, right: 14, left: 4 } : { bottom: 48 }) },
+      tooltip: compact ? { show: false } : base.tooltip,
+      xAxis: { ...base.xAxis, splitNumber: compact ? 2 : 5,
+        axisLabel: { fontSize: compact ? 9 : 11, formatter: (v: number) => fmt(v, compact ? 2 : 3), hideOverlap: true }, ...(compact ? { name: '' } : {}) },
+      yAxis: { ...base.yAxis, splitNumber: compact ? 4 : 5,
+        axisLabel: { fontSize: compact ? 9 : 11, formatter: (v: number) => fmt(v, compact ? 2 : 5), hideOverlap: true }, ...(compact ? { name: '' } : {}) },
+      legend: { show: !compact, type: 'scroll', bottom: 8, left: 12, right: 12,
+        ...(activeIndex === null ? {} : { selected: { ['X' + (activeIndex + 1) + ' · ' + r.state_names[activeIndex]]: true } }),
+        formatter: (name: string) => name.split(' · ')[0] },
   }} />;
 }
 

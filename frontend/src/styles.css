@@ -6,6 +6,7 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; }
+html { scrollbar-gutter: stable; }
 button, input, select { font: inherit; color: inherit; border-radius: 0; }
 button, summary, select { cursor: pointer; }
 button { background: #fff; border: 1px solid #b5b5b5; padding: 7px 10px; }
@@ -142,8 +143,27 @@ main { min-width: 0; }
 .section-heading select { max-width: 350px; font-size: 11px; }
 .profile-title { font-weight: 400; margin-bottom: 5px; color: #555; }
 .profile { --overview-chart-height: clamp(260px, 42dvh, 430px); }
-.overview-chart { position: sticky; top: 0; z-index: 3; padding-top: 6px; background: #fff; border-bottom: 1px solid #ddd; }
-.profile .equation-row h3, .profile .number-slot input { scroll-margin-top: calc(var(--overview-chart-height) + 20px); }
+.overview-chart-anchor { height: var(--overview-chart-height); margin-bottom: 12px; }
+.overview-chart { background: #fff; }
+.overview-mini { position: fixed; z-index: 3; height: 300px; padding: 12px; border: 1px solid #c6cecc; display: grid; grid-template-rows: 40px minmax(0, 1fr) 30px; gap: 6px; }
+.overview-mini-heading { min-width: 0; }
+.overview-mini-heading h3, .overview-mini-heading p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.overview-mini-heading h3 { font-size: 12px; }
+.overview-mini-heading p { margin: 3px 0 0; color: #666; font-size: 10px; }
+.overview-mini .overview-chart-frame, .overview-mini .chart { height: 100%; min-height: 0; }
+.overview-mini .chart-download { display: none; }
+.overview-mini[data-current=false] .chart { opacity: .55; }
+.overview-mini-actions { display: flex; justify-content: space-between; gap: 8px; }
+.overview-mini-actions button { padding: 4px 7px; font-size: 10px; }
+.overview-show { position: fixed; z-index: 3; right: 16px; bottom: 16px; padding: 9px 13px; font-size: 12px; box-shadow: 0 2px 8px #0002; }
+.overview-show-sidebar { right: auto; bottom: auto; }
+.overview-dialog { width: min(1120px, calc(100% - 32px)); max-height: calc(100dvh - 32px); padding: 20px; border: 1px solid #999; background: #fff; }
+.overview-dialog::backdrop { background: #0005; }
+.overview-dialog-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 12px; }
+.overview-dialog-heading h2 { margin: 0; }
+.overview-dialog-heading p { font-size: 11px; color: #666; margin: 4px 0 0; }
+.overview-dialog-heading button { font-size: 12px; }
+.profile .equation-row h3, .profile .number-slot input { scroll-margin-top: 24px; }
 .equation-editor { margin-top: 16px; padding-top: 12px; border-top: 1px solid #ddd; }
 .equation-editor .section-heading, .equation-editor .button-row { flex-wrap: wrap; }
 .equation-row { padding: 12px 0; border-bottom: 1px solid #ddd; }

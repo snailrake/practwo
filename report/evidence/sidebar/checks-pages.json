@@ -1,0 +1,142 @@
+{
+  "url": "http://127.0.0.1:8022/pages-dist/",
+  "checks": [
+    {
+      "name": "Default normalization equals the declared radar bounds",
+      "passed": true
+    },
+    {
+      "name": "All 11 computed curves bend by at least seven percent of the common vertical span",
+      "passed": true
+    },
+    {
+      "name": "Every state stays positive and below its selected maximum on the whole output grid",
+      "passed": true
+    },
+    {
+      "name": "All eight cubic factor curves have visible curvature",
+      "passed": true
+    },
+    {
+      "name": "The preview uses the left column without covering formulas at 1366",
+      "passed": true
+    },
+    {
+      "name": "The preview leaves sidebar settings accessible at 1366",
+      "passed": true
+    },
+    {
+      "name": "Focusing X4 highlights its actual curve at 1366",
+      "passed": true
+    },
+    {
+      "name": "Exactly one combined plot at 1366",
+      "passed": true
+    },
+    {
+      "name": "No page overflow at 1366",
+      "passed": true
+    },
+    {
+      "name": "The preview uses the left column without covering formulas at 1280",
+      "passed": true
+    },
+    {
+      "name": "The preview leaves sidebar settings accessible at 1280",
+      "passed": true
+    },
+    {
+      "name": "Focusing X4 highlights its actual curve at 1280",
+      "passed": true
+    },
+    {
+      "name": "Exactly one combined plot at 1280",
+      "passed": true
+    },
+    {
+      "name": "No page overflow at 1280",
+      "passed": true
+    },
+    {
+      "name": "Mobile keeps the full height for formulas",
+      "passed": true
+    },
+    {
+      "name": "Mobile opens a readable chart on demand",
+      "passed": true
+    },
+    {
+      "name": "Exactly one combined plot at 390",
+      "passed": true
+    },
+    {
+      "name": "No page overflow at 390",
+      "passed": true
+    },
+    {
+      "name": "Expanded chart is a modal with one canvas",
+      "passed": true
+    },
+    {
+      "name": "Closing restores focus and the place in the formulas",
+      "passed": true
+    },
+    {
+      "name": "The preview can be hidden without moving the form",
+      "passed": true
+    },
+    {
+      "name": "An unfinished number marks the preview as stale",
+      "passed": true
+    },
+    {
+      "name": "Editing the visible coefficient runs a new solution",
+      "passed": true
+    },
+    {
+      "name": "The left preview works after replacing a scenario",
+      "passed": true
+    },
+    {
+      "name": "Additional X7 also has an active preview",
+      "passed": true
+    },
+    {
+      "name": "A normalization link still opens its sidebar setting",
+      "passed": true
+    },
+    {
+      "name": "Factor navigation returns to the full set of preview curves",
+      "passed": true
+    },
+    {
+      "name": "Returning to the top restores the large graph in the main column",
+      "passed": true
+    },
+    {
+      "name": "The worked calculation is available under X4",
+      "passed": true
+    },
+    {
+      "name": "All eight editable factor rows and adjacent plots are present",
+      "passed": true
+    },
+    {
+      "name": "Four quarter diagrams use the supplied limits",
+      "passed": true
+    },
+    {
+      "name": "Radar limits have their own R labels",
+      "passed": true
+    },
+    {
+      "name": "The new default passes all five numerical checks",
+      "passed": true
+    },
+    {
+      "name": "No uncaught browser errors",
+      "passed": true
+    }
+  ],
+  "errors": []
+}

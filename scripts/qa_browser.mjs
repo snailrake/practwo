@@ -131,8 +131,9 @@ try{
  delete legacy.radar_limits;
  await importConfig(legacy);
  check('Older scenarios receive the default limits and stay exportable',await page.getByRole('button',{name:'Результат JSON ↓',exact:true}).isEnabled());
- await selectTab('Все результаты');const pngPromise=page.waitForEvent('download');await page.getByRole('button',{name:'Скачать Временной профиль X3',exact:true}).click();
- const png=await pngPromise;await png.saveAs(path.join(output,'ui-chart-export.png'));
+ await selectTab('Все результаты');await page.getByLabel('Характеристика на основном графике',{exact:true}).selectOption('2');
+ const [png]=await Promise.all([page.waitForEvent('download'),page.getByRole('button',{name:'Скачать Временной профиль X3',exact:true}).click()]);
+ await png.saveAs(path.join(output,'ui-chart-export.png'));
  check('Graph PNG export has bytes',(await fs.stat(path.join(output,'ui-chart-export.png'))).size>10000);
  await page.getByLabel('X1 начальное условие',{exact:true}).fill('0.75');await run();
  check('Initial conditions editing recomputes',!(await page.getByRole('alert').count()));
