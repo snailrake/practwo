@@ -216,14 +216,14 @@ def polynomial_projection(expression, values=None):
         class ReplaceArgument(ast.NodeTransformer):
             def visit_BinOp(self, node):
                 if ast.dump(node) == pattern:
-                    return ast.Name(id='u', ctx=ast.Load())
+                    return ast.Name(id='x', ctx=ast.Load())
                 return self.generic_visit(node)
 
         # Keep the stored expression intact. Accept the candidate only if the
         # entire expression reduces to a polynomial in this one argument.
         try:
             tree = ReplaceArgument().visit(ast.parse(expression.source, mode='eval'))
-            coefficients = polynomial_coefficients(Expression(ast.unparse(tree), {'u'}), 'u')
+            coefficients = polynomial_coefficients(Expression(ast.unparse(tree), {'x'}), 'x')
         except ModelError:
             continue
         if coefficients is not None:
@@ -240,7 +240,7 @@ def polynomial_projection(expression, values=None):
 def equation_fields(expression, values=None):
     factor = polynomial_factor(expression)
     projection = polynomial_projection(expression, values) if not factor else None
-    argument = 'u' if projection else factor['argument'] if factor else next(iter(expression.dependencies), '')
+    argument = 'x' if projection else factor['argument'] if factor else next(iter(expression.dependencies), '')
     template = projection or factor
     coefficients = template['coefficients'] if template else polynomial_coefficients(expression, argument)
     return {'source': expression.source, 'tex': expression_tex(expression),

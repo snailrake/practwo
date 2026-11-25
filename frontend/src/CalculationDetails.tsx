@@ -42,7 +42,7 @@ function evaluationTex(name: string, expression: string, value: string) {
 function evaluatedPart(fields: EquationFields, result: Result, name: string, value: string) {
   const projection = fields.projection;
   if (projection?.value == null || !fields.coefficients) {
-    return { u: null, formula: evaluationTex(name, substitute(fields.tex, result), value) };
+    return { substitution: null, formula: evaluationTex(name, substitute(fields.tex, result), value) };
   }
   const input = numberTex(projection.value, 12);
   const terms = fields.coefficients.flatMap((coefficient, i) => {
@@ -52,7 +52,7 @@ function evaluatedPart(fields: EquationFields, result: Result, name: string, val
     return [term];
   });
   return {
-    u: evaluationTex('u(0)', substitute(projection.tex, result), input),
+    substitution: evaluationTex(fields.argument + '(0)', substitute(projection.tex, result), input),
     formula: evaluationTex(name, (terms.join('+') || '0').replace(/\+-(?=\d)/g, '-'), value),
   };
 }
@@ -88,7 +88,7 @@ function StateCalculation({ result, index }: { result: Result; index: number }) 
     </div>
     <div className="calculation-equations">
       {[positive, negative].map((part, i) => part && <div key={i}>
-        {part.u && <div className="calculation-argument"><MathFormula block source={part.u} /></div>}
+        {part.substitution && <div className="calculation-argument"><MathFormula block source={part.substitution} /></div>}
         <MathFormula block source={part.formula} />
       </div>)}
     </div>

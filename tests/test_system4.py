@@ -91,6 +91,7 @@ def test_system4_cubic_has_nonzero_cubes_and_preserves_figure_arguments():
             assert fields['multiplier'] is None
             projection = fields['projection']
             if projection:
+                assert fields['argument'] == 'x'
                 names = Expression(fields['source'], set(inputs)).dependencies
                 main = projection['variable']
                 argument = inputs[main] + .1 * sum(inputs[name] for name in names if name != main)

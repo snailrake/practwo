@@ -47,8 +47,10 @@ try{
  await page.evaluate(()=>scrollTo(0,0));
  await page.screenshot({path:path.join(output,'overview.png')});
  const part=page.getByRole('group',{name:'Вычитаемая часть X1',exact:true});
- check('The default minus part is a cubic in all four original inputs',
+ check('The default minus part uses x with all four original inputs',
    (await part.locator('.polynomial-input a').count())===4 &&
+   (await part.locator('.polynomial-input').textContent()).trim().startsWith('x=') &&
+   base.equation_fields.minus[0].argument==='x' &&
    base.equation_fields.minus[0].multiplier===null && base.equation_fields.minus[0].projection.value===.34);
  check('Default normalization equals the declared radar bounds',JSON.stringify(base.config.scales)===JSON.stringify(base.config.radar_limits));
  const t=base.t,y=base.y,indices=base.profile_indices;

@@ -1,5 +1,5 @@
 {
-  "url": "http://127.0.0.1:8035/",
+  "url": "http://127.0.0.1:8037/",
   "checks": [
     {
       "name": "All 11 curves have their indexed name in the legend",
@@ -10,7 +10,7 @@
       "passed": true
     },
     {
-      "name": "The default minus part is a cubic in all four original inputs",
+      "name": "The default minus part uses x with all four original inputs",
       "passed": true
     },
     {

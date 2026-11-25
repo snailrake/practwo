@@ -82,7 +82,7 @@ export function EquationList(props: Props) {
         <InlineExpression stateTime node={fields.editable.tree} values={values} onChange={edit} />
       </>}
       </div>
-      {fields.projection && <p className="polynomial-input"><MathFormula linkVariables source={'u=' + fields.projection.tex} /></p>}
+      {fields.projection && <p className="polynomial-input"><MathFormula linkVariables source={argument + '=' + fields.projection.tex} /></p>}
     </div>;
   }
 
@@ -127,7 +127,7 @@ export function EquationList(props: Props) {
     {sourceEquations ? <details className="plain-details system4-source">
       <summary>Источник формул и обозначения</summary>
       <p>Аргументы и индексы взяты с рисунка (4) задания. {props.system4Cubic
-        ? 'Каждая часть задана кубическим полиномом. Если у функции несколько входов, u равен основному входу плюс одна десятая суммы остальных. Коэффициенты и начальные условия заданы для учебного примера.'
+        ? 'Каждая часть задана кубическим полиномом. Если у функции несколько входов, x равен основному входу плюс одна десятая суммы остальных. Коэффициенты и начальные условия заданы для учебного примера.'
         : 'Исходные выражения и коэффициенты взяты из таблицы 2 статьи Цвиркуна и соавторов.'}</p>
       <p>В строке X₃ делитель X₃₁ᵐᵃˣ прочитан как X₃ᵐᵃˣ.{!props.system4Cubic && ' В строке f₁₃⁺ использован коэффициент k₁₃⁺ = 0,025, указанный в таблице для этой функции.'}</p>
       <p>Начальные значения, делители и профили F(t) заданы для учебного расчёта.</p>

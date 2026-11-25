@@ -61,7 +61,7 @@ try {
   const partNumber = text => Number(text.replace('{,}', '.'));
   check('The X4 substitution shows the arguments and both evaluated functions from the solve',
     positive.includes('\\left(' + display(rounded.y[0][0]) + '\\right)') && Math.abs(partNumber(plusText) - rounded.plus[0][3]) < 1e-6 &&
-    minusInput.includes('\\left(' + display(rounded.factors[0][3]) + '\\right)') &&
+    minusInput.startsWith('x(0)=') && minusInput.includes('\\left(' + display(rounded.factors[0][3]) + '\\right)') &&
     negative.includes('\\left(' + display(rounded.equation_fields.minus[3].projection.value) + '\\right)') &&
     Math.abs(partNumber(minusText) - rounded.minus[0][3]) < 1e-6 &&
     await example.getByRole('link', { name: /^Внешний фактор F[134]$/ }).count() === 3);

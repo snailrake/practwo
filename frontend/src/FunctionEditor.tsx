@@ -201,7 +201,7 @@ type Part = ReturnType<typeof useFunctionPart>;
 
 function FormulaPart({ part, name, roundCoefficients }: { part: Part; name: string; roundCoefficients: boolean }) {
   const form = part.form;
-  const input = part.projection ? 'u' : part.argument;
+  const input = part.projection ? 'x' : part.argument;
   const equation = part.prefix + (part.kind !== 'factors' && typeof form === 'number' && form > 0 && !part.factor ? '(' + variableTex(input) + ')' : '') + '=';
   return <div className="formula-part" role="group" aria-label={name} data-part={part.kind}>
     <div className="inline-formula" role="group" aria-label={'Числа в формуле — ' + name}>
@@ -214,7 +214,7 @@ function FormulaPart({ part, name, roundCoefficients }: { part: Part; name: stri
         ? <><MathFormula linkVariables source={equation} /><InlineExpression node={part.template.editable.tree} values={part.literals} onChange={part.editLiteral} /></>
         : <span className="formula-loading">{part.error ? 'Откройте запись формулы' : 'Подготавливаем формулу…'}</span>}
     </div>
-    {part.projection && <p className="polynomial-input"><MathFormula linkVariables source={'u=' + part.projection.tex} /></p>}
+    {part.projection && <p className="polynomial-input"><MathFormula linkVariables source={input + '=' + part.projection.tex} /></p>}
   </div>;
 }
 

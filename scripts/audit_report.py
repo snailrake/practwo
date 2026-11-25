@@ -89,7 +89,7 @@ def check_report():
         expected=['X'+str(i+1)]*2+['f'+str(i+1)]+plus.split()
         if minus:expected+=['f'+str(i+1)]+minus.split()
         check('Exact figure argument list for X'+str(i+1),pairs==expected)
-    functions=next(t for t in d.tables if t.cell(0,0).text=='Часть' and len(t.columns)==6 and t.cell(0,5).text=='Аргумент u')
+    functions=next(t for t in d.tables if t.cell(0,0).text=='Часть' and len(t.columns)==6 and t.cell(0,5).text=='Аргумент x')
     check('All 19 cubic coefficient rows match the integrated model',len(functions.rows)==20 and all(
         functions.cell(row+1,k+1).text==f'{v:.2f}'.replace('.',',')
         for row,record in enumerate(manifest['functions']) for k,v in enumerate(record['coefficients'])))
