@@ -1,8 +1,11 @@
 import type { Editable } from './InlineFormula';
 
+export type PolynomialProjection = { source: string; tex: string; variable: string; coefficients: number[]; value: number | null };
+
 export type EquationFields = {
   source: string; tex: string; argument: string; coefficients: number[] | null; editable: Editable | null;
   multiplier: { source: string; tex: string } | null;
+  projection?: PolynomialProjection | null;
 };
 export type Config = {
   name: string; initial: number[]; scales: number[]; radar_limits?: number[]; factors: string[];

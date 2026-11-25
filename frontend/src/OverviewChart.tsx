@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
-import { AllProfiles, fmt } from './Charts';
+import { AllProfiles, fmt, ProfileLegend } from './Charts';
 import type { Result, ResultStatus } from './types';
 
 type Props = {
@@ -21,12 +21,13 @@ export function OverviewChart({ r, cursor, comparison, activeIndex, status, side
   const [dock, setDock] = useState<Dock>({ active: false, room: false, desktop: true, left: 0, top: 16, width: 260 });
   const [hidden, setHidden] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [hiddenProfiles, setHiddenProfiles] = useState<number[]>([]);
 
   useEffect(() => {
     const container = anchor.current;
     const aside = sidebar.current;
     const end = sidebarEnd.current;
-    const editor = container?.parentElement?.querySelector('.equation-editor');
+    const editor = container?.closest('.profile')?.querySelector('.equation-editor');
     if (!container || !aside || !end || !editor) return;
     let frame = 0;
     function measure() {
@@ -86,6 +87,11 @@ export function OverviewChart({ r, cursor, comparison, activeIndex, status, side
     setExpanded(true);
   }
 
+  function toggleProfile(index: number) {
+    setHiddenProfiles(previous => previous.includes(index) ? previous.filter(x => x !== index)
+      : previous.length < r.profile_indices.length - 1 ? [...previous, index] : previous);
+  }
+
   const mini = dock.active && dock.room && !hidden;
   const location = { left: dock.left, top: dock.top, width: dock.width };
   const caption = activeIndex === null ? 'Все 11 характеристик' : 'X' + (activeIndex + 1) + ' · ' + r.state_names[activeIndex];
@@ -94,16 +100,20 @@ export function OverviewChart({ r, cursor, comparison, activeIndex, status, side
 
   return <>
     <div className="overview-chart-anchor" ref={anchor}>
-      {!expanded && <div className={mini ? 'overview-chart overview-mini' : 'overview-chart'}
-        style={mini ? location : undefined} data-current={status === 'current'} data-active-state={activeIndex === null ? '' : 'X' + (activeIndex + 1)}>
-        {mini && <div className="overview-mini-heading"><h3 title={caption}>{caption}</h3><p title={state}>{state}</p></div>}
-        <div className="overview-chart-frame"><AllProfiles r={r} cursor={cursor} comparison={comparison}
-          compact={mini} activeIndex={mini ? activeIndex : null} height={mini ? '100%' : 'var(--overview-chart-height)'} /></div>
-        {mini && <div className="overview-mini-actions">
-          <button type="button" ref={expandButton} onClick={open}>Развернуть</button>
-          <button type="button" aria-label="Скрыть мини-график" onClick={() => setHidden(true)}>Скрыть</button>
+      <div className="overview-chart-space">
+        {!expanded && <div className={mini ? 'overview-chart overview-mini' : 'overview-chart'}
+          style={mini ? location : undefined} data-current={status === 'current'} data-active-state={activeIndex === null ? '' : 'X' + (activeIndex + 1)}>
+          {mini && <div className="overview-mini-heading"><h3 title={caption}>{caption}</h3><p title={state}>{state}</p></div>}
+          <div className="overview-chart-frame"><AllProfiles r={r} cursor={cursor} comparison={comparison}
+            compact={mini} activeIndex={mini ? activeIndex : null} hidden={hiddenProfiles}
+            height={mini ? '100%' : 'var(--overview-chart-height)'} /></div>
+          {mini && <div className="overview-mini-actions">
+            <button type="button" ref={expandButton} onClick={open}>Развернуть</button>
+            <button type="button" aria-label="Скрыть мини-график" onClick={() => setHidden(true)}>Скрыть</button>
+          </div>}
         </div>}
-      </div>}
+      </div>
+      <ProfileLegend r={r} hidden={hiddenProfiles} toggle={toggleProfile} />
     </div>
     {dock.active && !mini && !expanded && <button type="button" ref={showButton}
       className={dock.desktop && dock.room ? 'overview-show overview-show-sidebar' : 'overview-show'}
@@ -116,7 +126,8 @@ export function OverviewChart({ r, cursor, comparison, activeIndex, status, side
       <div className="overview-dialog-heading"><div><h2 id="overview-dialog-title">Временные зависимости</h2><p>{caption}</p></div>
         <button type="button" autoFocus onClick={() => setExpanded(false)}>Закрыть</button></div>
       {status !== 'current' && <p className="note">{messages[status]}. Показан последний корректный расчёт.</p>}
-      <AllProfiles r={r} cursor={cursor} comparison={comparison} activeIndex={activeIndex} height="min(65dvh, 620px)" />
+      <AllProfiles r={r} cursor={cursor} comparison={comparison} activeIndex={activeIndex} hidden={hiddenProfiles} height="min(56dvh, 540px)" />
+      <ProfileLegend r={r} hidden={hiddenProfiles} toggle={toggleProfile} activeIndex={activeIndex} />
     </dialog>, document.body)}
   </>;
 }

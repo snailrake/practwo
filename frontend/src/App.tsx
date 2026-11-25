@@ -7,6 +7,7 @@ import { FunctionEditor } from './FunctionEditor';
 import { EquationList } from './EquationList';
 import { useSimulation } from './useSimulation';
 import { OverviewChart } from './OverviewChart';
+import { RadarLimits } from './RadarLimits';
 
 const tabs = ['Все результаты', 'Зависимости', 'Внешние факторы', 'Лепестковые диаграммы'];
 const clone = <T,>(value: T): T => structuredClone(value);
@@ -301,14 +302,14 @@ export function App() {
             roundCoefficients={roundCoefficients} status={resultStatus} comparison={comparison} onChange={array} onDraft={setDraftPending}
             onResetFactor={index => resetEditor(index, true)} />}
           {tab === 3 && <>
-            <section><h2>Четыре снимка расчёта</h2><p className="section-note radar-explanation">На всех четырёх снимках у каждого показателя одна шкала. Число под названием луча — его верхний предел в относительных единицах.</p><QuarterRadars r={result} /></section>
+            <section>
+              <h2>Четыре снимка расчёта</h2>
+              <div className="radar-legend"><span>Значения показателей</span><span>Верхний предел</span></div>
+              <QuarterRadars r={result} />
+            </section>
             <section><h2>Численные значения срезов</h2><div className="table-scroll"><table><thead><tr><th>Характеристика</th>{snapshots.map(q => <th key={q.t}>{timeSymbol} = {fmt(q.t, 3)}</th>)}{comparison && <><th>Эталон, {timeSymbol} = {fmt(comparison.config.t_end)}</th><th>Разность</th></>}</tr></thead><tbody>{result.profile_indices.map(i => <tr key={i}><th scope="row">{symbol('X', i)} {labels[i]}</th>{snapshots.map(q => <td key={q.t}>{fmt(q.values[i], 6)}</td>)}{comparison && <><td>{fmt(comparison.y.at(-1)![i], 6)}</td><td>{fmt(result.y.at(-1)![i] - comparison.y.at(-1)![i], 6)}</td></>}</tr>)}</tbody></table></div></section>
-            <details className="plain-details"><summary>Пределы шкал</summary><p>Верхняя граница луча Rᵢ задаёт масштаб изображения. Во всех четырёх четвертях используется одно значение Rᵢ. В исходном кубическом примере принято Rᵢ = Xᵢᵐᵃˣ. Параметры уравнений доступны в настройках нормирования.</p><div className="scale-values">{result.profile_indices.map(i => {
-              const limits = config.radar_limits ?? result.radar_scales;
-              return <label className="field" key={i}>
-              {symbol('X', i)} {labels[i]}<span className="radar-limit-input"><MathFormula source={'R_{' + (i + 1) + '}='} /><input type="number" min={1e-9} max={1e8} step="any" aria-label={'Предел X' + (i + 1)}
-                value={fieldNumber(limits[i])} onChange={e => update('radar_limits', limits.map((v, j) => j === i ? e.target.valueAsNumber : v))} /></span></label>;
-            })}</div></details>
+            <RadarLimits key={scenarioVersion} r={result} limits={config.radar_limits ?? result.radar_scales} names={labels}
+              onChange={limits => update('radar_limits', limits)} />
           </>}
           {tab === 1 && <>
             <FunctionEditor key={'model-' + scenarioVersion} config={config} names={names} factors={factorNames}
@@ -317,7 +318,7 @@ export function App() {
             <details className="plain-details all-equations"><summary>Все уравнения</summary><section><h2>Система уравнений</h2><MathFormula block source={isSystem4 ? '\\frac{dX_i(t)}{dt}=\\frac{f_i^+-f_i^-}{X_i^{\\max}},\\qquad X_i(0)=X_i^0' : '\\frac{dX_i}{d\\tau}=\\frac{f_i^+-f_i^-}{S_i},\\qquad X_i(0)=X_i^0'} /><p className="section-note">{dirty || draftPending ? 'Математическая запись показывает предыдущий расчёт.' : 'Формулы ниже соответствуют выполненному расчёту.'} Изменения в полях автоматически запускают новый расчёт.</p>
               <details className="plain-details"><summary>Синтаксис формул и исходные допущения</summary>
                 <p>В выражениях доступны X1…X{names.length}, F1…F{factorNames.length}, t и константы pi, e. Операции + − * / ** и функции sqrt, exp, log, sin, cos, tanh, abs, min, max. Для внешних факторов допустимы только время и константы.</p>
-                <p>{system4Cubic ? 'В каждой части системы (4) один множитель заменён кубическим полиномом. Списки аргументов сохранены.' : isSystem4 ? 'Система (4) сохраняет аргументы рисунка в каждой части. Исходные коэффициенты взяты из таблицы 2 статьи.' : 'Здесь используются формулы учебной таблицы 1 и её нумерация.'} Начальные значения и делители заданы для вычислительного эксперимента.</p>
+                <p>{system4Cubic ? 'Каждая часть системы (4) задана кубическим полиномом. Все входы из рисунка входят в его аргумент.' : isSystem4 ? 'Система (4) сохраняет аргументы рисунка в каждой части. Исходные коэффициенты взяты из таблицы 2 статьи.' : 'Здесь используются формулы учебной таблицы 1 и её нумерация.'} Начальные значения и делители заданы для вычислительного эксперимента.</p>
                 <p>Вычитаемая часть берётся со знаком коэффициента из источника. Вычитание отрицательного значения увеличивает производную.</p>
               </details>
               <div className="equation-list">{names.map((n, i) => <div className="equation" key={n}><h3>{symbol('X', i)} {n} <span><MathFormula linkVariables source={divisorTex(i, isSystem4)} /> = {fmt(result.config.scales[i], 6)}</span></h3><MathFormula block linkVariables source={result.source_equations?.[i].tex ?? result.equations_tex[i]} />

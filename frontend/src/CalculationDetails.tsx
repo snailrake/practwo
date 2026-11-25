@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MathFormula } from './Math';
-import type { Result, ResultStatus } from './types';
+import type { EquationFields, Result, ResultStatus } from './types';
 
 type Props = { result: Result; index: number; status: ResultStatus; factor?: boolean };
 
@@ -27,7 +27,7 @@ function substitute(tex: string, result: Result) {
   // Fixed-size parentheses let a long sum wrap while keeping its grouping visible.
   return tex.replaceAll('\\left(', '\\bigl(').replaceAll('\\right)', '\\bigr)')
     .replace(/(\d)\.(?=\d)/g, '$1{,}').replace(
-      /([XF])_\{(\d{1,2})\}|\\tau(?![A-Za-z])/g,
+      /([XF])_\{(\d{1,2})\}(?:\(t\))?|\\tau(?![A-Za-z])/g,
       (_, kind?: string, index?: string) => {
         const value = kind ? initialValue(result, kind, Number(index) - 1) : result.t[0];
         return '\\left(' + numberTex(value) + '\\right)';
@@ -37,6 +37,24 @@ function substitute(tex: string, result: Result) {
 
 function evaluationTex(name: string, expression: string, value: string) {
   return name + '=' + expression + (expression === value ? '' : approx + value);
+}
+
+function evaluatedPart(fields: EquationFields, result: Result, name: string, value: string) {
+  const projection = fields.projection;
+  if (projection?.value == null || !fields.coefficients) {
+    return { u: null, formula: evaluationTex(name, substitute(fields.tex, result), value) };
+  }
+  const input = numberTex(projection.value, 12);
+  const terms = fields.coefficients.flatMap((coefficient, i) => {
+    if (coefficient === 0) return [];
+    const power = 3 - i;
+    const term = numberTex(coefficient) + (power ? '\\cdot\\left(' + input + '\\right)' + (power > 1 ? '^{' + power + '}' : '') : '');
+    return [term];
+  });
+  return {
+    u: evaluationTex('u(0)', substitute(projection.tex, result), input),
+    formula: evaluationTex(name, (terms.join('+') || '0').replace(/\+-(?=\d)/g, '-'), value),
+  };
 }
 
 function StateCalculation({ result, index }: { result: Result; index: number }) {
@@ -55,6 +73,8 @@ function StateCalculation({ result, index }: { result: Result; index: number }) 
   const precision = difference ? Math.min(17, 6 + Math.max(0, Math.ceil(Math.log10(magnitude / difference)))) : 6;
   const p = numberTex(plus, precision);
   const m = numberTex(minus, precision);
+  const positive = evaluatedPart(result.equation_fields.plus[index], result, fn + '^{+}', p);
+  const negative = hasMinus ? evaluatedPart(result.equation_fields.minus[index], result, fn + '^{-}', m) : null;
   const numerator = hasMinus ? p + '-\\left(' + m + '\\right)' : p;
   const inputs = result.dependencies[index].sources.filter(name => name !== 't')
     .sort((a, b) => b[0].localeCompare(a[0]) || Number(a.slice(1)) - Number(b.slice(1)));
@@ -67,8 +87,10 @@ function StateCalculation({ result, index }: { result: Result; index: number }) 
       <MathFormula linkVariables source={divisor + '=' + scale} />
     </div>
     <div className="calculation-equations">
-      <MathFormula block source={evaluationTex(fn + '^{+}', substitute(result.equation_fields.plus[index].tex, result), p)} />
-      {hasMinus && <MathFormula block source={evaluationTex(fn + '^{-}', substitute(result.equation_fields.minus[index].tex, result), m)} />}
+      {[positive, negative].map((part, i) => part && <div key={i}>
+        {part.u && <div className="calculation-argument"><MathFormula block source={part.u} /></div>}
+        <MathFormula block source={part.formula} />
+      </div>)}
     </div>
     <div className="calculation-slope">
       <span className="calculation-label">Начальный наклон графика</span>

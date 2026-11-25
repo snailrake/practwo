@@ -1,6 +1,18 @@
 {
-  "url": "http://127.0.0.1:8020/",
+  "url": "http://127.0.0.1:8035/",
   "checks": [
+    {
+      "name": "All 11 curves have their indexed name in the legend",
+      "passed": true
+    },
+    {
+      "name": "A legend entry toggles its curve",
+      "passed": true
+    },
+    {
+      "name": "The default minus part is a cubic in all four original inputs",
+      "passed": true
+    },
     {
       "name": "Default normalization equals the declared radar bounds",
       "passed": true
@@ -18,7 +30,15 @@
       "passed": true
     },
     {
-      "name": "The combined graph stays visible above an edited coefficient at 1366",
+      "name": "The preview uses the left column without covering formulas at 1366",
+      "passed": true
+    },
+    {
+      "name": "The preview leaves sidebar settings accessible at 1366",
+      "passed": true
+    },
+    {
+      "name": "Focusing X4 highlights its actual curve at 1366",
       "passed": true
     },
     {
@@ -30,7 +50,15 @@
       "passed": true
     },
     {
-      "name": "The combined graph stays visible above an edited coefficient at 1280",
+      "name": "The preview uses the left column without covering formulas at 1280",
+      "passed": true
+    },
+    {
+      "name": "The preview leaves sidebar settings accessible at 1280",
+      "passed": true
+    },
+    {
+      "name": "Focusing X4 highlights its actual curve at 1280",
       "passed": true
     },
     {
@@ -42,7 +70,15 @@
       "passed": true
     },
     {
-      "name": "The combined graph stays visible above an edited coefficient at 390",
+      "name": "Mobile keeps the full height for formulas",
+      "passed": true
+    },
+    {
+      "name": "All 13 structural equations wrap inside the phone viewport",
+      "passed": true
+    },
+    {
+      "name": "Mobile opens a readable chart on demand",
       "passed": true
     },
     {
@@ -54,7 +90,43 @@
       "passed": true
     },
     {
+      "name": "Expanded chart is a modal with one canvas",
+      "passed": true
+    },
+    {
+      "name": "Closing restores focus and the place in the formulas",
+      "passed": true
+    },
+    {
+      "name": "The preview can be hidden without moving the form",
+      "passed": true
+    },
+    {
+      "name": "An unfinished number marks the preview as stale",
+      "passed": true
+    },
+    {
       "name": "Editing the visible coefficient runs a new solution",
+      "passed": true
+    },
+    {
+      "name": "The left preview works after replacing a scenario",
+      "passed": true
+    },
+    {
+      "name": "Additional X7 also has an active preview",
+      "passed": true
+    },
+    {
+      "name": "A normalization link still opens its sidebar setting",
+      "passed": true
+    },
+    {
+      "name": "Factor navigation returns to the full set of preview curves",
+      "passed": true
+    },
+    {
+      "name": "Returning to the top restores the large graph in the main column",
       "passed": true
     },
     {
@@ -71,6 +143,18 @@
     },
     {
       "name": "Radar limits have their own R labels",
+      "passed": true
+    },
+    {
+      "name": "Limit controls fit five typed characters",
+      "passed": true
+    },
+    {
+      "name": "Red limits stay visible for over-limit data",
+      "passed": true
+    },
+    {
+      "name": "Five-character decimal comma is applied as written",
       "passed": true
     },
     {

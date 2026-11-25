@@ -4,8 +4,8 @@ import 'katex/dist/katex.min.css';
 
 const definitionHref = /^#(?:(?:definition-[XF]|divisor-X|initial-X)\d{1,2}|model-time)$/;
 
-export function MathFormula({ source, block = false, linkVariables = false }: {
-  source: string; block?: boolean; linkVariables?: boolean;
+export function MathFormula({ source, block = false, linkVariables = false, wrap = false }: {
+  source: string; block?: boolean; linkVariables?: boolean; wrap?: boolean;
 }) {
   const html = useMemo(() => {
     const linked = linkVariables ? source.replace(
@@ -18,8 +18,8 @@ export function MathFormula({ source, block = false, linkVariables = false }: {
       },
     ) : source;
     const active = linked !== source;
-    const markup = katex.renderToString(linked, {
-      displayMode: block, throwOnError: false,
+    const markup = katex.renderToString(wrap ? '\\displaystyle ' + linked : linked, {
+      displayMode: block && !wrap, throwOnError: false,
       trust: context => active && context.command === '\\href' && definitionHref.test(context.url),
       strict: 'error', maxExpand: 500, output: active ? 'html' : 'htmlAndMathml',
     });
@@ -29,6 +29,12 @@ export function MathFormula({ source, block = false, linkVariables = false }: {
       .replace(/href="#(definition|divisor|initial)-([XF]\d{1,2})"/g, (href, target: string, name: string) =>
         href + ' aria-label="' + (target === 'initial' ? 'Начальное условие '
           : target === 'divisor' ? 'Делитель ' : name.startsWith('F') ? 'Внешний фактор ' : 'Уравнение ') + name + '"');
-  }, [source, block, linkVariables]);
+  }, [source, block, linkVariables, wrap]);
   return <span className={block ? 'math-block' : 'math-inline'} dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
+export function SourceEquation({ source }: { source: string }) {
+  const breakable = source.replaceAll('\\left[', '\\bigl[').replaceAll('\\right]', '\\bigr]')
+    .replaceAll('\\left(', '(').replaceAll('\\right)', ')').replaceAll(',', ',\\allowbreak ');
+  return <div className="source-equation"><MathFormula block linkVariables wrap source={breakable} /></div>;
 }

@@ -101,7 +101,7 @@
       "passed": true
     },
     {
-      "name": "Values beyond the configured scale remain in the table",
+      "name": "Values beyond the configured scale remain in the table and the diagrams stay visible",
       "passed": true
     },
     {

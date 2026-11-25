@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { CalculationDetails } from './CalculationDetails';
 import { Chart, fmt, lineOption } from './Charts';
 import { InlineExpression, PolynomialFields, numeric, replaceLiterals, validNumber, variableTex } from './InlineFormula';
-import { MathFormula } from './Math';
+import { MathFormula, SourceEquation } from './Math';
 import { coefficientText, polynomialSource } from './polynomial';
 import type { Config, EquationFields, Result, ResultStatus } from './types';
 
@@ -63,13 +63,15 @@ export function EquationList(props: Props) {
       const next = values.map((value, i) => i === slot ? text : value);
       const expression = !next.every(validNumber) ? source : fields.editable
         ? replaceLiterals(fields.source, fields.editable, next)
-        : polynomialSource(next.map(numeric), argument, fields.multiplier?.source, !!sourceEquations && !external);
+        : polynomialSource(next.map(numeric), fields.projection ? '(' + fields.projection.source + ')' : argument,
+          fields.multiplier?.source, !!fields.projection || !!sourceEquations && !external);
       setDrafts(previous => ({ ...previous, [key]: { source: expression, fields, values: next } }));
       if (expression !== source) onChange(kind, index, expression);
     }
 
     if (!saved && source.trim() !== fields.source) return <p className="note">Обновляется {label}…</p>;
-    return <div className="inline-formula equation-fields" role="group" aria-label={label} key={key}>
+    return <div role="group" aria-label={label} key={key}>
+      <div className="inline-formula equation-fields">
       {fields.coefficients ? <span className="polynomial-terms">
         {fields.multiplier && <><MathFormula linkVariables source={prefix} /><span>(</span></>}
         <PolynomialFields round={roundCoefficients} stateTime values={values} argument={argument} degree={degree}
@@ -79,6 +81,8 @@ export function EquationList(props: Props) {
         <MathFormula linkVariables source={prefix} />
         <InlineExpression stateTime node={fields.editable.tree} values={values} onChange={edit} />
       </>}
+      </div>
+      {fields.projection && <p className="polynomial-input"><MathFormula linkVariables source={'u=' + fields.projection.tex} /></p>}
     </div>;
   }
 
@@ -123,7 +127,7 @@ export function EquationList(props: Props) {
     {sourceEquations ? <details className="plain-details system4-source">
       <summary>Источник формул и обозначения</summary>
       <p>Аргументы и индексы взяты с рисунка (4) задания. {props.system4Cubic
-        ? 'В каждой части один исходный множитель заменён кубическим полиномом. Коэффициенты полиномов и остальных множителей, начальные условия и параметры нормирования подобраны для наглядного учебного примера с нелинейными траекториями.'
+        ? 'Каждая часть задана кубическим полиномом. Если у функции несколько входов, u равен основному входу плюс одна десятая суммы остальных. Коэффициенты и начальные условия заданы для учебного примера.'
         : 'Исходные выражения и коэффициенты взяты из таблицы 2 статьи Цвиркуна и соавторов.'}</p>
       <p>В строке X₃ делитель X₃₁ᵐᵃˣ прочитан как X₃ᵐᵃˣ.{!props.system4Cubic && ' В строке f₁₃⁺ использован коэффициент k₁₃⁺ = 0,025, указанный в таблице для этой функции.'}</p>
       <p>Начальные значения, делители и профили F(t) заданы для учебного расчёта.</p>
@@ -133,7 +137,7 @@ export function EquationList(props: Props) {
       <h3 id={'definition-X' + (index + 1)} tabIndex={-1}><MathFormula source={variableTex('X' + (index + 1))} /> {name}
         <span>Нормирование <MathFormula linkVariables source={(sourceEquations ? 'X' : 'S') + '_{' + (index + 1) + '}' + (sourceEquations ? '^{\\max}' : '')} /> = {fmt(config.scales[index], 5)}</span>
       </h3>
-      {sourceEquations && <div className="source-equation"><MathFormula block linkVariables source={sourceEquations[index].tex} /></div>}
+      {sourceEquations && <SourceEquation source={sourceEquations[index].tex} />}
       {renderPart('plus', index)}
       {(!sourceEquations || sourceEquations[index].has_minus) && renderPart('minus', index)}
       <CalculationDetails result={result} index={index} status={status} />

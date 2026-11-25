@@ -158,6 +158,8 @@ def simulate(config: SimulationConfig, *, step_divisor: int = 100):
     plus = np.array([x[0] for x in components])
     minus = np.array([x[1] for x in components])
     factors = np.array([x[2] for x in components])
+    initial_values = {'t': 0., **{f'X{i}': float(x) for i, x in enumerate(y[0], 1)},
+                      **{f'F{i}': float(x) for i, x in enumerate(factors[0], 1)}}
     scales = np.array(config.radar_limits)
     snapshots = [{"t": float(t), "values": y[np.argmin(abs(times-t))].tolist(),
                   "normalized": (y[np.argmin(abs(times-t))] / scales).tolist()} for t in quarters]
@@ -184,8 +186,8 @@ def simulate(config: SimulationConfig, *, step_divisor: int = 100):
         "source_equations": [{"tex": system4_equation_tex(i, args), "has_minus": bool(args[1])}
                              for i, args in enumerate(SYSTEM4_ARGUMENTS, 1)] if config.is_system4 else None,
         "equations_tex": [equation_tex(i+1, p, m) for i, (p,m) in enumerate(zip(config.plus, config.minus))],
-        "equation_fields": {"plus": [equation_fields(p) for p in dynamics.plus],
-                            "minus": [equation_fields(m) for m in dynamics.minus],
+        "equation_fields": {"plus": [equation_fields(p, initial_values) for p in dynamics.plus],
+                            "minus": [equation_fields(m, initial_values) for m in dynamics.minus],
                             "factors": [equation_fields(f) for f in dynamics.factors]},
         "factors_tex": [to_tex(s) for s in config.factors],
         "dependencies": [{"target": f"X{i+1}", "sources": sorted(set(p.dependencies + m.dependencies))}
@@ -218,7 +220,9 @@ def random_scenario(use_system4=False, cubic=False):
                         continue
                     fields = equation_fields(Expression(source, names))
                     weight = random.uniform(low, high)
-                    cubic = polynomial(fields['argument'], *(weight * c for c in fields['coefficients']))
+                    projection = fields['projection']
+                    argument = f"({projection['source']})" if projection else fields['argument']
+                    cubic = polynomial(argument, *(weight * c for c in fields['coefficients']))
                     multiplier = fields['multiplier']
                     candidate[kind][index] = f"({cubic})*({multiplier['source']})" if multiplier else cubic
         config = SimulationConfig(**candidate)

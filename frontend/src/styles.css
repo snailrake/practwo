@@ -127,9 +127,13 @@ details[open] > summary { margin-bottom: 8px; }
 .scale-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin: 12px 0; }
 .scale-inputs label { display: flex; align-items: center; gap: 8px; font-size: 11px; }
 .scale-inputs input { font-size: 11px; padding: 5px; }
-.radar-limit-input { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
-.radar-limit-input > .math-inline { flex-shrink: 0; }
-.radar-limit-input > input { margin-top: 0; }
+.radar-limit-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr)); gap: 0 18px; }
+.radar-limit-row { min-width: 0; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid #e4e8e7; font-size: 11px; }
+.radar-limit-row:last-child { border-bottom: 0; }
+.radar-limit-row b { margin-right: 4px; }
+.radar-limit-input { display: inline-flex; align-items: center; gap: 5px; flex: none; white-space: nowrap; color: #5b3334; }
+.radar-limit-input > input { box-sizing: content-box; width: 5ch; padding: 4px 6px; text-align: right; color: #111; }
+.radar-limit-input > input[aria-invalid=true] { border-color: #b6373b; background: #fff8f7; }
 .button-row { display: flex; flex-wrap: wrap; gap: 7px; }
 .button-row button { font-size: 10px; padding: 7px 8px; }
 main { min-width: 0; }
@@ -143,8 +147,16 @@ main { min-width: 0; }
 .section-heading select { max-width: 350px; font-size: 11px; }
 .profile-title { font-weight: 400; margin-bottom: 5px; color: #555; }
 .profile { --overview-chart-height: clamp(260px, 42dvh, 430px); }
-.overview-chart-anchor { height: var(--overview-chart-height); margin-bottom: 12px; }
+.overview-chart-anchor { margin-bottom: 12px; }
+.overview-chart-space { height: var(--overview-chart-height); }
 .overview-chart { background: #fff; }
+.profile-legend { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 235px), 1fr)); gap: 2px 12px; padding: 8px 0 0; margin: 0; border-top: 1px solid #dce2e0; }
+.profile-legend button { display: grid; grid-template-columns: 14px 3ch minmax(0, 1fr); align-items: baseline; gap: 7px; width: 100%; height: 100%; text-align: left; border: 0; padding: 6px 4px; font-size: 11px; line-height: 1.4; }
+.profile-legend button:hover { background: #f1f6f4; }
+.profile-legend button[aria-pressed=false] { color: #65716f; text-decoration: line-through; }
+.profile-legend button[aria-pressed=false] > .legend-line { opacity: .38; }
+.profile-legend button:disabled { opacity: 1; background: #edf4f1; }
+.legend-line { display: block; height: 0; border-top: 2px solid; align-self: start; margin-top: .6em; }
 .overview-mini { position: fixed; z-index: 3; height: 300px; padding: 12px; border: 1px solid #c6cecc; display: grid; grid-template-rows: 40px minmax(0, 1fr) 30px; gap: 6px; }
 .overview-mini-heading { min-width: 0; }
 .overview-mini-heading h3, .overview-mini-heading p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -173,10 +185,11 @@ main { min-width: 0; }
 .equation-fields { min-height: 0; padding-top: 6px; }
 .equation-fields .polynomial-terms { padding-inline-start: .65em; }
 .equation-fields .polynomial-terms > :first-child { margin-inline-start: -.65em; }
+.polynomial-input { margin: -2px 4px 12px; padding: 4px 0 4px 8px; border-inline-start: 2px solid #d3e0dd; color: #3d4d49; font-size: 15px; overflow-x: auto; }
+.formula-part .polynomial-input { margin: 0 4px 10px; text-align: center; border-inline-start: 0; }
 .factor-equations-heading { margin-top: 24px; }
-.source-equation { margin: 6px 0; }
-.source-equation .katex-display { text-align: left; margin: 3px 0; }
-.source-equation .katex-display > .katex { text-align: left; }
+.source-equation { margin: 9px 0; }
+.source-equation .katex { line-height: 1.75; }
 .formula-links { pointer-events: none; }
 .formula-links a {
   pointer-events: auto;
@@ -195,6 +208,7 @@ main { min-width: 0; }
 .calculation-values { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; margin: 8px 0; }
 .calculation-values > .math-inline { font-size: 16px; }
 .calculation-equations .math-block, .calculation-slope .math-block { font-size: clamp(18px, 15px + 0.5vw, 24px); }
+.calculation-argument .math-block { font-size: clamp(16px, 13px + 0.45vw, 20px); color: #3d4d49; }
 .calculation-example .katex-display, .calculation-example .katex-display > .katex { text-align: left; }
 .calculation-example .katex-display { margin: 2px 0; }
 .calculation-example .katex-display > .katex { white-space: normal; line-height: 1.5; }
@@ -236,6 +250,11 @@ main { min-width: 0; }
 .formula-input input { font-size: 12px; padding: 7px; }
 .radar-cell h3 { display: flex; justify-content: space-between; }
 .radar-cell h3 span { font-weight: 400; color: #666; }
+.radar-legend { display: flex; flex-wrap: wrap; gap: 6px 20px; margin: -2px 0 14px; font-size: 11px; }
+.radar-legend span { display: inline-flex; align-items: center; gap: 8px; }
+.radar-legend span::before { content: ''; width: 18px; border-top: 2px solid #245e55; }
+.radar-legend span:last-child::before { border-color: #b6373b; }
+.radar-overflow { margin: 0 0 8px; color: #9a2c32; font-size: 11px; overflow-wrap: anywhere; }
 .table-scroll { overflow-x: auto; margin-top: 15px; }
 table { border-collapse: collapse; width: 100%; font-size: 11px; }
 th, td { padding: 10px 12px; border-bottom: 1px solid #ddd; text-align: right; vertical-align: top; white-space: nowrap; }
@@ -276,6 +295,7 @@ footer { display: flex; justify-content: space-between; gap: 16px; padding: 24px
   .section-heading { flex-direction: column; gap: 12px; }
   .section-heading select { max-width: 100%; }
   .plot-grid { grid-template-columns: 1fr; }
+  .radar-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
 }
 @media(max-width: 1000px) {
   .editor-heading { grid-template-columns: minmax(0, 1fr) auto; }
@@ -312,10 +332,16 @@ footer { display: flex; justify-content: space-between; gap: 16px; padding: 24px
   .metric strong { font-size: 18px; }
   .time-control { grid-template-columns: auto minmax(0, 1fr) 65px; gap: 8px; font-size: 10px; }
   .radar-grid { grid-template-columns: 1fr; }
+  .overview-dialog { padding: 12px; }
+  .overview-dialog-heading { position: sticky; top: -12px; z-index: 1; background: #fff; padding: 8px 0; }
   .scale-list, .diagnostics { grid-template-columns: repeat(2, 1fr); }
   .result-actions { flex-wrap: wrap; }
   .equation h3 span { float: none; display: block; margin: 5px 0 0; }
   .initial-list { grid-template-columns: 1fr; }
+}
+@media (min-width: 375px) and (max-width: 520px) {
+  .profile-legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .profile-legend button { grid-template-columns: 10px 3ch minmax(0, 1fr); gap: 4px; }
 }
 @media (min-width: 1001px) {
   .function-editor { --editor-chart-height: clamp(180px, calc(100dvh - 478px), 420px); }

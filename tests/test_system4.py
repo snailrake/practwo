@@ -88,10 +88,16 @@ def test_system4_cubic_has_nonzero_cubes_and_preserves_figure_arguments():
             coefficients = fields['coefficients']
             assert coefficients[0] != 0
             assert coefficients == [round(c, 2) for c in coefficients]
-            argument = inputs[fields['argument']]
-            multiplier = fields['multiplier']
-            scale = Expression(multiplier['source'], set(inputs))(inputs) if multiplier else 1
-            assert result[kind][0][i] == pytest.approx(scale * np.polyval(coefficients, argument))
+            assert fields['multiplier'] is None
+            projection = fields['projection']
+            if projection:
+                names = Expression(fields['source'], set(inputs)).dependencies
+                main = projection['variable']
+                argument = inputs[main] + .1 * sum(inputs[name] for name in names if name != main)
+                assert projection['value'] == pytest.approx(argument)
+            else:
+                argument = inputs[fields['argument']]
+            assert result[kind][0][i] == pytest.approx(np.polyval(coefficients, argument))
     trajectory = np.asarray(result['y'])
     assert config.scales == config.radar_limits
     assert np.all((trajectory >= 0) & (trajectory <= config.radar_limits))

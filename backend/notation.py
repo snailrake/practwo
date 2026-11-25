@@ -183,11 +183,68 @@ def polynomial_factor(expression, values=None):
             'reference_x': values[argument] if values is not None else None}
 
 
-def equation_fields(expression):
+def polynomial_projection(expression, values=None):
+    """Find a polynomial of a repeated, parenthesized input in a sum of terms."""
+    if len(expression.dependencies) < 2:
+        return None
+    names = set(expression.dependencies)
+
+    def summands(node):
+        if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Sub)):
+            yield from summands(node.left)
+            yield from summands(node.right)
+        else:
+            yield node
+
+    for term in summands(expression.tree):
+        if not isinstance(term, ast.BinOp) or not isinstance(term.op, ast.Mult):
+            continue
+        arg = term.right
+        if isinstance(arg, ast.BinOp) and isinstance(arg.op, ast.Pow):
+            arg = arg.left
+        if not isinstance(arg, ast.BinOp) or not isinstance(arg.op, (ast.Add, ast.Sub)):
+            continue
+        source = ast.unparse(arg)
+        try:
+            projected = Expression(source, names)
+        except ModelError:
+            continue
+        if set(projected.dependencies) != names:
+            continue
+        pattern = ast.dump(arg)
+
+        class ReplaceArgument(ast.NodeTransformer):
+            def visit_BinOp(self, node):
+                if ast.dump(node) == pattern:
+                    return ast.Name(id='u', ctx=ast.Load())
+                return self.generic_visit(node)
+
+        # Keep the stored expression intact. Accept the candidate only if the
+        # entire expression reduces to a polynomial in this one argument.
+        try:
+            tree = ReplaceArgument().visit(ast.parse(expression.source, mode='eval'))
+            coefficients = polynomial_coefficients(Expression(ast.unparse(tree), {'u'}), 'u')
+        except ModelError:
+            continue
+        if coefficients is not None:
+            try:
+                value = projected(values) if values is not None else None
+            except ModelError:
+                value = None
+            variable = next(n.id for n in ast.walk(arg) if isinstance(n, ast.Name) and n.id in names)
+            return {'source': source, 'tex': expression_tex(projected, state_time=True),
+                    'variable': variable, 'coefficients': coefficients, 'value': value}
+    return None
+
+
+def equation_fields(expression, values=None):
     factor = polynomial_factor(expression)
-    argument = factor['argument'] if factor else next(iter(expression.dependencies), '')
-    coefficients = factor['coefficients'] if factor else polynomial_coefficients(expression, argument)
+    projection = polynomial_projection(expression, values) if not factor else None
+    argument = 'u' if projection else factor['argument'] if factor else next(iter(expression.dependencies), '')
+    template = projection or factor
+    coefficients = template['coefficients'] if template else polynomial_coefficients(expression, argument)
     return {'source': expression.source, 'tex': expression_tex(expression),
             'argument': argument, 'coefficients': coefficients,
+            'projection': projection,
             'multiplier': {'source': factor['source'], 'tex': factor['tex']} if factor else None,
             'editable': editable_tree(expression) if coefficients is None else None}

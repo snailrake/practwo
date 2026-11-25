@@ -46,12 +46,14 @@ def figures(results, verification):
         ax.grid(alpha=.6); ax.set_xlabel('t'); ax.set_ylabel('Отн. ед.')
     save(fig, 'system4-factors.png')
     angles = np.linspace(0, 2*np.pi, 11, endpoint=False)
+    closed_angles = np.r_[angles, angles[0]]
     fig, axes = plt.subplots(2, 2, figsize=(7.2, 7.6), subplot_kw={'projection': 'polar'}, layout='constrained')
     for j, (ax, q) in enumerate(zip(axes.flat, base['quarters'])):
         ax.set_theta_offset(np.pi/2); ax.set_theta_direction(1)
         v = [q['normalized'][i] for i in indices]
-        ax.plot(np.r_[angles, angles[0]], v+[v[0]], color='#111111', lw=2)
-        ax.fill(np.r_[angles, angles[0]], v+[v[0]], color='#111111', alpha=.04)
+        ax.plot(closed_angles, v+[v[0]], color='#365953', lw=2)
+        ax.fill(closed_angles, v+[v[0]], color='#365953', alpha=.14)
+        ax.plot(closed_angles, np.ones_like(closed_angles), color='#b84045', lw=1.35)
         ax.set_xticks(angles, [f'X{i+1}\nR={base["radar_scales"][i]:g}' for i in indices], fontsize=7)
         ax.set_ylim(0, 1); ax.set_yticks([.25, .5, .75, 1], ['0,25', '0,50', '0,75', '1,00'], fontsize=7)
         ax.set_title(f'Четверть {j+1}   t = {q["t"]:.2f}', fontsize=11, pad=22)

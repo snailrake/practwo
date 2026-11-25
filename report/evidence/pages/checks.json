@@ -1,5 +1,5 @@
 {
-  "url": "http://127.0.0.1:8022/pages-dist/",
+  "url": "http://127.0.0.1:8036/pages-dist/",
   "checks": [
     {
       "name": "All results starts with the combined plot",
@@ -158,6 +158,6 @@
     "platform": "emscripten",
     "engine": "WebAssembly"
   },
-  "load_ms": 14881.8928,
+  "load_ms": 16809.513199999998,
   "max_scaled_difference": 1.8554545494496828e-16
 }

@@ -36,6 +36,20 @@ async function cropBounds(name,first,last){
 try{
  await page.goto(url);await ready();
  const base=await exported();
+ await page.evaluate(()=>scrollTo(0,0));
+ const legend=page.locator('.profile-legend');
+ check('All 11 curves have their indexed name in the legend',
+   await legend.locator('button').count()===11 && (await legend.getByRole('button',{name:/X₁ .*Время испарения/}).count())===1);
+ const evaporation=legend.getByRole('button',{name:/X₁ .*Время испарения/});
+ await evaporation.click();
+ check('A legend entry toggles its curve',await evaporation.getAttribute('aria-pressed')==='false');
+ await evaporation.click();
+ await page.evaluate(()=>scrollTo(0,0));
+ await page.screenshot({path:path.join(output,'overview.png')});
+ const part=page.getByRole('group',{name:'Вычитаемая часть X1',exact:true});
+ check('The default minus part is a cubic in all four original inputs',
+   (await part.locator('.polynomial-input a').count())===4 &&
+   base.equation_fields.minus[0].multiplier===null && base.equation_fields.minus[0].projection.value===.34);
  check('Default normalization equals the declared radar bounds',JSON.stringify(base.config.scales)===JSON.stringify(base.config.radar_limits));
  const t=base.t,y=base.y,indices=base.profile_indices;
  const values=y.flatMap(r=>indices.map(i=>r[i]));const span=Math.max(...values)-Math.min(...values);
@@ -61,6 +75,10 @@ try{
    check('Focusing X4 highlights its actual curve at '+width,await page.locator('.overview-mini').getAttribute('data-active-state')==='X4'&&(await page.locator('.overview-mini h3').textContent()).startsWith('X4'));
   }else{
    check('Mobile keeps the full height for formulas',await page.locator('.overview-mini').count()===0&&await page.getByRole('button',{name:'График ↗',exact:true}).isVisible());
+   await page.evaluate(() => document.fonts.ready);
+   check('All 13 structural equations wrap inside the phone viewport',
+    await page.locator('.source-equation .math-block').evaluateAll(
+     blocks=>blocks.length===13&&blocks.every(block=>block.scrollWidth<=block.clientWidth+1)));
    await page.getByRole('button',{name:'График ↗',exact:true}).click();
    check('Mobile opens a readable chart on demand',await page.getByRole('dialog').isVisible()&&await page.locator('canvas').count()===1);
    await page.getByRole('button',{name:'Закрыть',exact:true}).click();
@@ -128,6 +146,21 @@ try{
  await page.screenshot({path:path.join(output,'radars.png')});
  await page.getByText('Пределы шкал',{exact:true}).click();
  check('Radar limits have their own R labels',await page.locator('.radar-limit-input').count()===11);
+ const firstLimit=page.getByLabel('Предел X1',{exact:true});
+ check('Limit controls fit five typed characters',await firstLimit.getAttribute('maxlength')==='5'&&
+   await firstLimit.evaluate(el=>el.getBoundingClientRect().width<=65&&el.inputMode==='decimal'));
+ await firstLimit.fill('0,125');
+ await page.locator('.radar-overflow').first().waitFor();
+ check('Red limits stay visible for over-limit data',await page.locator('.radar-grid canvas').count()===4&&
+   await page.locator('.radar-grid canvas').first().evaluate(canvas=>{
+     const pixels=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;
+     let red=0;
+     for(let i=0;i<pixels.length;i+=4) if(pixels[i]===182&&pixels[i+1]===55&&pixels[i+2]===59&&pixels[i+3]===255) red++;
+     return red>100;
+   }));
+ check('Five-character decimal comma is applied as written',(await exported()).radar_scales[0]===.125);
+ await firstLimit.fill('1');
+ await page.locator('.radar-overflow').first().waitFor({state:'detached'});
  await tab('Все результаты');await page.getByText('Проверка расчёта',{exact:true}).click();
  await page.getByRole('button',{name:'Проверить расчёт',exact:true}).click();
  await page.waitForFunction(()=>document.querySelector('.verification-result h3')||document.querySelector('main [role=alert]'));

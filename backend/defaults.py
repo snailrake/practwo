@@ -69,14 +69,6 @@ CUBIC_ARGUMENTS = {
     'minus': [('X9', 1), ('X9', 1), None, ('F4', 1), None, ('F7', -1), None,
               ('X9', 1), None, None, ('F5', -1)],
 }
-SYSTEM4_CUBIC_ARGUMENTS = {
-    'plus': [('F1', .8), ('X3', 1), ('F3', 1), ('X1', 1), ('F2', 1), ('F6', 1),
-             ('X13', 1), ('X11', 1), ('X3', 1), ('X3', .2), ('X3', .5), ('X11', 1), ('F8', 1)],
-    'minus': [('X10', 1), ('X10', 1), None, ('F4', 1), None, ('X4', 1),
-              None, None, ('X10', 1), None, None, ('F5', -1), None],
-}
-
-
 def polynomial(argument, a, b, c, d):
     hundredth = Decimal('0.01')
     # Remove floating-point noise around half-cent ties before rounding.
@@ -200,46 +192,41 @@ def startup():
 
 
 def system4_cubic():
-    config = system4()
+    config = deepcopy(BASE)
     config.update(
         name='Система (4) · кубический пример',
         initial=[.25, .55, .90, .80, .03, .65, .12, .08, .65, .15, .45, .15, .15],
         scales=SYSTEM4_RADAR_LIMITS.copy(),
+        radar_limits=SYSTEM4_RADAR_LIMITS.copy(),
     )
-    # Classroom coefficients chosen for visibly different nonlinear trajectories.
-    coefficients = {
-        'plus': [
-            (2.92, -7.92, 8.97, -2.36), (8.69, -11.57, 4.96, -.79),
-            (10.49, -12.47, 5.61, -.87), (19.09, -40.12, 29.81, -6.57),
-            (-.41, .77, -.52, .15), (-12.39, 30.50, -24.57, 5.56),
-            (-.06, .44, -.11, .01), (-1.06, .57, -.74, .30),
-            (6.51, -8.74, 5.63, -2.15), (8.41, -11.77, 6.10, -1.24),
-            (-.09, .22, -.02, -.13), (-40.77, 17.39, 1.91, -.67),
-            (.07, .29, -.22, .30),
-        ],
-        'minus': [(.01, 0, 0, 0)] * 13,
-    }
-    multipliers = {
-        'plus': [
-            None, '30*(X7+X8)*X9*F1**0.8', '-0.22*F1**0.8*F4/X1**2.9',
-            None, '0.15/X1**2.1', '0.75*F5', '26.25*(X5+X6)**0.6',
-            '18.75*(X5+X6)**0.7*X13', None, '2.30*X9**0.2',
-            '3*sqrt(F6)', '3.06*F7/F6', '1.25*X3**0.5*F6',
-        ],
-        'minus': [
-            '-0.50*X11/(F3*F4)', '-77.50*X11', None, '-0.44*F1**0.8*F3',
-            None, '1.20/(X11*X12*F7)', None, None, '2.50*X11',
-            None, None, None, None,
-        ],
-    }
-    for kind, selections in SYSTEM4_CUBIC_ARGUMENTS.items():
-        for index, selection in enumerate(selections):
-            if selection is None:
+    # One cubic per present part. Its argument is the main input plus a tenth
+    # of the sum of the other inputs on that line of figure (4).
+    for kind, main_inputs, coefficients in (
+        ('plus', 'F1 X3 F3 X1 F2 F6 X13 X11 X3 X3 X3 X11 F8'.split(), [
+            (2.92, -7.92, 8.97, -2.36), (1.61, 3.53, -2.74, -1.33),
+            (-.49, 2.43, -4.34, 1.54), (19.09, -40.12, 29.81, -6.57),
+            (-1.05, 2.60, -2.13, .58), (-3.59, 9.75, -8.98, 2.33),
+            (-18.03, 26.06, -8.93, .97), (1.44, -3.30, -1.77, 1.63),
+            (6.51, -8.74, 5.63, -2.15), (17.82, -27.91, 15.51, -3.24),
+            (-.38, .56, .30, -.52), (-384.71, 413.15, -134.73, 13.28),
+            (-.53, 1.06, -.44, .14),
+        ]),
+        ('minus', 'X10 X10 - F4 - X4 - - X10 - - F5 -'.split(), [
+            (.01, 0, 0, -.01), (-1.03, 1.30, -.63, .09), None,
+            (.01, 0, 0, -.02), None, (.50, -1.30, 1.34, -.45),
+            None, None, (.01, 0, 0, 0), None, None, (.01, 0, .01, -.01), None,
+        ]),
+    ):
+        column = 0 if kind == 'plus' else 1
+        parts = []
+        for arguments, main_input, values in zip(SYSTEM4_ARGUMENTS, main_inputs, coefficients):
+            if values is None:
+                parts.append('0')
                 continue
-            argument, _ = selection
-            multiplier = multipliers[kind][index]
-            cubic = polynomial(argument, *coefficients[kind][index])
-            config[kind][index] = f'({cubic})*({multiplier})' if multiplier else cubic
+            other = [name for name in arguments[column].split() if name != main_input]
+            argument = f'({main_input}+0.1*({"+".join(other)}))' if other else main_input
+            parts.append(polynomial(argument, *values))
+        config[kind] = parts
     config['factors'] = [
         polynomial('t', *values) for values in [
             (.60, .05, .05, .40), (.50, .10, .15, .30),

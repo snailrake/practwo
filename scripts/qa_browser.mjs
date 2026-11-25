@@ -87,10 +87,12 @@ try{
  await page.getByText('Пределы шкал',{exact:true}).click();
  const limit = page.getByLabel('Предел X1',{exact:true});
  await limit.fill('0.1');
- await page.getByText('За пределом шкалы: X1.',{exact:false}).first().waitFor();
- check('Values beyond the configured scale remain in the table',await page.locator('tbody tr').count()===11&&await page.locator('.radar-grid canvas').count()===0);
+ const firstValues = await page.locator('tbody tr').first().innerText();
+ await page.getByText('За пределом шкалы: X₁.',{exact:false}).first().waitFor();
+ check('Values beyond the configured scale remain in the table and the diagrams stay visible',
+   await page.locator('tbody tr').first().innerText()===firstValues&&await page.locator('.radar-grid canvas').count()===4);
  await limit.fill('1');
- await page.locator('.radar-grid canvas').first().waitFor();
+ await page.locator('.radar-overflow').first().waitFor({state:'detached'});
  await selectTab('Все результаты');await page.getByText('Сравнение экспериментов',{exact:true}).click();await page.getByRole('button',{name:'Запомнить эталон',exact:true}).click();await selectTab('Лепестковые диаграммы');
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('1');
  check('Changed configuration visibly marked stale',await page.locator('.message[role=status]').isVisible());

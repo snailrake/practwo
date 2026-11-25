@@ -49,18 +49,21 @@ try {
     Math.abs(rounded.plus[0][0] - polynomialValue(firstCoefficients, f1)) < 1e-12);
   const x4 = page.locator('#definition-X4').locator('..');
   const example = x4.locator('.calculation-details');
-  const parts = example.locator('.calculation-equations annotation');
+  const parts = example.locator('.calculation-equations > div > .math-block annotation');
   const slope = example.locator('.calculation-slope annotation');
   const display = value => String(Number(value.toPrecision(6))).replace('.', '{,}');
   check('Worked calculations are collapsed initially', await example.getAttribute('open') === null && await parts.count() === 0);
   await example.locator('summary').click();
   await slope.waitFor({ state: 'attached' });
   const [positive, negative] = await parts.allTextContents();
+  const minusInput = await example.locator('.calculation-argument annotation').textContent();
   const [plusText, minusText] = [positive, negative].map(text => text.split('\\nobreak ').at(-1));
   const partNumber = text => Number(text.replace('{,}', '.'));
   check('The X4 substitution shows the arguments and both evaluated functions from the solve',
     positive.includes('\\left(' + display(rounded.y[0][0]) + '\\right)') && Math.abs(partNumber(plusText) - rounded.plus[0][3]) < 1e-6 &&
-    negative.includes('\\left(' + display(rounded.factors[0][3]) + '\\right)') && Math.abs(partNumber(minusText) - rounded.minus[0][3]) < 1e-6 &&
+    minusInput.includes('\\left(' + display(rounded.factors[0][3]) + '\\right)') &&
+    negative.includes('\\left(' + display(rounded.equation_fields.minus[3].projection.value) + '\\right)') &&
+    Math.abs(partNumber(minusText) - rounded.minus[0][3]) < 1e-6 &&
     await example.getByRole('link', { name: /^Внешний фактор F[134]$/ }).count() === 3);
   check('The worked slope subtracts the negative part and uses the actual divisor',
     (await slope.textContent()).includes('\\frac{' + plusText + '-\\left(' + minusText + '\\right)}{' + display(rounded.config.scales[3]) + '}') &&
