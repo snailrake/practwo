@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts/core';
-import { LineChart, RadarChart, GraphChart } from 'echarts/charts';
+import { LineChart, RadarChart, GraphChart, CustomChart } from 'echarts/charts';
 import { TooltipComponent, GridComponent, LegendComponent, MarkLineComponent, AriaComponent } from 'echarts/components';
-import { LabelLayout } from 'echarts/features';
 import { CanvasRenderer } from 'echarts/renderers';
+import type { CustomSeriesOption } from 'echarts/charts';
 import type { EChartsCoreOption } from 'echarts/core';
 import type { Result } from './types';
 
-echarts.use([LineChart, RadarChart, GraphChart, TooltipComponent, GridComponent, LegendComponent, MarkLineComponent, AriaComponent, CanvasRenderer, LabelLayout]);
+echarts.use([LineChart, RadarChart, GraphChart, CustomChart, TooltipComponent, GridComponent, LegendComponent, MarkLineComponent, AriaComponent, CanvasRenderer]);
 export const short = ['Испарение', 'Ликвидация', 'Площадь', 'Подход облака', 'Первичное облако', 'Вторичное облако', 'Госпитализация', 'Техника', 'Раствор', 'Ресурсы', 'Оповещение'];
 export const fmt = (x: number, digits = 4) => {
   if (!Number.isFinite(x)) return '–';
@@ -125,13 +125,51 @@ export function QuarterRadars({ r }: { r: Result }) {
 export function ProfileLegend({ r, hidden, toggle, activeIndex = null }: {
   r: Result; hidden: number[]; toggle: (index: number) => void; activeIndex?: number | null;
 }) {
-  return <ul className="profile-legend" aria-label="Обозначения линий">{profileIndices(r, activeIndex).map((index, position) =>
-    <li key={index}><button type="button" aria-pressed={index === activeIndex || !hidden.includes(index)}
+  return <ul className="profile-legend" aria-label="Обозначения линий">{profileIndices(r, activeIndex).map((index, position) => {
+    const color = profileColors[position] ?? profileColors[0];
+    return <li key={index}><button type="button" aria-pressed={index === activeIndex || !hidden.includes(index)}
       onClick={() => toggle(index)} disabled={index === activeIndex}>
-      <span className="legend-line" style={{ color: profileColors[position] ?? profileColors[0] }} />
-      <b>{chartSymbol('X', index)}</b><span>{r.state_names[index]}</span>
-    </button></li>
-  )}</ul>;
+      <span className="legend-line" style={{ color }} />
+      <b style={{ color }}>{chartSymbol('X', index)}</b><span>{r.state_names[index]}</span>
+    </button></li>;
+  })}</ul>;
+}
+
+type ProfileEndpoint = { symbol: string; value: number; color: string };
+
+function profileEndLabels(time: number, endpoints: ProfileEndpoint[]): CustomSeriesOption {
+  return {
+    id: 'profile-labels', type: 'custom', coordinateSystem: 'cartesian2d', data: [[time, endpoints[0].value]],
+    encode: { x: 0, y: 1 }, silent: true, clip: false, animation: false, z: 6, tooltip: { show: false },
+    renderItem({ coordSys }, api) {
+      const plot = coordSys as { type: 'cartesian2d'; y: number; height: number };
+      const top = plot.y;
+      const bottom = top + plot.height;
+      const labels = endpoints.map(endpoint => {
+        const [x, y] = api.coord([time, endpoint.value]);
+        return { ...endpoint, x, y, labelY: y };
+      }).sort((a, b) => a.y - b.y);
+      const gap = Math.min(19, plot.height / Math.max(1, labels.length - 1));
+
+      // Average the two passes to keep a cluster centered near its actual endpoints.
+      let previous = top - gap;
+      const down = labels.map(({ y }, index) => {
+        previous = Math.min(bottom - (labels.length - 1 - index) * gap, Math.max(y, previous + gap));
+        return previous;
+      });
+      let next = bottom + gap;
+      for (let index = labels.length - 1; index >= 0; index--) {
+        next = Math.max(top + index * gap, Math.min(labels[index].y, next - gap));
+        labels[index].labelY = (down[index] + next) / 2;
+      }
+      return { type: 'group', children: labels.flatMap(({ symbol, x, y, labelY, color }) => [
+        { type: 'polyline' as const, shape: { points: [[x, y], [x + 3, y], [x + 13, labelY]] },
+          style: { stroke: color, opacity: .75, lineWidth: 1.25 } },
+        { type: 'text' as const, style: { text: symbol, x: x + 17, y: labelY, verticalAlign: 'middle',
+          fill: color, fontFamily: mono, fontWeight: 'bold', fontSize: 15 } },
+      ]) };
+    },
+  };
 }
 
 export function AllProfiles({ r, cursor, comparison, compact = false, activeIndex = null, height = 380, hidden = [] }: {
@@ -150,7 +188,8 @@ export function AllProfiles({ r, cursor, comparison, compact = false, activeInde
   }));
   const firstVisible = indices.find(index => index === activeIndex || !hidden.includes(index));
   const selected: Record<string, boolean> = {};
-  const series = indices.flatMap((index, position) => {
+  const endpoints: ProfileEndpoint[] = [];
+  const series: object[] = indices.flatMap((index, position) => {
     const symbol = chartSymbol('X', index);
     const label = symbol + ' · ' + r.state_names[index];
     const [current, reference] = lineOption(r, index, index === firstVisible ? cursor : undefined, comparison).series;
@@ -158,23 +197,25 @@ export function AllProfiles({ r, cursor, comparison, compact = false, activeInde
     const focused = activeIndex === index;
     const subdued = activeIndex !== null && !focused;
     selected[label] = focused || !hidden.includes(index);
+    if (selected[label]) endpoints.push({ symbol, value: end[index], color });
     return [
       { ...current, name: label, itemStyle: { color }, z: focused ? 5 : curved[position] ? 3 : 2,
-        endLabel: { show: !compact, formatter: symbol, color, fontWeight: 600, fontSize: 11, distance: 7 },
-        labelLayout: { moveOverlap: 'shiftY' },
         lineStyle: { color, width: focused ? 3 : compact ? 1.4 : curved[position] ? 3 : 1.6,
           opacity: subdued ? compact ? .22 : .5 : curved[position] ? 1 : .65 } },
       ...(reference ? [{ ...reference, name: label, itemStyle: { color }, lineStyle: { color, type: 'dashed', width: 1 } }] : []),
     ];
   });
+  if (!compact && endpoints.length) series.push(profileEndLabels(r.t.at(-1)!, endpoints));
   return <Chart label={indices.length === 11 ? 'Все 11 временных зависимостей' : 'Временные зависимости'} height={height} option={{
     ...base, series,
-      grid: { ...base.grid, ...(compact ? { top: 12, bottom: 20, right: 14, left: 4 } : { right: 42, bottom: 42 }) },
+      grid: { ...base.grid, ...(compact ? { top: 12, bottom: 20, right: 14, left: 4 } : { right: 56, bottom: 42 }) },
       tooltip: compact ? { show: false } : base.tooltip,
       xAxis: { ...base.xAxis, splitNumber: compact ? 2 : 5,
-        axisLabel: { fontSize: compact ? 9 : 11, formatter: (v: number) => fmt(v, compact ? 2 : 3), hideOverlap: true }, ...(compact ? { name: '' } : {}) },
+        nameTextStyle: { fontSize: 12, fontWeight: 600 },
+        axisLabel: { fontSize: compact ? 9 : 12, formatter: (v: number) => fmt(v, compact ? 2 : 3), hideOverlap: true }, ...(compact ? { name: '' } : {}) },
       yAxis: { ...base.yAxis, splitNumber: compact ? 4 : 5,
-        axisLabel: { fontSize: compact ? 9 : 11, formatter: (v: number) => fmt(v, compact ? 2 : 5), hideOverlap: true }, ...(compact ? { name: '' } : {}) },
+        nameTextStyle: { fontSize: 12, fontWeight: 600 },
+        axisLabel: { fontSize: compact ? 9 : 12, formatter: (v: number) => fmt(v, compact ? 2 : 5), hideOverlap: true }, ...(compact ? { name: '' } : {}) },
       legend: { show: false, selected },
   }} />;
 }

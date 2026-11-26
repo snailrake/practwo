@@ -173,13 +173,15 @@ main { min-width: 0; }
 .overview-chart-anchor { margin-bottom: 12px; }
 .overview-chart-space { height: var(--overview-chart-height); }
 .overview-chart { background: #fff; }
-.profile-legend { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 235px), 1fr)); gap: 2px 12px; padding: 8px 0 0; margin: 0; border-top: 1px solid #dce2e0; }
-.profile-legend button { display: grid; grid-template-columns: 14px 3ch minmax(0, 1fr); align-items: baseline; gap: 7px; width: 100%; height: 100%; text-align: left; border: 0; padding: 6px 4px; font-size: 11px; line-height: 1.4; }
+.profile-legend { list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 3px 14px; padding: 10px 0 0; margin: 0; border-top: 1px solid #dce2e0; }
+.profile-legend button { display: grid; grid-template-columns: 20px 28px minmax(0, 1fr); align-items: baseline; gap: 8px; width: 100%; height: 100%; text-align: left; border: 0; padding: 7px 4px; font-size: 14px; line-height: 1.35; }
+.profile-legend button > b { font-size: 16px; }
+.profile-legend button > span:last-child { overflow-wrap: anywhere; }
 .profile-legend button:hover { background: #f1f6f4; }
 .profile-legend button[aria-pressed=false] { color: #65716f; text-decoration: line-through; }
-.profile-legend button[aria-pressed=false] > .legend-line { opacity: .38; }
+.profile-legend button[aria-pressed=false] > :is(.legend-line, b) { opacity: .45; }
 .profile-legend button:disabled { opacity: 1; background: #edf4f1; }
-.legend-line { display: block; height: 0; border-top: 2px solid; align-self: start; margin-top: .6em; }
+.legend-line { display: block; height: 0; border-top: 3px solid; align-self: start; margin-top: .55em; }
 .overview-mini { position: fixed; z-index: 3; height: 300px; padding: 12px; border: 1px solid #c6cecc; display: grid; grid-template-rows: 40px minmax(0, 1fr) 30px; gap: 6px; }
 .overview-mini-heading { min-width: 0; }
 .overview-mini-heading h3, .overview-mini-heading p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -331,7 +333,7 @@ footer { display: flex; justify-content: space-between; gap: 16px; padding: 24px
   .editor-result-plot { border-left: 0; border-top: 1px solid #ddd; padding: 9px 0 0; }
 }
 @media(max-width: 800px) {
-  .profile { --overview-chart-height: clamp(210px, 32dvh, 280px); }
+  .profile { --overview-chart-height: clamp(265px, 33dvh, 305px); }
   .app { padding: 20px 16px 0; }
   h1 { font-size: 19px; letter-spacing: -.5px; }
   .workbench { display: flex; flex-direction: column; gap: 24px; padding-top: 20px; }
@@ -367,7 +369,8 @@ footer { display: flex; justify-content: space-between; gap: 16px; padding: 24px
 }
 @media (min-width: 375px) and (max-width: 520px) {
   .profile-legend { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .profile-legend button { grid-template-columns: 10px 3ch minmax(0, 1fr); gap: 4px; }
+  .profile-legend button { grid-template-columns: 12px 25px minmax(0, 1fr); gap: 5px; font-size: 13px; }
+  .profile-legend button > b { font-size: 15px; }
 }
 @media (min-width: 1001px) {
   .function-editor { --editor-chart-height: clamp(180px, calc(100dvh - 478px), 420px); }
