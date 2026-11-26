@@ -125,7 +125,7 @@
       "passed": true
     },
     {
-      "name": "All 19 cubic coefficient rows match the integrated model",
+      "name": "All 49 cubic coefficient rows match the integrated model",
       "passed": true
     },
     {
@@ -165,16 +165,16 @@
       "passed": true
     }
   ],
-  "pages": 38,
+  "pages": 39,
   "passed": true,
   "files": {
     "Практическая_работа_2_Химический_выброс.docx": {
-      "bytes": 1509788,
-      "sha256": "aaf9a023104ef253e93c070acf23c99e758b5d8346828bd2faf18415476ac641"
+      "bytes": 1550493,
+      "sha256": "8c4a2307e66045248f01c05bce79071d472c3ead4fde00556df8bad902c59965"
     },
     "Практическая_работа_2_Химический_выброс.pdf": {
-      "bytes": 1785282,
-      "sha256": "dd6470a54ab0a7bf91c5fb00eae1bf504df1ba8d8e949f079200d009734bf346"
+      "bytes": 1871391,
+      "sha256": "37926bab36659983adb5bf66c27d610827565e162f821aff61cff4c7d77fd4a0"
     }
   },
   "visual_review": "Each final rendered page separately reviewed; no clipping or detached captions accepted."

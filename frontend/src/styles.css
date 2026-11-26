@@ -29,7 +29,30 @@ sub { font-size: .75em; }
 .app { max-width: 1480px; padding: 30px 32px 0; margin: auto; }
 .header { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding-bottom: 24px; border-bottom: 1px solid #111; }
 .subtitle { font-size: 11px; color: #666; margin: 8px 0 0; }
-.header-links { display: flex; flex-wrap: wrap; gap: 16px; font-size: 11px; padding-top: 4px; flex-shrink: 0; }
+.header-links { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; font-size: 11px; padding-top: 4px; flex-shrink: 0; }
+.back-to-system { padding: 3px 7px; white-space: nowrap; }
+.general-system { padding: 28px 0 36px; }
+.general-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px 24px; flex-wrap: wrap; padding-bottom: 22px; }
+.general-heading h2 { font-size: 24px; margin: 0; letter-spacing: -.5px; }
+.general-heading p { color: #555; margin: 4px 0 0; }
+.calculation-entry { white-space: nowrap; padding: 7px 12px; width: fit-content; }
+.calculation-entry span { margin-left: 5px; }
+.general-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(205px, 245px); gap: clamp(20px, 3vw, 42px); }
+.general-equations { border-top: 1px solid #111; min-width: 0; }
+.general-equation { padding: 12px 0; margin: 0; border-color: #e0e4e2; }
+.general-equation h3 { display: flex; align-items: baseline; gap: 9px; font-size: 13px; }
+.general-equation h3 .math-inline { color: #245e55; }
+.general-equation .source-equation { margin: 3px 0 0; }
+.general-notation { border-top: 1px solid #111; padding-top: 12px; font-size: 12px; }
+.general-notation dl { margin: 8px 0 16px; }
+.general-notation dl div { display: grid; grid-template-columns: 3ch minmax(0, 1fr); gap: 8px; padding: 6px 0; align-items: baseline; }
+.general-notation dt { color: #245e55; }
+.general-notation dd { margin: 0; }
+.general-notation p { color: #555; }
+@media (max-width: 800px) {
+  .general-system { padding-top: 20px; }
+  .general-layout { grid-template-columns: minmax(0, 1fr); }
+}
 .workbench { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 32px; padding-top: 24px; }
 .sidebar { min-width: 0; border-right: 1px solid #ccc; padding-right: 24px; }
 section { padding-bottom: 24px; margin-bottom: 24px; border-bottom: 1px solid #ccc; min-width: 0; }
@@ -66,6 +89,7 @@ details[open] > summary { margin-bottom: 8px; }
 .part-switch { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
 .part-switch button[aria-pressed=true] { background: #245e55; border-color: #245e55; color: #fff; }
 .formula-part { border: 1px solid #7d9d96; background: #f6faf9; min-width: 0; padding: 7px 8px 4px; }
+.component-caption { margin: 1px 4px 0; color: #30554f; font-size: 12px; }
 .equation-divisor { border-top: 1px solid #222; margin-top: 5px; padding: 3px 0; text-align: center; font-size: 11px; }
 .equation-divisor > span:first-child { margin-right: 4px; color: #555; }
 .formula-toolbar { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 8px 14px; margin-top: 8px; }
@@ -183,6 +207,13 @@ main { min-width: 0; }
 .equation-row h3 > span:last-child { color: #555; font-size: 12px; font-weight: 400; }
 .equation-fields, .equation-fields .polynomial-terms { justify-content: flex-start; }
 .equation-fields { min-height: 0; padding-top: 6px; }
+.component-heading { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-top: 4px; font-size: var(--formula-size); }
+.component-heading > .math-inline { min-width: 0; }
+.component-picker { display: flex; align-items: center; gap: 6px; color: #30554f; font-size: 11px; }
+.component-picker select { width: auto; padding: 3px 5px; background: #f6faf9; }
+.component-equation { margin: 3px 0 8px; padding-left: 8px; border-inline-start: 2px solid #d6e3df; }
+.component-equation .polynomial-terms { padding-inline-start: 0; }
+.component-equation .polynomial-terms > :first-child { margin-inline-start: 0; }
 .equation-fields .polynomial-terms { padding-inline-start: .65em; }
 .equation-fields .polynomial-terms > :first-child { margin-inline-start: -.65em; }
 .polynomial-input { margin: -2px 4px 12px; padding: 4px 0 4px 8px; border-inline-start: 2px solid #d3e0dd; color: #3d4d49; font-size: 15px; overflow-x: auto; }
@@ -209,6 +240,10 @@ main { min-width: 0; }
 .calculation-values > .math-inline { font-size: 16px; }
 .calculation-equations .math-block, .calculation-slope .math-block { font-size: clamp(18px, 15px + 0.5vw, 24px); }
 .calculation-argument .math-block { font-size: clamp(16px, 13px + 0.45vw, 20px); color: #3d4d49; }
+.calculation-components { margin-top: 8px; padding-left: 10px; border-inline-start: 2px solid #d3e0dd; }
+.calculation-components > div { display: flex; align-items: baseline; column-gap: 10px; flex-wrap: wrap; }
+.calculation-components > div > span:first-child { color: #3d4d49; font-size: 11px; }
+.calculation-components .math-block { font-size: clamp(16px, 13px + .45vw, 20px); line-height: 1.55; }
 .calculation-example .katex-display, .calculation-example .katex-display > .katex { text-align: left; }
 .calculation-example .katex-display { margin: 2px 0; }
 .calculation-example .katex-display > .katex { white-space: normal; line-height: 1.5; }

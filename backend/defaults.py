@@ -2,6 +2,8 @@
 import ast
 from copy import deepcopy
 from decimal import Decimal, ROUND_HALF_UP
+import json
+from pathlib import Path
 
 from .expressions import Expression
 
@@ -15,28 +17,13 @@ STATE_NAMES = [
 FACTOR_NAMES = ["Объём выброса", "Персонал объекта", "Скорость ветра",
                 "Температура воздуха", "Задержка оповещения", "Население", "Убежища"]
 RADAR_LIMITS = [1, 1.25, 1, 1.25, 0.25, 0.75, 0.75, 1, 1, 0.5, 1]
-SYSTEM4_NAMES = STATE_NAMES[:6] + [
-    "Получившие амбулаторную помощь", "Размещённые в стационаре и реанимации",
-] + STATE_NAMES[7:] + ["Ранее подвергавшиеся воздействию транспортных выбросов"]
-SYSTEM4_FACTORS = FACTOR_NAMES + ["Площадь фонового загрязнения от транспорта"]
+SYSTEM4 = json.loads(Path(__file__).with_name("system4.json").read_text(encoding="utf-8"))
+SYSTEM4_NAMES = SYSTEM4["state_names"]
+SYSTEM4_FACTORS = SYSTEM4["factor_names"]
 # The 11 named outputs in the assignment, in the numbering of system (4).
 SYSTEM4_PROFILES = [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11]
 SYSTEM4_RADAR_LIMITS = RADAR_LIMITS[:6] + [0.75] + RADAR_LIMITS[6:] + [0.5]
-SYSTEM4_ARGUMENTS = [
-    ("F1", "X10 X11 F3 F4"),
-    ("X3 X7 X8 X9 F1", "X10 X11"),
-    ("X1 F1 F3 F4", ""),
-    ("X1", "F1 F3 F4"),
-    ("X1 F2", ""),
-    ("F5 F6", "X4 X11 X12 F7"),
-    ("X5 X6 X13", ""),
-    ("X5 X6 X11 X13", ""),
-    ("X3", "X10 X11"),
-    ("X3 X9", ""),
-    ("X3 F6", ""),
-    ("X11 F6 F7", "F5"),
-    ("X3 F6 F8", ""),
-]
+SYSTEM4_ARGUMENTS = SYSTEM4["arguments"]
 PLUS = [
     "0.0186*X2*F1**0.8",
     "0.085*X3*X7*X8*F1**0.8/F5",
@@ -77,6 +64,11 @@ def polynomial(argument, a, b, c, d):
         for value in (a, b, c, d)
     )
     return f'({a})*{argument}**3+({b})*{argument}**2+({c})*{argument}+({d})'
+
+
+def polynomial_sum(terms):
+    sources = [polynomial(argument, *coefficients) for argument, coefficients in terms]
+    return sources[0] if len(sources) == 1 else '+'.join(f'({part})' for part in sources)
 
 
 class UnitArgument(ast.NodeTransformer):
@@ -199,33 +191,49 @@ def system4_cubic():
         scales=SYSTEM4_RADAR_LIMITS.copy(),
         radar_limits=SYSTEM4_RADAR_LIMITS.copy(),
     )
-    # One cubic per present part. Its argument is the main input plus a tenth
-    # of the sum of the other inputs on that line of figure (4).
-    for kind, main_inputs, coefficients in (
-        ('plus', 'F1 X3 F3 X1 F2 F6 X13 X11 X3 X3 X3 X11 F8'.split(), [
-            (2.92, -7.92, 8.97, -2.36), (1.61, 3.53, -2.74, -1.33),
-            (-.49, 2.43, -4.34, 1.54), (19.09, -40.12, 29.81, -6.57),
-            (-1.05, 2.60, -2.13, .58), (-3.59, 9.75, -8.98, 2.33),
-            (-18.03, 26.06, -8.93, .97), (1.44, -3.30, -1.77, 1.63),
-            (6.51, -8.74, 5.63, -2.15), (17.82, -27.91, 15.51, -3.24),
-            (-.38, .56, .30, -.52), (-384.71, 413.15, -134.73, 13.28),
-            (-.53, 1.06, -.44, .14),
-        ]),
-        ('minus', 'X10 X10 - F4 - X4 - - X10 - - F5 -'.split(), [
-            (.01, 0, 0, -.01), (-1.03, 1.30, -.63, .09), None,
-            (.01, 0, 0, -.02), None, (.50, -1.30, 1.34, -.45),
-            None, None, (.01, 0, 0, 0), None, None, (.01, 0, .01, -.01), None,
-        ]),
-    ):
-        column = 0 if kind == 'plus' else 1
+    # One coefficient tuple per input, in the order of figure (4).
+    # These classroom coefficients approximate the earlier simulated example.
+    coefficients = {
+        'plus': [
+            [(2.92, -7.92, 8.97, -2.36)],
+            [(-.86, 7.67, -2.66, -2.18), (8.98, -10.24, 4.02, 0),
+             (-8.41, 7.75, -1.63, 0), (-9.23, 14.82, -6.66, 0), (1, -2.35, 2.33, 0)],
+            [(-.12, .27, -.29, 1.51), (-.14, .35, -.39, 0),
+             (-.55, 2.35, -3.64, 0), (.35, -.38, -.43, 0)],
+            [(19.09, -40.12, 29.81, -6.57)],
+            [(-.19, .34, -.21, .58), (-1.22, 2.81, -2.13, 0)],
+            [(-2.97, 5.89, -3.95, 2.83), (-3.87, 9.76, -8.33, 0)],
+            [(-14.04, 5.86, -.51, .44), (-1.03, 1.44, -.37, 0), (-22.43, 25.59, -6.28, 0)],
+            [(-.77, .33, -.43, 1.82), (.07, -.12, -.32, 0),
+             (1.68, -3.07, -2.34, 0), (-.95, .78, -.60, 0)],
+            [(6.51, -8.74, 5.63, -2.15)],
+            [(18.89, -25.97, 12.76, -4.52), (9.96, -17.46, 10.36, 0)],
+            [(-.33, .43, .38, -.51), (-.06, .12, -.03, 0)],
+            [(-312.72, 226.89, -43.83, 219.59), (-12.53, 24.69, -15.60, 0),
+             (-887.52, 1661.05, -1034.08, 0)],
+            [(-.01, .02, .01, .08), (-.01, .02, .01, 0), (-.53, .86, -.20, 0)],
+        ],
+        'minus': [
+            [(.01, .01, 0, -.02), (.01, -.01, .01, 0), (-.01, .02, -.01, 0), (.01, -.03, .03, 0)],
+            [(-.97, 1.10, -.50, .07), (.64, -.55, .11, 0)],
+            [],
+            [(.01, -.02, .02, -.05), (.01, -.02, .02, 0), (.01, -.01, .03, 0)],
+            [],
+            [(.53, -1.13, 1.02, .02), (-.07, .07, 0, 0), (-.02, .03, .01, 0), (-1.43, 2.65, -1.61, 0)],
+            [],
+            [],
+            [(.01, 0, 0, 0), (-.02, .02, -.01, 0)],
+            [],
+            [],
+            [(.01, 0, .01, -.01)],
+            [],
+        ],
+    }
+    for column, (kind, rows) in enumerate(coefficients.items()):
         parts = []
-        for arguments, main_input, values in zip(SYSTEM4_ARGUMENTS, main_inputs, coefficients):
-            if values is None:
-                parts.append('0')
-                continue
-            other = [name for name in arguments[column].split() if name != main_input]
-            argument = f'({main_input}+0.1*({"+".join(other)}))' if other else main_input
-            parts.append(polynomial(argument, *values))
+        for arguments, values in zip(SYSTEM4_ARGUMENTS, rows, strict=True):
+            terms = zip(arguments[column].split(), values, strict=True)
+            parts.append(polynomial_sum(terms) if values else '0')
         config[kind] = parts
     config['factors'] = [
         polynomial('t', *values) for values in [

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { variableTex } from './InlineFormula';
 import { MathFormula } from './Math';
 import type { EquationFields, Result, ResultStatus } from './types';
 
@@ -39,21 +40,38 @@ function evaluationTex(name: string, expression: string, value: string) {
   return name + '=' + expression + (expression === value ? '' : approx + value);
 }
 
-function evaluatedPart(fields: EquationFields, result: Result, name: string, value: string) {
-  const projection = fields.projection;
-  if (projection?.value == null || !fields.coefficients) {
-    return { substitution: null, formula: evaluationTex(name, substitute(fields.tex, result), value) };
-  }
-  const input = numberTex(projection.value, 12);
-  const terms = fields.coefficients.flatMap((coefficient, i) => {
+function substitutePolynomial(coefficients: number[], input: string) {
+  const terms = coefficients.flatMap((coefficient, i) => {
     if (coefficient === 0) return [];
     const power = 3 - i;
     const term = numberTex(coefficient) + (power ? '\\cdot\\left(' + input + '\\right)' + (power > 1 ? '^{' + power + '}' : '') : '');
     return [term];
   });
+  return (terms.join('+') || '0').replace(/\+-(?=\d)/g, '-');
+}
+
+function evaluatedPart(fields: EquationFields, result: Result, name: string, value: string) {
+  const components = fields.components;
+  if (components?.every(part => part.value != null)) {
+    const lines = components.map(part => {
+      const input = numberTex(part.argument === 't' ? result.t[0]
+        : initialValue(result, part.argument[0], Number(part.argument.slice(1)) - 1), 12);
+      const numeric = numberTex(part.value!, 10);
+      const expression = substitutePolynomial(part.coefficients, input);
+      return { argument: part.argument, expression: expression + (expression === numeric ? '' : approx + numeric), numeric };
+    });
+    return { lines, substitution: null, formula: evaluationTex(name,
+      lines.map(line => '\\left(' + line.numeric + '\\right)').join('+'), value) };
+  }
+  const projection = fields.projection;
+  if (projection?.value == null || !fields.coefficients) {
+    return { lines: [], substitution: null, formula: evaluationTex(name, substitute(fields.tex, result), value) };
+  }
+  const input = numberTex(projection.value, 12);
   return {
+    lines: [],
     substitution: evaluationTex(fields.argument + '(0)', substitute(projection.tex, result), input),
-    formula: evaluationTex(name, (terms.join('+') || '0').replace(/\+-(?=\d)/g, '-'), value),
+    formula: evaluationTex(name, substitutePolynomial(fields.coefficients, input), value),
   };
 }
 
@@ -89,6 +107,11 @@ function StateCalculation({ result, index }: { result: Result; index: number }) 
     <div className="calculation-equations">
       {[positive, negative].map((part, i) => part && <div key={i}>
         {part.substitution && <div className="calculation-argument"><MathFormula block source={part.substitution} /></div>}
+        {part.lines.length > 0 && <div className="calculation-components">{part.lines.map(line =>
+          <div key={line.argument} data-argument={line.argument}>
+            <span>Слагаемое по <MathFormula linkVariables source={variableTex(line.argument)} /></span>
+            <MathFormula block wrap source={line.expression} />
+          </div>)}</div>}
         <MathFormula block source={part.formula} />
       </div>)}
     </div>

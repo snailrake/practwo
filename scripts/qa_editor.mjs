@@ -35,7 +35,9 @@ const importConfig = async config => {
   await page.waitForTimeout(80); await ready();
 };
 try {
-  await page.goto(url); await ready();
+  await page.goto(url);
+  await page.getByRole('button',{name:'Перейти к расчёту',exact:true}).click();
+  await ready();
   const first = page.getByRole('group', { name: 'Первая часть X1', exact: true });
   const firstCubic = first.getByLabel('Коэффициент a', { exact: true });
   const displayedA = await firstCubic.inputValue();
@@ -56,15 +58,16 @@ try {
   await example.locator('summary').click();
   await slope.waitFor({ state: 'attached' });
   const [positive, negative] = await parts.allTextContents();
-  const minusInput = await example.locator('.calculation-argument annotation').textContent();
+  const componentWork = example.locator('.calculation-components > div');
   const [plusText, minusText] = [positive, negative].map(text => text.split('\\nobreak ').at(-1));
   const partNumber = text => Number(text.replace('{,}', '.'));
   check('The X4 substitution shows the arguments and both evaluated functions from the solve',
     positive.includes('\\left(' + display(rounded.y[0][0]) + '\\right)') && Math.abs(partNumber(plusText) - rounded.plus[0][3]) < 1e-6 &&
-    minusInput.startsWith('x(0)=') && minusInput.includes('\\left(' + display(rounded.factors[0][3]) + '\\right)') &&
-    negative.includes('\\left(' + display(rounded.equation_fields.minus[3].projection.value) + '\\right)') &&
+    await componentWork.count() === 3 &&
+    (await example.locator('.calculation-components [data-argument=F4] .math-block annotation').textContent()).includes('\\left(' + display(rounded.factors[0][3]) + '\\right)') &&
+    negative.includes('\\left(' + String(Number(rounded.equation_fields.minus[3].components[2].value.toPrecision(10))).replace('.', '{,}') + '\\right)') &&
     Math.abs(partNumber(minusText) - rounded.minus[0][3]) < 1e-6 &&
-    await example.getByRole('link', { name: /^Внешний фактор F[134]$/ }).count() === 3);
+    await example.locator('.calculation-values').first().getByRole('link', { name: /^Внешний фактор F[134]$/ }).count() === 3);
   check('The worked slope subtracts the negative part and uses the actual divisor',
     (await slope.textContent()).includes('\\frac{' + plusText + '-\\left(' + minusText + '\\right)}{' + display(rounded.config.scales[3]) + '}') &&
     (await slope.textContent()).endsWith(display(rounded.derivatives[0][3])));
@@ -81,10 +84,22 @@ try {
     (await slope.textContent()).endsWith(display(recalculated.derivatives[0][3])) &&
     recalculated.derivatives[0][3] !== rounded.derivatives[0][3] &&
     (await example.locator('.calculation-points annotation').last().textContent()).endsWith(display(recalculated.y.at(-1)[3])));
+  await tab('Зависимости');
+  await selectPart('minus');
+  const detailedArgument = page.getByLabel('По горизонтали', { exact: true });
+  await detailedArgument.selectOption('F3');
+  const nextA = await coefficient('a').inputValue();
+  await coefficient('a').fill(String(Number(nextA) + .02));
+  const detailed = await exportResult();
+  const editedTerms = detailed.equation_fields.minus[3].components;
+  check('Editing the F3 cubic independently changes the integrated result',
+    editedTerms[1].argument === 'F3' && editedTerms[1].coefficients[0] === .03 &&
+    [0,2].every(i => JSON.stringify(editedTerms[i].coefficients) === JSON.stringify(recalculated.equation_fields.minus[3].components[i].coefficients)) &&
+    detailed.y.at(-1)[3] !== recalculated.y.at(-1)[3]);
   await page.getByLabel('Модельный пример', { exact: true }).selectOption({ label: 'Кубические зависимости' });
   await ready(); await tab('Зависимости'); await settled();
   const startup = await exportResult();
-  check('First screen is the inline cubic editor without an extra click', await page.getByRole('heading', { name: 'Редактор зависимостей', exact: true }).isVisible() && await page.getByLabel('Вид формулы', { exact: true }).inputValue() === '3');
+  check('The table exercise opens in the inline cubic editor', await page.getByRole('heading', { name: 'Редактор зависимостей', exact: true }).isVisible() && await page.getByLabel('Вид формулы', { exact: true }).inputValue() === '3');
   const startupA = await coefficient('a').inputValue();
   check('All four editable fields are physically inside the formula', await activePart.locator('.inline-formula input').count() === 4 && Number(startupA) !== 0 && await coefficient('d').inputValue() === '0');
   const subtracted = page.locator('.formula-part[data-part=minus]');

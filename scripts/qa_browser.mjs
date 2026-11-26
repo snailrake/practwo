@@ -20,6 +20,7 @@ const importConfig=async(config)=>{
 };
 try{
  await page.goto(baseUrl);
+ await page.getByRole('button',{name:'Перейти к расчёту',exact:true}).click();
  await page.locator('.calculation-status[data-ready=true]').waitFor();
  await selectTab('Все результаты');
  await page.locator('.profile canvas').waitFor();

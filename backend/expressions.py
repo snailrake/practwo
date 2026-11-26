@@ -25,16 +25,20 @@ BINOPS = {ast.Add: operator.add, ast.Sub: operator.sub, ast.Mult: operator.mul,
 
 class Expression:
     def __init__(self, source: str, names: set[str]):
-        if not isinstance(source, str) or not source.strip() or len(source) > 400:
-            raise ModelError("Формула должна содержать от 1 до 400 символов")
+        if not isinstance(source, str) or not source.strip() or len(source) > 512:
+            raise ModelError("Формула должна содержать от 1 до 512 символов")
         self.source = source
         try:
             tree = ast.parse(source, mode="eval")
         except (SyntaxError, RecursionError) as exc:
             raise ModelError("Ошибка записи формулы; степень обозначается **") from exc
         nodes = list(ast.walk(tree))
-        if len(nodes) > 120:
-            raise ModelError("Формула слишком сложная: не более 120 узлов")
+        dependencies = sorted({n.id for n in nodes if isinstance(n, ast.Name) and n.id in names})
+        max_length, max_nodes = (512, 200) if len(dependencies) > 1 else (400, 120)
+        if len(source) > max_length:
+            raise ModelError(f"Формула должна содержать от 1 до {max_length} символов")
+        if len(nodes) > max_nodes:
+            raise ModelError(f"Формула слишком сложная, не более {max_nodes} узлов")
         for node in nodes:
             if isinstance(node, ast.Name):
                 if node.id not in names | set(FUNCTIONS) | {"pi", "e"}:
@@ -58,7 +62,7 @@ class Expression:
                                        ast.Div, ast.Pow, ast.UAdd, ast.USub)):
                 raise ModelError(f"Недопустимая конструкция {type(node).__name__}")
         self.tree = tree.body
-        self.dependencies = sorted({n.id for n in nodes if isinstance(n, ast.Name) and n.id in names})
+        self.dependencies = dependencies
 
     def __call__(self, values: dict[str, float]) -> float:
         def visit(n):

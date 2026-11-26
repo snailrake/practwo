@@ -85,20 +85,16 @@ def test_system4_cubic_has_nonzero_cubes_and_preserves_figure_arguments():
         for i, fields in enumerate(result['equation_fields'][kind]):
             if getattr(exact, kind)[i] == '0':
                 continue
-            coefficients = fields['coefficients']
-            assert coefficients[0] != 0
-            assert coefficients == [round(c, 2) for c in coefficients]
-            assert fields['multiplier'] is None
-            projection = fields['projection']
-            if projection:
-                assert fields['argument'] == 'x'
-                names = Expression(fields['source'], set(inputs)).dependencies
-                main = projection['variable']
-                argument = inputs[main] + .1 * sum(inputs[name] for name in names if name != main)
-                assert projection['value'] == pytest.approx(argument)
-            else:
-                argument = inputs[fields['argument']]
-            assert result[kind][0][i] == pytest.approx(np.polyval(coefficients, argument))
+            assert fields['multiplier'] is None and fields['projection'] is None
+            components = fields['components'] or [fields]
+            expected_inputs = ['t'] if kind == 'factors' else Expression(getattr(exact, kind)[i], set(inputs)).dependencies
+            assert sorted(part['argument'] for part in components) == expected_inputs
+            for part in components:
+                coefficients = part['coefficients']
+                assert coefficients[0] != 0
+                assert coefficients == [round(c, 2) for c in coefficients]
+            expected = sum(np.polyval(part['coefficients'], inputs[part['argument']]) for part in components)
+            assert result[kind][0][i] == pytest.approx(expected)
     trajectory = np.asarray(result['y'])
     assert config.scales == config.radar_limits
     assert np.all((trajectory >= 0) & (trajectory <= config.radar_limits))
@@ -113,6 +109,13 @@ def test_system4_cubic_has_nonzero_cubes_and_preserves_figure_arguments():
     p = preview(PreviewConfig(config=config, kind='plus', index=3, argument='X1'))
     assert p['degree'] == 3
     assert abs(p['points'][100][1] - (p['points'][0][1] + p['points'][-1][1]) / 2) > .1
+    multi = preview(PreviewConfig(config=config, kind='minus', index=3, argument='F3'))
+    assert multi['degree'] == 3
+    parts = result['equation_fields']['minus'][3]['components']
+    assert [part['argument'] for part in parts] == ['F1', 'F3', 'F4']
+    fixed_value = sum(part['value'] for part in parts if part['argument'] != 'F3')
+    for x, value in multi['points']:
+        assert value == pytest.approx(fixed_value + np.polyval(multi['coefficients'], x))
 
 
 @pytest.mark.parametrize('method', ['RK45', 'Radau'])

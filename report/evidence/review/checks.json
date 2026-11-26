@@ -1,6 +1,18 @@
 {
-  "url": "http://127.0.0.1:8037/",
+  "url": "http://127.0.0.1:8041/",
   "checks": [
+    {
+      "name": "The first view shows 13 general equations through a compact calculation button",
+      "passed": true
+    },
+    {
+      "name": "The general equations and entry button fit a phone",
+      "passed": true
+    },
+    {
+      "name": "The general view uses the same ordered arguments as the solver",
+      "passed": true
+    },
     {
       "name": "All 11 curves have their indexed name in the legend",
       "passed": true
@@ -10,7 +22,11 @@
       "passed": true
     },
     {
-      "name": "The default minus part uses x with all four original inputs",
+      "name": "The default minus part displays one editable cubic and all its original inputs",
+      "passed": true
+    },
+    {
+      "name": "Selecting another input displays only its cubic",
       "passed": true
     },
     {
@@ -107,6 +123,10 @@
     },
     {
       "name": "Editing the visible coefficient runs a new solution",
+      "passed": true
+    },
+    {
+      "name": "Returning to the general view preserves the current example",
       "passed": true
     },
     {

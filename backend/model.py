@@ -12,7 +12,7 @@ from scipy.integrate import solve_ivp
 
 from .defaults import (
     STATE_NAMES, FACTOR_NAMES, RADAR_LIMITS, SYSTEM4_NAMES, SYSTEM4_FACTORS,
-    SYSTEM4_RADAR_LIMITS, SYSTEM4_PROFILES, SYSTEM4_ARGUMENTS, polynomial, startup, system4, system4_cubic,
+    SYSTEM4_RADAR_LIMITS, SYSTEM4_PROFILES, SYSTEM4_ARGUMENTS, polynomial, polynomial_sum, startup, system4, system4_cubic,
 )
 from .expressions import Expression, ModelError
 from .notation import equation_fields, equation_tex, system4_equation_tex, to_tex
@@ -220,6 +220,11 @@ def random_scenario(use_system4=False, cubic=False):
                         continue
                     fields = equation_fields(Expression(source, names))
                     weight = random.uniform(low, high)
+                    if fields['components']:
+                        candidate[kind][index] = polynomial_sum(
+                            (part['argument'], [weight * c for c in part['coefficients']])
+                            for part in fields['components'])
+                        continue
                     projection = fields['projection']
                     argument = f"({projection['source']})" if projection else fields['argument']
                     cubic = polynomial(argument, *(weight * c for c in fields['coefficients']))

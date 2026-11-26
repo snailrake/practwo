@@ -3,6 +3,7 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm ci
 COPY frontend/ ./
+COPY backend/system4.json /app/backend/system4.json
 RUN npm run build
 FROM python:3.12-slim
 WORKDIR /app

@@ -1,9 +1,15 @@
-import { defineConfig } from 'vite';
+import { defineConfig, searchForWorkspaceRoot } from 'vite';
+
+const system4File = decodeURIComponent(new URL('../backend/system4.json', import.meta.url).pathname)
+  .replace(/^\/([A-Za-z]:\/)/, '$1');
 export default defineConfig(({ mode }) => ({
   base: './',
   publicDir: mode === 'pages' ? 'public-pages' : 'public',
   define: { __BROWSER_PYTHON__: JSON.stringify(mode === 'pages') },
   worker: { format: 'es' },
-  server: { proxy: { '/api': 'http://127.0.0.1:8000' } },
+  server: {
+    proxy: { '/api': 'http://127.0.0.1:8000' },
+    fs: { allow: [searchForWorkspaceRoot('.'), system4File] },
+  },
   build: { outDir: mode === 'pages' ? 'pages-dist' : 'dist', chunkSizeWarningLimit: 1200 },
 }));

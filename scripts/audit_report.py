@@ -33,7 +33,8 @@ def check_report():
 
     check('ZIP integrity', ZipFile(docx).testzip() is None)
     manifest=json.loads((REPORT/'evidence/system4-report-manifest.json').read_text('utf8'))
-    check('All formulas are native editable Office Math', len(d._element.body.xpath('.//m:oMath')) == manifest['native_math'] == 66)
+    check('All formulas are native editable Office Math',
+          len(d._element.body.xpath('.//m:oMath')) == manifest['native_math'] == 28 + 2*len(manifest['functions']))
     check('13 real inline figures', len(d.inline_shapes) == 13)
     figure_numbers = [int(m.group(1)) for p in paragraphs if (m := re.match(r'^Рисунок (\d+) –', p))]
     table_numbers = [int(m.group(1)) for p in paragraphs if (m := re.fullmatch(r'Таблица (\d+)', p))]
@@ -89,9 +90,9 @@ def check_report():
         expected=['X'+str(i+1)]*2+['f'+str(i+1)]+plus.split()
         if minus:expected+=['f'+str(i+1)]+minus.split()
         check('Exact figure argument list for X'+str(i+1),pairs==expected)
-    functions=next(t for t in d.tables if t.cell(0,0).text=='Часть' and len(t.columns)==6 and t.cell(0,5).text=='Аргумент x')
-    check('All 19 cubic coefficient rows match the integrated model',len(functions.rows)==20 and all(
-        functions.cell(row+1,k+1).text==f'{v:.2f}'.replace('.',',')
+    functions=next(t for t in d.tables if t.cell(0,0).text=='Часть' and len(t.columns)==6 and t.cell(0,1).text=='Вход')
+    check('All 49 cubic coefficient rows match the integrated model',len(functions.rows)==50 and len(manifest['functions'])==49 and all(
+        functions.cell(row+1,k+2).text==f'{v:.2f}'.replace('.',',')
         for row,record in enumerate(manifest['functions']) for k,v in enumerate(record['coefficients'])))
     check('Report configuration matches the current numerical evidence',manifest['fingerprint']==data[0]['fingerprint'])
     check('A4 and source margins retained', abs(d.sections[0].page_width.cm - 21) < .01 and all(abs(a-b) < .01 for a,b in zip([d.sections[0].top_margin.cm,d.sections[0].right_margin.cm,d.sections[0].bottom_margin.cm,d.sections[0].left_margin.cm],[2,1.5,2,3])))

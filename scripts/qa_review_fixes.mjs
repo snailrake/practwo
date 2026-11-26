@@ -34,8 +34,27 @@ async function cropBounds(name,first,last){
  crops[name]=[Math.max(0,Math.floor(Math.min(main.x,a.x)-4)),Math.max(0,Math.floor(a.y-4)),Math.ceil(main.x+main.width),Math.min(page.viewportSize().height,Math.ceil(Math.max(a.y+a.height,b.y+b.height)+4))];
 }
 try{
- await page.goto(url);await ready();
+ await page.goto(url);
+ const enter=page.getByRole('button',{name:'Перейти к расчёту',exact:true});
+ await enter.waitFor();
+ const general=page.locator('.general-system');
+ const generalFormulas=await general.locator('.source-equation annotation').allTextContents();
+ check('The first view shows 13 general equations through a compact calculation button',
+   generalFormulas.length===13 && await general.locator('input, canvas').count()===0 &&
+   await enter.evaluate(el=>el.offsetWidth<220 && el.offsetHeight<=40));
+ await cropBounds('general',general.locator('.general-heading'),general.locator('.general-equation').nth(4));
+ await page.screenshot({path:path.join(output,'general.png')});
+ await page.setViewportSize({width:390,height:900});await page.evaluate(()=>document.fonts.ready);
+ check('The general equations and entry button fit a phone', await enter.isVisible() &&
+   await general.locator('.math-block').evaluateAll(blocks=>blocks.every(el=>el.scrollWidth<=el.clientWidth+1)));
+ await page.screenshot({path:path.join(output,'general-mobile.png')});
+ await page.setViewportSize({width:1366,height:950});
+ await enter.click();await ready();
  const base=await exported();
+ check('The general view uses the same ordered arguments as the solver',
+   JSON.stringify(generalFormulas)===JSON.stringify(base.source_equations.map(({tex})=>'\\displaystyle '+tex
+     .replaceAll('\\left[','\\bigl[').replaceAll('\\right]','\\bigr]').replaceAll('\\left(','(').replaceAll('\\right)',')')
+     .replaceAll(',',',\\allowbreak '))));
  await page.evaluate(()=>scrollTo(0,0));
  const legend=page.locator('.profile-legend');
  check('All 11 curves have their indexed name in the legend',
@@ -47,11 +66,16 @@ try{
  await page.evaluate(()=>scrollTo(0,0));
  await page.screenshot({path:path.join(output,'overview.png')});
  const part=page.getByRole('group',{name:'Вычитаемая часть X1',exact:true});
- check('The default minus part uses x with all four original inputs',
-   (await part.locator('.polynomial-input a').count())===4 &&
-   (await part.locator('.polynomial-input').textContent()).trim().startsWith('x=') &&
-   base.equation_fields.minus[0].argument==='x' &&
-   base.equation_fields.minus[0].multiplier===null && base.equation_fields.minus[0].projection.value===.34);
+ const arg=part.getByRole('combobox',{name:'Аргумент кубика. Вычитаемая часть X1',exact:true});
+ check('The default minus part displays one editable cubic and all its original inputs',
+   await part.locator('.component-equation input').count()===4 &&
+   JSON.stringify(await arg.locator('option').allTextContents())===JSON.stringify(['X10','X11','F3','F4']) &&
+   JSON.stringify(base.equation_fields.minus[0].components.map(term=>term.argument))===JSON.stringify(['X10','X11','F3','F4']) &&
+   base.equation_fields.minus[0].components.every(term=>term.coefficients[0]!==0));
+ await arg.selectOption('F3');
+ check('Selecting another input displays only its cubic',await part.locator('.component-equation input').count()===4&&
+   Number(await part.getByRole('textbox',{name:'Коэффициент a',exact:true}).inputValue())===base.equation_fields.minus[0].components[2].coefficients[0]);
+ await arg.selectOption('X10');
  check('Default normalization equals the declared radar bounds',JSON.stringify(base.config.scales)===JSON.stringify(base.config.radar_limits));
  const t=base.t,y=base.y,indices=base.profile_indices;
  const values=y.flatMap(r=>indices.map(i=>r[i]));const span=Math.max(...values)-Math.min(...values);
@@ -111,6 +135,9 @@ try{
  await input.fill('19.10');await input.press('Tab');await page.waitForTimeout(900);await ready();
  const edited=await exported();
  check('Editing the visible coefficient runs a new solution',edited.config.plus[3]!==base.config.plus[3]&&edited.y.at(-1)[3]!==base.y.at(-1)[3]);
+ await page.getByRole('button',{name:'← Система (4)',exact:true}).click();
+ await enter.click();await ready();
+ check('Returning to the general view preserves the current example', (await exported()).fingerprint===edited.fingerprint);
  await importConfig(base.config);await showRow(3);
  await page.locator('.overview-mini').waitFor();
  check('The left preview works after replacing a scenario',await page.locator('.overview-mini').isVisible());

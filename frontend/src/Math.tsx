@@ -33,8 +33,8 @@ export function MathFormula({ source, block = false, linkVariables = false, wrap
   return <span className={block ? 'math-block' : 'math-inline'} dangerouslySetInnerHTML={{ __html: html }} />;
 }
 
-export function SourceEquation({ source }: { source: string }) {
+export function SourceEquation({ source, linkVariables = true }: { source: string; linkVariables?: boolean }) {
   const breakable = source.replaceAll('\\left[', '\\bigl[').replaceAll('\\right]', '\\bigr]')
     .replaceAll('\\left(', '(').replaceAll('\\right)', ')').replaceAll(',', ',\\allowbreak ');
-  return <div className="source-equation"><MathFormula block linkVariables wrap source={breakable} /></div>;
+  return <div className="source-equation"><MathFormula block linkVariables={linkVariables} wrap source={breakable} /></div>;
 }

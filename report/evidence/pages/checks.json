@@ -1,5 +1,5 @@
 {
-  "url": "http://127.0.0.1:8036/pages-dist/",
+  "url": "http://127.0.0.1:8042/pages-dist/",
   "checks": [
     {
       "name": "All results starts with the combined plot",
@@ -118,6 +118,10 @@
       "passed": true
     },
     {
+      "name": "Published Python source matches repository: system4.json",
+      "passed": true
+    },
+    {
       "name": "Actual WebAssembly interpreter and SciPy are present",
       "passed": true
     },
@@ -158,6 +162,6 @@
     "platform": "emscripten",
     "engine": "WebAssembly"
   },
-  "load_ms": 16809.513199999998,
+  "load_ms": 17495.6797,
   "max_scaled_difference": 1.8554545494496828e-16
 }

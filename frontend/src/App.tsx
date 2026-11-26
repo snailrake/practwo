@@ -8,6 +8,7 @@ import { EquationList } from './EquationList';
 import { useSimulation } from './useSimulation';
 import { OverviewChart } from './OverviewChart';
 import { RadarLimits } from './RadarLimits';
+import { SystemOverview } from './SystemOverview';
 
 const tabs = ['Все результаты', 'Зависимости', 'Внешние факторы', 'Лепестковые диаграммы'];
 const clone = <T,>(value: T): T => structuredClone(value);
@@ -28,7 +29,19 @@ function download(name: string, value: string, type = 'application/json') {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+function SiteHeader({ onBack }: { onBack?: () => void }) {
+  return <header className="header">
+    <div><h1>Моделирование химического выброса</h1>
+      <p className="subtitle">Практическая работа № 2 · {onBack ? 'Частный случай' : 'Системная динамика'}</p></div>
+    <div className="header-links">
+      {onBack && <button type="button" className="back-to-system" onClick={onBack}>← Система (4)</button>}
+      <a href={reportURL('docx')}>Отчёт DOCX ↓</a><a href={reportURL('pdf')}>PDF ↓</a>
+    </div>
+  </header>;
+}
+
 export function App() {
+  const [showCalculation, setShowCalculation] = useState(false);
   const [presetData, setPresetData] = useState<PresetData | null>(null);
   const [config, setConfig] = useState<Config | null>(null);
   const [scenarioDefaults, setScenarioDefaults] = useState<Config | null>(null);
@@ -51,6 +64,7 @@ export function App() {
   const sidebar = useRef<HTMLElement>(null);
   const sidebarEnd = useRef<HTMLDivElement>(null);
   const loaded = useRef(false);
+  const navigationRequested = useRef(false);
   const latestConfig = useRef(config);
   latestConfig.current = config;
   const isSystem4 = config?.initial.length === 13;
@@ -64,6 +78,11 @@ export function App() {
 
   useEffect(() => { if (result) setFrame(result.t.length - 1); }, [result]);
   useEffect(() => { setVerification(null); }, [config]);
+  useEffect(() => {
+    if (!navigationRequested.current) return;
+    navigationRequested.current = false;
+    document.getElementById(showCalculation ? 'calculation-start' : 'general-system-title')?.focus({ preventScroll: true });
+  }, [showCalculation]);
   useEffect(() => {
     if (!definitionJump) return;
     const target = document.getElementById(definitionJump.id);
@@ -90,15 +109,16 @@ export function App() {
     setDefinitionJump({ id });
   }
   useEffect(() => {
-    if (loaded.current) return;
-    loaded.current = true;
+    if (!showCalculation) return;
     const unsubscribe = onRuntimeProgress(setRuntimeProgress);
+    if (loaded.current) return unsubscribe;
+    loaded.current = true;
     call<PresetData>('/api/presets').then(data => {
       setPresetData(data);
       setScenarioDefaults(clone(data.system4_cubic)); setConfig(clone(data.system4_cubic));
     }).catch(e => setError(e.message));
     return unsubscribe;
-  }, []);
+  }, [showCalculation]);
   function update<K extends keyof Config>(key: K, value: Config[K]) {
     setConfig(c => c ? { ...c, [key]: value, name: key === 'name' ? String(value) : 'Пользовательский сценарий' } : c);
   }
@@ -186,7 +206,21 @@ export function App() {
     const rows = result.t.map((t, i) => [t, ...result.y[i], ...result.factors[i]].map(v => v.toPrecision(12)).join(';'));
     download('chemical-release-results.csv', '\ufeff' + headers.join(';') + '\n' + rows.join('\n'), 'text/csv;charset=utf-8');
   }
-  if (!config || !presetData) return <div className="app loading"><h1>Моделирование химического выброса</h1><p role={error ? 'alert' : 'status'}>{error || (browserPython ? runtimeProgress : 'Соединение с Python-сервером…')}</p>{browserPython && <p className="note">Первый запуск загружает Python и научные библиотеки. Ничего устанавливать на компьютер не нужно.</p>}{error && <button onClick={() => window.location.reload()}>Повторить загрузку</button>}</div>;
+  function navigate(calculation: boolean) {
+    navigationRequested.current = true;
+    window.scrollTo(0, 0);
+    setShowCalculation(calculation);
+  }
+  if (!showCalculation) return <div className="app">
+    <SiteHeader />
+    <SystemOverview onCalculate={() => navigate(true)} />
+  </div>;
+  if (!config || !presetData) return <div className="app">
+    <SiteHeader onBack={() => navigate(false)} />
+    <main className="loading" id="calculation-start" tabIndex={-1}><p role={error ? 'alert' : 'status'}>{error || (browserPython ? runtimeProgress : 'Соединение с Python-сервером…')}</p>
+      {error && <button onClick={() => window.location.reload()}>Повторить загрузку</button>}
+    </main>
+  </div>;
 
   const names = isSystem4 ? presetData.system4_state_names : presetData.state_names;
   const factorNames = isSystem4 ? presetData.system4_factor_names : presetData.factor_names;
@@ -214,10 +248,7 @@ export function App() {
   }
 
   return <div className={formulaView ? 'app formula-view' : 'app'} onClick={followDefinition} onFocusCapture={followEditorFocus}>
-    <header className="header">
-      <div><h1>Моделирование химического выброса</h1><p className="subtitle">Системная динамика · 11 характеристик · Python / SciPy{browserPython ? ' · В браузере' : ''}</p></div>
-      <div className="header-links"><a href={reportURL('docx')}>Отчёт DOCX ↓</a><a href={reportURL('pdf')}>PDF ↓</a></div>
-    </header>
+    <SiteHeader onBack={() => navigate(false)} />
     <div className="workbench">
       <aside className="sidebar" ref={sidebar}>
         <section>
@@ -263,7 +294,7 @@ export function App() {
         <p className="scope-note">Учебная модель в относительной шкале. Для прогноза реальной аварии нужна калибровка по данным объекта.</p>
         <div ref={sidebarEnd} />
       </aside>
-      <main>
+      <main id="calculation-start" tabIndex={-1}>
         <nav className="tabs" aria-label="Разделы приложения">{tabs.map((name, i) => <button className={tab === i ? 'active' : ''} key={name} onClick={() => setTab(i)} aria-current={tab === i ? 'page' : undefined}>{name}</button>)}</nav>
         {error && <div className="message error" role="alert"><span>{error}</span><button onClick={retry}>Повторить расчёт</button></div>}
         {(dirty || draftPending) && result && !formulaView && <p className="message" role="status">{draftPending ? 'Допишите коэффициент.' : error ? 'Исправьте параметры.' : 'Обновляем результаты автоматически.'} Пока показан последний корректный расчёт.</p>}
@@ -318,12 +349,12 @@ export function App() {
             <details className="plain-details all-equations"><summary>Все уравнения</summary><section><h2>Система уравнений</h2><MathFormula block source={isSystem4 ? '\\frac{dX_i(t)}{dt}=\\frac{f_i^+-f_i^-}{X_i^{\\max}},\\qquad X_i(0)=X_i^0' : '\\frac{dX_i}{d\\tau}=\\frac{f_i^+-f_i^-}{S_i},\\qquad X_i(0)=X_i^0'} /><p className="section-note">{dirty || draftPending ? 'Математическая запись показывает предыдущий расчёт.' : 'Формулы ниже соответствуют выполненному расчёту.'} Изменения в полях автоматически запускают новый расчёт.</p>
               <details className="plain-details"><summary>Синтаксис формул и исходные допущения</summary>
                 <p>В выражениях доступны X1…X{names.length}, F1…F{factorNames.length}, t и константы pi, e. Операции + − * / ** и функции sqrt, exp, log, sin, cos, tanh, abs, min, max. Для внешних факторов допустимы только время и константы.</p>
-                <p>{system4Cubic ? 'Каждая часть системы (4) задана кубическим полиномом. Все входы из рисунка входят в его аргумент.' : isSystem4 ? 'Система (4) сохраняет аргументы рисунка в каждой части. Исходные коэффициенты взяты из таблицы 2 статьи.' : 'Здесь используются формулы учебной таблицы 1 и её нумерация.'} Начальные значения и делители заданы для вычислительного эксперимента.</p>
+                <p>{system4Cubic ? 'В кубическом примере каждому входу соответствует свой полином. Для вычисления части уравнения значения полиномов складываются.' : isSystem4 ? 'Система (4) сохраняет аргументы рисунка в каждой части. Исходные коэффициенты взяты из таблицы 2 статьи.' : 'Здесь используются формулы учебной таблицы 1 и её нумерация.'} Начальные значения и делители заданы для вычислительного эксперимента.</p>
                 <p>Вычитаемая часть берётся со знаком коэффициента из источника. Вычитание отрицательного значения увеличивает производную.</p>
               </details>
               <div className="equation-list">{names.map((n, i) => <div className="equation" key={n}><h3>{symbol('X', i)} {n} <span><MathFormula linkVariables source={divisorTex(i, isSystem4)} /> = {fmt(result.config.scales[i], 6)}</span></h3><MathFormula block linkVariables source={result.source_equations?.[i].tex ?? result.equations_tex[i]} />
-                <label className="formula-input"><span>f⁺ =</span><input aria-label={'Функция плюс X' + (i + 1)} maxLength={400} spellCheck={false} value={config.plus[i]} onChange={e => array('plus', i, e.target.value)} /></label>
-                {(!result.source_equations || result.source_equations[i].has_minus) && <label className="formula-input"><span>f⁻ =</span><input aria-label={'Функция минус X' + (i + 1)} maxLength={400} spellCheck={false} value={config.minus[i]} onChange={e => array('minus', i, e.target.value)} /></label>}
+                <label className="formula-input"><span>f⁺ =</span><input aria-label={'Функция плюс X' + (i + 1)} maxLength={512} spellCheck={false} value={config.plus[i]} onChange={e => array('plus', i, e.target.value)} /></label>
+                {(!result.source_equations || result.source_equations[i].has_minus) && <label className="formula-input"><span>f⁻ =</span><input aria-label={'Функция минус X' + (i + 1)} maxLength={512} spellCheck={false} value={config.minus[i]} onChange={e => array('minus', i, e.target.value)} /></label>}
               </div>)}</div>
             </section></details>
             <details className="plain-details"><summary>Граф зависимостей уравнений</summary><DependencyGraph r={result} /><p className="note">Связи получены из действующих выражений. Ребро означает наличие переменной в формуле, а не доказанный знак её влияния.</p></details>

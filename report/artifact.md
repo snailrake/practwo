@@ -45,10 +45,10 @@ facts, wave screenshots, formula pictures or author names remain.
 ## Source and validation contract
 
 The user's later clarification selects figure (4) as the primary model:
-13 states, 8 factors and complete argument lists. All 19 present parts and
-eight factor profiles are cubic in the demonstration. For each part with
-multiple inputs, the cubic argument is the primary input plus 0.1 times the
-sum of its other inputs. Table 1 and the
+13 states, 8 factors and complete argument lists. The opening screen shows
+the structural equations. The calculation example assigns one cubic to
+each input and sums the contributions within each of the 19 present parts.
+All eight factor profiles are cubic. Table 1 and the
 article's original expressions remain separate reference scenarios.
 The model is (f+ - f-)/Xmax with algebraic signs preserved. Missing parts
 are zero. Numerical coefficients, initial values and normalization are
