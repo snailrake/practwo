@@ -1,5 +1,5 @@
 {
-  "url": "http://127.0.0.1:8041/",
+  "url": "http://127.0.0.1:8044/",
   "checks": [
     {
       "name": "The first view shows 13 general equations through a compact calculation button",
@@ -22,11 +22,11 @@
       "passed": true
     },
     {
-      "name": "The default minus part displays one editable cubic and all its original inputs",
+      "name": "The X1 minus part shows one cubic in X10 and the three fixed inputs",
       "passed": true
     },
     {
-      "name": "Selecting another input displays only its cubic",
+      "name": "All 19 parts in figure (4) have four visible coefficient fields in order",
       "passed": true
     },
     {

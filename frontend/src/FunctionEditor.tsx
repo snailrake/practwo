@@ -3,10 +3,10 @@ import { CalculationDetails } from './CalculationDetails';
 import { Chart, fmt, lineOption } from './Charts';
 import { MathFormula, SourceEquation } from './Math';
 import { call } from './compute';
-import { InlineExpression, PolynomialFields, numeric, replaceLiterals, validNumber, variableTex } from './InlineFormula';
+import { FixedArguments, InlineExpression, PolynomialFields, numeric, replaceLiterals, validNumber, variableTex } from './InlineFormula';
 import type { Editable } from './InlineFormula';
-import { coefficientText, polynomialSource, polynomialSumSource, polynomialValue, roundCoefficient } from './polynomial';
-import type { Config, PolynomialComponent, PolynomialProjection, Result, ResultStatus } from './types';
+import { coefficientText, polynomialSource, polynomialValue, roundCoefficient } from './polynomial';
+import type { Config, PolynomialProjection, Result, ResultStatus } from './types';
 
 type Kind = 'plus' | 'minus' | 'factors';
 type Points = [number, number | null][];
@@ -19,7 +19,6 @@ type Preview = {
   points: Points; fixed: Record<string, number>; reference_x: number;
   reference_y: number | null; coefficients: number[] | null; degree: number | null; factor: PolynomialFactor | null;
   projection?: PolynomialProjection | null;
-  components?: PolynomialComponent[] | null;
 };
 type Form = 'formula' | 0 | 1 | 2 | 3;
 type Props = {
@@ -51,7 +50,6 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
   const ownSource = useRef('');
-  const coefficientArgument = useRef('');
   const autoDomain = useRef(true);
   const source = config[kind][index];
   const domain = customDomain ?? ['0', external ? String(config.t_end) : '1'];
@@ -60,7 +58,6 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
   const polynomial = typeof form === 'number';
   const factor = preview?.factor;
   const projection = preview?.projection;
-  const components = preview?.components;
   const valid = polynomial ? coefficients.every(validNumber) : literals.every(validNumber);
   const domainValid = Number.isFinite(start) && Number.isFinite(end) && start < end && Math.max(Math.abs(start), Math.abs(end)) <= 1e6;
   const sourceCurrent = preview?.source === source && preview?.argument === argument;
@@ -73,12 +70,12 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
       call<Preview>('/api/preview', { config, kind, index, argument, start, end }).then(data => {
         if (!current) return;
         setPreview(data); setPending(false);
-        const preferredArgument = data.projection?.variable ?? data.factor?.argument ?? (data.dependencies.includes(argument) ? argument : data.components?.[0].argument ?? data.dependencies[0]);
-        if (form === null && preferredArgument && preferredArgument !== argument && !external) {
+        const preferredArgument = data.projection?.variable ?? data.factor?.argument ?? (data.dependencies.includes(argument) ? argument : data.dependencies[0]);
+        if ((form === null || config.single_input_cubics) && preferredArgument && preferredArgument !== argument && !external) {
           setArgument(preferredArgument); return;
         }
         const inputs = data.projection?.coefficients ?? data.coefficients;
-        if (ownSource.current !== source || data.components && coefficientArgument.current !== argument) {
+        if (ownSource.current !== source) {
           if (inputs?.every(v => Number.isFinite(v) && Math.abs(v) <= 1e12)) {
             const anchor = data.factor ? polynomialValue(inputs, data.factor.reference_x) : data.reference_y;
             loadCoefficients(inputs, anchor);
@@ -90,7 +87,6 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
             setForm('formula');
           }
           ownSource.current = source;
-          coefficientArgument.current = argument;
         }
         if (autoDomain.current) {
           autoDomain.current = false;
@@ -119,11 +115,8 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
     const next = coefficients.map((value, j) => j === i ? text : value);
     setCoefficients(next);
     if (!next.every(validNumber)) return;
-    const numbers = next.map(numeric);
-    write(components ? polynomialSumSource(components.map(part =>
-      part.argument === argument ? { ...part, coefficients: numbers } : part))
-      : polynomialSource(numbers, projection ? '(' + projection.source + ')' : argument,
-        factor?.source, fixedArguments));
+    write(polynomialSource(next.map(numeric), projection ? '(' + projection.source + ')' : argument,
+      factor?.source, fixedArguments));
   }
 
   function editLiteral(i: number, text: string) {
@@ -161,8 +154,7 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
 
   function changeArgument(next: string) {
     setArgument(next);
-    if (components) setForm(null);
-    if (!fixedArguments && !components && polynomial && valid) write(polynomialSource(values, next, factor?.source));
+    if (!fixedArguments && polynomial && valid) write(polynomialSource(values, next, factor?.source));
   }
 
   function editSource(next: string) {
@@ -174,7 +166,7 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
   const points: Points = useMemo(() => {
     if (!domainValid) return [];
     const scale = factor ? factor.value : 1;
-    if (projection || components) return preview?.argument === argument ? preview.points : [];
+    if (projection) return preview?.argument === argument ? preview.points : [];
     if (!polynomial || !valid || scale === null || source !== polynomialSource(values, argument, factor?.source, fixedArguments)) {
       return sourceCurrent && preview ? preview.points : [];
     }
@@ -184,16 +176,16 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
       const y = value === null ? null : value * scale;
       return [x, y !== null && Math.abs(y) <= 1e12 ? y : null];
     });
-  }, [source, polynomial, coefficients, start, end, preview, factor, projection, components, argument, domainValid, sourceCurrent, valid, fixedArguments]);
+  }, [source, polynomial, coefficients, start, end, preview, factor, projection, argument, domainValid, sourceCurrent, valid, fixedArguments]);
   const firstTerm = values.findIndex(v => v !== 0);
   const degree = polynomial && valid ? firstTerm < 0 ? 0 : 3 - firstTerm : sourceCurrent ? preview.degree : null;
   const type = degree === null ? 'Аналитическая' : forms[Math.min(degree, 3)];
   const active = Math.max(polynomial ? 3 - form : 0, activeCoefficient);
   const prefix = external ? 'F_{' + (index + 1) + '}(t)' : 'f_{' + (index + 1) + '}^{' + (kind === 'plus' ? '+' : '-') + '}';
   return {
-    source, kind, prefix, form, coefficients, literals, template, factor, projection, components, valid, points, type, argument,
+    source, kind, prefix, form, coefficients, literals, template, factor, projection, valid, points, type, argument,
     active, values, sliderLimit: limits[active], domain, start, end, domainValid, error, pending, sourceCurrent,
-    argumentsList: polynomial && !fixedArguments && !components ? variables.filter(name => !factor?.dependencies.includes(name)) : preview?.dependencies.length ? preview.dependencies : variables,
+    argumentsList: polynomial && !fixedArguments ? variables.filter(name => !factor?.dependencies.includes(name)) : preview?.dependencies.length ? preview.dependencies : variables,
     fixed: sourceCurrent ? preview.fixed : {},
     changeForm, changeArgument, editCoefficient, editLiteral, editSource, setActiveCoefficient,
     finishCoefficient(i: number) {
@@ -208,23 +200,25 @@ function useFunctionPart(config: Config, kind: Kind, index: number, onChange: Pr
 
 type Part = ReturnType<typeof useFunctionPart>;
 
-function FormulaPart({ part, name, roundCoefficients }: { part: Part; name: string; roundCoefficients: boolean }) {
+function FormulaPart({ part, name, roundCoefficients, fixed }: {
+  part: Part; name: string; roundCoefficients: boolean; fixed?: Record<string, number>;
+}) {
   const form = part.form;
   const input = part.projection ? 'x' : part.argument;
-  const equation = part.prefix + (part.kind !== 'factors' && typeof form === 'number' && form > 0 && !part.factor ? '(' + variableTex(input) + ')' : '') + '=';
+  const equation = part.prefix + (part.kind !== 'factors' && typeof form === 'number' && form > 0 && !part.factor ? '(' + variableTex(input, true) + ')' : '') + '=';
   return <div className="formula-part" role="group" aria-label={name} data-part={part.kind}>
-    {part.components && <p className="component-caption">Слагаемое по <MathFormula linkVariables source={variableTex(input, true)} /></p>}
     <div className="inline-formula" role="group" aria-label={'Числа в формуле — ' + name}>
       {typeof form === 'number' ? <><span className="polynomial-terms">
         {part.factor && <><MathFormula linkVariables source={equation} /><span className="polynomial-paren">(</span></>}
-        <PolynomialFields round={roundCoefficients} stateTime={!!part.components} values={part.coefficients} argument={input} degree={form}
-          prefix={part.factor || part.components ? undefined : equation}
+        <PolynomialFields round={roundCoefficients} stateTime values={part.coefficients} argument={input} degree={form}
+          prefix={part.factor ? undefined : equation}
           onFocus={part.setActiveCoefficient} onBlur={part.finishCoefficient} onChange={part.editCoefficient} />
         {part.factor && <span className="polynomial-paren">)</span>}
       </span>{part.factor && <span className="polynomial-factor"><MathFormula linkVariables source={'\\displaystyle \\cdot ' + part.factor.tex} /></span>}</> : part.template
         ? <><MathFormula linkVariables source={equation} /><InlineExpression node={part.template.editable.tree} values={part.literals} onChange={part.editLiteral} /></>
         : <span className="formula-loading">{part.error ? 'Откройте запись формулы' : 'Подготавливаем формулу…'}</span>}
     </div>
+    <FixedArguments values={fixed} />
     {part.projection && <p className="polynomial-input"><MathFormula linkVariables source={input + '=' + part.projection.tex} /></p>}
   </div>;
 }
@@ -279,9 +273,9 @@ function FormulaPlot({ part, variableName, index }: { part: Part; variableName: 
     }} />
     {!part.domainValid && <p className="editor-error">Начало диапазона должно быть меньше конца, обе границы по модулю до 10⁶.</p>}
     {part.error && <p className="editor-error" role="status">{part.error}</p>}
-    {(part.form === 'formula' || part.projection || part.components) && part.pending && <p className="note" role="status">Обновляем график…</p>}
+    {(part.form === 'formula' || part.projection) && part.pending && <p className="note" role="status">Обновляем график…</p>}
     {invalidPoints > 0 && <p className="note">Пропуски на графике: {invalidPoints}. В этих точках формула не определена или выходит за численный диапазон.</p>}
-    {(part.form === 'formula' || part.factor || part.projection || part.components) && Object.keys(part.fixed).length > 0 && <details className="fixed-values">
+    {(part.form === 'formula' || part.factor || part.projection) && Object.keys(part.fixed).length > 0 && <details className="fixed-values">
       <summary>Остальные значения взяты в начале расчёта</summary>
       <div>{Object.entries(part.fixed).map(([name, value]) => <span key={name}>{name} = {fmt(value, 6)}</span>)}</div>
     </details>}
@@ -331,7 +325,8 @@ function FormulaWorkspace({ config, names, factors, external = false, result, st
           <button type="button" aria-pressed={side === 'plus'} onClick={() => setSide('plus')}>Первая часть</button>
           {(!sourceEquation || sourceEquation.has_minus) && <button type="button" aria-pressed={side === 'minus'} onClick={() => setSide('minus')}>Вычитаемая часть</button>}
         </div>
-        <FormulaPart key={side} part={part} name={side === 'plus' ? 'Первая часть' : 'Вычитаемая часть'} roundCoefficients={roundCoefficients} />
+        <FormulaPart key={side} part={part} name={side === 'plus' ? 'Первая часть' : 'Вычитаемая часть'} roundCoefficients={roundCoefficients}
+          fixed={result.equation_fields[side][index].fixed_arguments} />
         <div className="equation-divisor"><span>Нормирование</span> <MathFormula linkVariables source={sourceEquation ? 'X_{' + (index + 1) + '}^{\\max}' : 'S_{' + (index + 1) + '}'} /> = {fmt(config.scales[index], 6)}</div>
       </>}
       <div className="formula-toolbar">

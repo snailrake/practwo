@@ -1,5 +1,3 @@
-import type { PolynomialComponent } from './types';
-
 const hundredths = new Intl.NumberFormat('en-US', {
   useGrouping: false, maximumFractionDigits: 2,
 });
@@ -23,11 +21,6 @@ export function polynomialSource(coefficients: number[], argument: string, multi
   // Keep the chosen argument in the editable form even when its coefficient is zero.
   const marker = (preserveArgument || multiplier) && coefficients.slice(0, 3).every(value => value === 0) ? '+0*' + argument : '';
   return multiplier ? `(${expression}${marker})*(${multiplier})` : expression + marker;
-}
-
-export function polynomialSumSource(components: PolynomialComponent[]) {
-  return components.map(({ coefficients, argument }) => '('
-    + polynomialSource(coefficients, argument, undefined, true) + ')').join('+');
 }
 
 export function polynomialValue(coefficients: number[], x: number): number | null {

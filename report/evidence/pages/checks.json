@@ -1,6 +1,10 @@
 {
-  "url": "http://127.0.0.1:8042/pages-dist/",
+  "url": "http://127.0.0.1:8045/pages-dist/",
   "checks": [
+    {
+      "name": "The initial solve recovers after an interrupted package request",
+      "passed": true
+    },
     {
       "name": "All results starts with the combined plot",
       "passed": true
@@ -11,6 +15,14 @@
     },
     {
       "name": "System (4) has editable cubic functions and 8 cubic factor profiles",
+      "passed": true
+    },
+    {
+      "name": "The worker serves the single-input cubic build without a version-independent model request",
+      "passed": true
+    },
+    {
+      "name": "The cubic example matches native Python for all 13 trajectories",
       "passed": true
     },
     {
@@ -162,6 +174,6 @@
     "platform": "emscripten",
     "engine": "WebAssembly"
   },
-  "load_ms": 17495.6797,
+  "load_ms": 15884.9534,
   "max_scaled_difference": 1.8554545494496828e-16
 }

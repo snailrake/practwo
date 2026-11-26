@@ -58,16 +58,13 @@ try {
   await example.locator('summary').click();
   await slope.waitFor({ state: 'attached' });
   const [positive, negative] = await parts.allTextContents();
-  const componentWork = example.locator('.calculation-components > div');
   const [plusText, minusText] = [positive, negative].map(text => text.split('\\nobreak ').at(-1));
-  const partNumber = text => Number(text.replace('{,}', '.'));
-  check('The X4 substitution shows the arguments and both evaluated functions from the solve',
-    positive.includes('\\left(' + display(rounded.y[0][0]) + '\\right)') && Math.abs(partNumber(plusText) - rounded.plus[0][3]) < 1e-6 &&
-    await componentWork.count() === 3 &&
-    (await example.locator('.calculation-components [data-argument=F4] .math-block annotation').textContent()).includes('\\left(' + display(rounded.factors[0][3]) + '\\right)') &&
-    negative.includes('\\left(' + String(Number(rounded.equation_fields.minus[3].components[2].value.toPrecision(10))).replace('.', '{,}') + '\\right)') &&
-    Math.abs(partNumber(minusText) - rounded.minus[0][3]) < 1e-6 &&
-    await example.locator('.calculation-values').first().getByRole('link', { name: /^Внешний фактор F[134]$/ }).count() === 3);
+  check('The X4 substitution uses both cubics and their actual inputs',
+    positive.includes('\\left(' + display(rounded.y[0][0]) + '\\right)') && plusText === display(rounded.plus[0][3]) &&
+    negative.includes('\\left(' + display(rounded.factors[0][3]) + '\\right)') &&
+    minusText === display(rounded.minus[0][3]) &&
+    await example.locator('.calculation-values a[href="#definition-F4"]').count() === 1 &&
+    await x4.locator('.fixed-arguments a[href="#definition-F3"]').count() === 1);
   check('The worked slope subtracts the negative part and uses the actual divisor',
     (await slope.textContent()).includes('\\frac{' + plusText + '-\\left(' + minusText + '\\right)}{' + display(rounded.config.scales[3]) + '}') &&
     (await slope.textContent()).endsWith(display(rounded.derivatives[0][3])));
@@ -87,14 +84,15 @@ try {
   await tab('Зависимости');
   await selectPart('minus');
   const detailedArgument = page.getByLabel('По горизонтали', { exact: true });
-  await detailedArgument.selectOption('F3');
+  await page.waitForFunction(() => document.querySelector('[aria-label="По горизонтали"]')?.value === 'F4');
   const nextA = await coefficient('a').inputValue();
-  await coefficient('a').fill(String(Number(nextA) + .02));
+  const editedA = Number((Number(nextA) + .02).toFixed(2));
+  await coefficient('a').fill(String(editedA));
   const detailed = await exportResult();
-  const editedTerms = detailed.equation_fields.minus[3].components;
-  check('Editing the F3 cubic independently changes the integrated result',
-    editedTerms[1].argument === 'F3' && editedTerms[1].coefficients[0] === .03 &&
-    [0,2].every(i => JSON.stringify(editedTerms[i].coefficients) === JSON.stringify(recalculated.equation_fields.minus[3].components[i].coefficients)) &&
+  const editedCubic = detailed.equation_fields.minus[3];
+  check('Editing the F4 cubic changes the integrated result at the same fixed inputs',
+    await detailedArgument.locator('option').count() === 1 && editedCubic.argument === 'F4' && editedCubic.coefficients[0] === editedA &&
+    JSON.stringify(editedCubic.fixed_arguments) === JSON.stringify(recalculated.equation_fields.minus[3].fixed_arguments) &&
     detailed.y.at(-1)[3] !== recalculated.y.at(-1)[3]);
   await page.getByLabel('Модельный пример', { exact: true }).selectOption({ label: 'Кубические зависимости' });
   await ready(); await tab('Зависимости'); await settled();

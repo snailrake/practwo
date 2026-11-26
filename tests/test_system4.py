@@ -74,10 +74,12 @@ def test_system4_keeps_new_inputs_live_and_supports_cubic_edit():
     assert p['points'][-1][1] > p['points'][0][1]
 
 
-def test_system4_cubic_has_nonzero_cubes_and_preserves_figure_arguments():
+def test_system4_cubic_varies_one_input_and_shows_the_full_figure():
     exact = SimulationConfig(**system4())
     config = SimulationConfig(**system4_cubic())
-    result = simulate(config)  # Checks every part against the figure.
+    result = simulate(config)
+    assert result['source_equations'] == simulate(exact)['source_equations']
+    assert result['config']['single_input_cubics'] is True
     kinds = ('plus', 'minus', 'factors')
     inputs = {'t': 0., **{f'X{i}': v for i, v in enumerate(config.initial, 1)},
               **{f'F{i}': v for i, v in enumerate(result['factors'][0], 1)}}
@@ -86,15 +88,15 @@ def test_system4_cubic_has_nonzero_cubes_and_preserves_figure_arguments():
             if getattr(exact, kind)[i] == '0':
                 continue
             assert fields['multiplier'] is None and fields['projection'] is None
-            components = fields['components'] or [fields]
             expected_inputs = ['t'] if kind == 'factors' else Expression(getattr(exact, kind)[i], set(inputs)).dependencies
-            assert sorted(part['argument'] for part in components) == expected_inputs
-            for part in components:
-                coefficients = part['coefficients']
-                assert coefficients[0] != 0
-                assert coefficients == [round(c, 2) for c in coefficients]
-            expected = sum(np.polyval(part['coefficients'], inputs[part['argument']]) for part in components)
-            assert result[kind][0][i] == pytest.approx(expected)
+            argument = fields['argument']
+            assert argument in expected_inputs
+            assert fields.get('fixed_arguments', {}) == {name: inputs[name] for name in expected_inputs if name != argument}
+            assert Expression(fields['source'], set(inputs)).dependencies == [argument]
+            coefficients = fields['coefficients']
+            assert coefficients[0] != 0
+            assert coefficients == [round(c, 2) for c in coefficients]
+            assert result[kind][0][i] == pytest.approx(np.polyval(coefficients, inputs[argument]))
     trajectory = np.asarray(result['y'])
     assert config.scales == config.radar_limits
     assert np.all((trajectory >= 0) & (trajectory <= config.radar_limits))
@@ -109,13 +111,11 @@ def test_system4_cubic_has_nonzero_cubes_and_preserves_figure_arguments():
     p = preview(PreviewConfig(config=config, kind='plus', index=3, argument='X1'))
     assert p['degree'] == 3
     assert abs(p['points'][100][1] - (p['points'][0][1] + p['points'][-1][1]) / 2) > .1
-    multi = preview(PreviewConfig(config=config, kind='minus', index=3, argument='F3'))
-    assert multi['degree'] == 3
-    parts = result['equation_fields']['minus'][3]['components']
-    assert [part['argument'] for part in parts] == ['F1', 'F3', 'F4']
-    fixed_value = sum(part['value'] for part in parts if part['argument'] != 'F3')
-    for x, value in multi['points']:
-        assert value == pytest.approx(fixed_value + np.polyval(multi['coefficients'], x))
+    slice_preview = preview(PreviewConfig(config=config, kind='minus', index=3, argument='F4'))
+    assert slice_preview['degree'] == 3
+    assert result['equation_fields']['minus'][3]['fixed_arguments'] == {'F1': .4, 'F3': .35}
+    for x, value in slice_preview['points']:
+        assert value == pytest.approx(np.polyval(slice_preview['coefficients'], x))
 
 
 @pytest.mark.parametrize('method', ['RK45', 'Radau'])
@@ -133,6 +133,11 @@ def test_system4_rejects_mixed_dimensions_or_missing_dependencies():
     config["minus"][1] = "-0.31*X9*X10"
     with pytest.raises(ModelError, match=r'f2−.*X10, X11'):
         simulate(SimulationConfig(**config))
+    private = system4_cubic()
+    for expression in ('F2**3', 'X10**3+X11**3', 'X10**4'):
+        private['minus'][0] = expression
+        with pytest.raises(ModelError, match=r'f1−.*X10, X11, F3, F4'):
+            Dynamics(SimulationConfig(**private))
 
 
 def test_system4_available_in_native_and_browser_api():

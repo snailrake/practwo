@@ -63,6 +63,9 @@ def build():
             data = (ROOT/'backend'/name).read_bytes().replace(b'\r\n',b'\n')
             sources[name] = hashlib.sha256(data).hexdigest()
             archive.writestr('backend/'+name,data)
+    worker_assets = ROOT/'frontend/work'
+    worker_assets.mkdir(exist_ok=True)
+    shutil.copy2(model/'model.zip', worker_assets/'model.zip')
     reports = OUT/'report'; reports.mkdir(exist_ok=True)
     for kind in ['docx','pdf']:
         shutil.copy2(ROOT/'report'/('Практическая_работа_2_Химический_выброс.'+kind),reports/('report.'+kind))

@@ -91,7 +91,7 @@ def check_report():
         if minus:expected+=['f'+str(i+1)]+minus.split()
         check('Exact figure argument list for X'+str(i+1),pairs==expected)
     functions=next(t for t in d.tables if t.cell(0,0).text=='Часть' and len(t.columns)==6 and t.cell(0,1).text=='Вход')
-    check('All 49 cubic coefficient rows match the integrated model',len(functions.rows)==50 and len(manifest['functions'])==49 and all(
+    check('All 19 cubic coefficient rows match the integrated model',len(functions.rows)==20 and len(manifest['functions'])==19 and all(
         functions.cell(row+1,k+2).text==f'{v:.2f}'.replace('.',',')
         for row,record in enumerate(manifest['functions']) for k,v in enumerate(record['coefficients'])))
     check('Report configuration matches the current numerical evidence',manifest['fingerprint']==data[0]['fingerprint'])

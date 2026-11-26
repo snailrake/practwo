@@ -1,17 +1,17 @@
 import type { Editable } from './InlineFormula';
 
 export type PolynomialProjection = { source: string; tex: string; variable: string; coefficients: number[]; value: number | null };
-export type PolynomialComponent = { argument: string; coefficients: number[]; value?: number | null };
 
 export type EquationFields = {
   source: string; tex: string; argument: string; coefficients: number[] | null; editable: Editable | null;
   multiplier: { source: string; tex: string } | null;
   projection?: PolynomialProjection | null;
-  components?: PolynomialComponent[] | null;
+  fixed_arguments?: Record<string, number>;
 };
 export type Config = {
   name: string; initial: number[]; scales: number[]; radar_limits?: number[]; factors: string[];
   plus: string[]; minus: string[]; method: 'DOP853' | 'RK45' | 'Radau';
+  single_input_cubics?: true;
   rtol: number; atol: number; samples: number; t_end: number;
 };
 export type Result = {

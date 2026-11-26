@@ -38,8 +38,8 @@ def figures(results, verification):
     fig, axes = plt.subplots(4, 2, figsize=(7.2, 8.3), layout='constrained')
     for i, ax in enumerate(axes.flat):
         ax.plot(t, factors[:, i], color='#111111', lw=2, label='Базовый')
-        if i in {0, 2, 4}:
-            r = results[{0: 3, 2: 1, 4: 2}[i]]
+        if i in {0, 3, 4}:
+            r = results[{0: 3, 3: 1, 4: 2}[i]]
             ax.plot(t, np.array(r['factors'])[:, i], color='#777777', lw=2, ls='--', label='Возмущение')
             ax.legend(fontsize=8, frameon=False)
         ax.set_title(f'F{i+1}  {base["factor_names"][i]}', fontsize=9, loc='left')
@@ -58,10 +58,10 @@ def figures(results, verification):
         ax.set_ylim(0, 1); ax.set_yticks([.25, .5, .75, 1], ['0,25', '0,50', '0,75', '1,00'], fontsize=7)
         ax.set_title(f'Четверть {j+1}   t = {q["t"]:.2f}', fontsize=11, pad=22)
     save(fig, 'system4-radar-four.png')
-    fig, axes = plt.subplots(2, 2, figsize=(7.2, 5.5), layout='constrained')
-    for ax, i in zip(axes.flat, [2, 5, 9, 11]):
+    fig, axes = plt.subplots(2, 2, figsize=(7.2, 5.15), layout='constrained')
+    for ax, i in zip(axes.flat, [3, 5, 9, 11]):
         for j, r in enumerate(results[:3]):
-            ax.plot(t, np.array(r['y'])[:, i], color=COLORS[j], lw=2, ls=['-', '--', ':'][j], label=['Базовый', 'Ветер', 'Задержка'][j])
+            ax.plot(t, np.array(r['y'])[:, i], color=COLORS[j], lw=2, ls=['-', '--', ':'][j], label=['Базовый', 'Температура', 'Задержка'][j])
         ax.set_title(f'X{i+1}  {labels[i]}', loc='left'); ax.grid(alpha=.7); ax.set_xlabel('t')
     handles, names = axes[0, 0].get_legend_handles_labels()
     fig.legend(handles, names, loc='outside lower center', ncol=3, frameon=False)
@@ -95,7 +95,7 @@ def generate():
     base = SimulationConfig(**system4_cubic())
     variants = [base]
     for index, source, name in [
-        (2, '0.23*t**3+0.20*t**2+0.40*t+0.35', 'Изменение ветра F3'),
+        (3, '0.10*t**3-0.40*t**2+0.90', 'Изменение температуры F4'),
         (4, '0.40*t**3-0.20*t**2+0.10*t+0.52', 'Изменение задержки F5'),
         (0, '0.63*t**3+0.05*t**2+0.05*t+0.40', 'Изменение объёма F1'),
     ]:

@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from .expressions import Expression, ModelError
 from .model import SimulationConfig
-from .notation import additive_polynomials, editable_tree, polynomial_coefficients, polynomial_factor, polynomial_projection, to_tex
+from .notation import editable_tree, polynomial_coefficients, polynomial_factor, polynomial_projection, to_tex
 
 class PreviewConfig(BaseModel):
     model_config = ConfigDict(extra='forbid', allow_inf_nan=False)
@@ -44,13 +44,9 @@ def preview(request: PreviewConfig):
             y = None
             invalid += 1
         points.append([float(x), y])
-    components = additive_polynomials(expression)
-    factor = polynomial_factor(expression, values) if not components else None
-    projection = polynomial_projection(expression, values) if request.config.is_system4 and not (components or factor) else None
-    if components:
-        coefficients = next((part['coefficients'] for part in components if part['argument'] == request.argument), None)
-    else:
-        coefficients = factor['coefficients'] if factor and factor['argument'] == request.argument else polynomial_coefficients(expression, request.argument)
+    factor = polynomial_factor(expression, values)
+    projection = polynomial_projection(expression, values) if request.config.is_system4 and not factor else None
+    coefficients = factor['coefficients'] if factor and factor['argument'] == request.argument else polynomial_coefficients(expression, request.argument)
     degree = next((3-i for i, v in enumerate(coefficients) if v != 0), 0) if coefficients is not None else None
     try:
         anchor = expression(values)
@@ -60,4 +56,4 @@ def preview(request: PreviewConfig):
             'argument': request.argument, 'points': points, 'fixed': fixed,
             'reference_x': values.get(request.argument, 0.), 'reference_y': anchor,
             'coefficients': coefficients, 'degree': degree, 'factor': factor, 'projection': projection,
-            'components': components, 'invalid_points': invalid}
+            'invalid_points': invalid}

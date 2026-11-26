@@ -66,11 +66,6 @@ def polynomial(argument, a, b, c, d):
     return f'({a})*{argument}**3+({b})*{argument}**2+({c})*{argument}+({d})'
 
 
-def polynomial_sum(terms):
-    sources = [polynomial(argument, *coefficients) for argument, coefficients in terms]
-    return sources[0] if len(sources) == 1 else '+'.join(f'({part})' for part in sources)
-
-
 class UnitArgument(ast.NodeTransformer):
     def __init__(self, argument):
         self.argument = argument
@@ -187,54 +182,46 @@ def system4_cubic():
     config = deepcopy(BASE)
     config.update(
         name='Система (4) · кубический пример',
+        single_input_cubics=True,
         initial=[.25, .55, .90, .80, .03, .65, .12, .08, .65, .15, .45, .15, .15],
         scales=SYSTEM4_RADAR_LIMITS.copy(),
         radar_limits=SYSTEM4_RADAR_LIMITS.copy(),
     )
-    # One coefficient tuple per input, in the order of figure (4).
-    # These classroom coefficients approximate the earlier simulated example.
-    coefficients = {
+    # Each row specifies one varied argument and its four classroom coefficients.
+    cubics = {
         'plus': [
-            [(2.92, -7.92, 8.97, -2.36)],
-            [(-.86, 7.67, -2.66, -2.18), (8.98, -10.24, 4.02, 0),
-             (-8.41, 7.75, -1.63, 0), (-9.23, 14.82, -6.66, 0), (1, -2.35, 2.33, 0)],
-            [(-.12, .27, -.29, 1.51), (-.14, .35, -.39, 0),
-             (-.55, 2.35, -3.64, 0), (.35, -.38, -.43, 0)],
-            [(19.09, -40.12, 29.81, -6.57)],
-            [(-.19, .34, -.21, .58), (-1.22, 2.81, -2.13, 0)],
-            [(-2.97, 5.89, -3.95, 2.83), (-3.87, 9.76, -8.33, 0)],
-            [(-14.04, 5.86, -.51, .44), (-1.03, 1.44, -.37, 0), (-22.43, 25.59, -6.28, 0)],
-            [(-.77, .33, -.43, 1.82), (.07, -.12, -.32, 0),
-             (1.68, -3.07, -2.34, 0), (-.95, .78, -.60, 0)],
-            [(6.51, -8.74, 5.63, -2.15)],
-            [(18.89, -25.97, 12.76, -4.52), (9.96, -17.46, 10.36, 0)],
-            [(-.33, .43, .38, -.51), (-.06, .12, -.03, 0)],
-            [(-312.72, 226.89, -43.83, 219.59), (-12.53, 24.69, -15.60, 0),
-             (-887.52, 1661.05, -1034.08, 0)],
-            [(-.01, .02, .01, .08), (-.01, .02, .01, 0), (-.53, .86, -.20, 0)],
+            ('F1', 2.92, -7.92, 8.97, -2.36),
+            ('X3', -.19, 5.90, -2.11, -1.39),
+            ('X1', -6.09, 13.08, -9.83, 1.57),
+            ('X1', 19.09, -40.12, 29.81, -6.57),
+            ('X1', -1.87, 3.75, -2.48, .54),
+            ('F5', -78.69, 163.49, -113.09, 25.58),
+            ('X13', -13.62, 15.82, -3.16, .23),
+            ('X11', 21.10, -18.68, 1.41, 1.18),
+            ('X3', 7.15, -9.80, 6.18, -2.25),
+            ('X3', 16.68, -22.46, 11.29, -2.30),
+            ('X3', -.22, .27, .41, -.48),
+            ('X11', -256.81, 179.04, -30.40, 1.03),
+            ('X3', .04, -.03, -.20, .28),
         ],
         'minus': [
-            [(.01, .01, 0, -.02), (.01, -.01, .01, 0), (-.01, .02, -.01, 0), (.01, -.03, .03, 0)],
-            [(-.97, 1.10, -.50, .07), (.64, -.55, .11, 0)],
-            [],
-            [(.01, -.02, .02, -.05), (.01, -.02, .02, 0), (.01, -.01, .03, 0)],
-            [],
-            [(.53, -1.13, 1.02, .02), (-.07, .07, 0, 0), (-.02, .03, .01, 0), (-1.43, 2.65, -1.61, 0)],
-            [],
-            [],
-            [(.01, 0, 0, 0), (-.02, .02, -.01, 0)],
-            [],
-            [],
-            [(.01, 0, .01, -.01)],
-            [],
+            ('X10', .03, -.01, .01, -.01),
+            ('X10', -.96, 1.14, -.53, .07),
+            None,
+            ('F4', -.36, 1.11, -1.12, .37),
+            None,
+            ('X4', .85, -1.71, 1.37, -.35),
+            None,
+            None,
+            ('X10', .01, .02, -.01, 0),
+            None,
+            None,
+            ('F5', .01, 0, .01, -.01),
+            None,
         ],
     }
-    for column, (kind, rows) in enumerate(coefficients.items()):
-        parts = []
-        for arguments, values in zip(SYSTEM4_ARGUMENTS, rows, strict=True):
-            terms = zip(arguments[column].split(), values, strict=True)
-            parts.append(polynomial_sum(terms) if values else '0')
-        config[kind] = parts
+    for kind, rows in cubics.items():
+        config[kind] = [polynomial(*row) if row is not None else '0' for row in rows]
     config['factors'] = [
         polynomial('t', *values) for values in [
             (.60, .05, .05, .40), (.50, .10, .15, .30),

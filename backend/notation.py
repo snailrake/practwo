@@ -237,50 +237,14 @@ def polynomial_projection(expression, values=None):
     return None
 
 
-def additive_polynomials(expression, values=None):
-    """Recognize a sum of single-input polynomials with distinct arguments."""
-    if len(expression.dependencies) < 2:
-        return None
-    components = {}
-
-    def collect(node, sign=1):
-        arguments = {n.id for n in ast.walk(node)
-                     if isinstance(n, ast.Name) and n.id in expression.dependencies}
-        if len(arguments) == 1:
-            argument = arguments.pop()
-            if argument in components:
-                return False
-            part = Expression(ast.unparse(node), {argument})
-            coefficients = polynomial_coefficients(part, argument)
-            if coefficients is None:
-                return False
-            component = {'argument': argument, 'coefficients': [sign * c for c in coefficients]}
-            if values is not None:
-                try:
-                    component['value'] = sign * part(values)
-                except ModelError:
-                    component['value'] = None
-            components[argument] = component
-            return True
-        if isinstance(node, ast.BinOp) and isinstance(node.op, (ast.Add, ast.Sub)):
-            return collect(node.left, sign) and collect(node.right, -sign if isinstance(node.op, ast.Sub) else sign)
-        return False
-
-    try:
-        return list(components.values()) if collect(expression.tree) else None
-    except ModelError:
-        return None
-
-
 def equation_fields(expression, values=None):
-    components = additive_polynomials(expression, values)
-    factor = polynomial_factor(expression) if not components else None
-    projection = polynomial_projection(expression, values) if not (components or factor) else None
+    factor = polynomial_factor(expression)
+    projection = polynomial_projection(expression, values) if not factor else None
     argument = 'x' if projection else factor['argument'] if factor else next(iter(expression.dependencies), '')
     template = projection or factor
     coefficients = template['coefficients'] if template else polynomial_coefficients(expression, argument)
     return {'source': expression.source, 'tex': expression_tex(expression),
             'argument': argument, 'coefficients': coefficients,
-            'projection': projection, 'components': components,
+            'projection': projection,
             'multiplier': {'source': factor['source'], 'tex': factor['tex']} if factor else None,
-            'editable': editable_tree(expression) if coefficients is None and not components else None}
+            'editable': editable_tree(expression) if coefficients is None else None}

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { CalculationDetails } from './CalculationDetails';
 import { Chart, fmt, lineOption } from './Charts';
-import { InlineExpression, PolynomialFields, numeric, replaceLiterals, validNumber, variableTex } from './InlineFormula';
+import { FixedArguments, InlineExpression, PolynomialFields, numeric, replaceLiterals, validNumber, variableTex } from './InlineFormula';
 import { MathFormula, SourceEquation } from './Math';
-import { coefficientText, polynomialSource, polynomialSumSource } from './polynomial';
+import { coefficientText, polynomialSource } from './polynomial';
 import type { Config, EquationFields, Result, ResultStatus } from './types';
 
 type Kind = keyof Result['equation_fields'];
@@ -30,7 +30,6 @@ export function EquationList(props: Props) {
   const { config, result, roundCoefficients, onChange, onDraft } = props;
   const sourceEquations = result.source_equations;
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
-  const [selectedInputs, setSelectedInputs] = useState<Record<string, string>>({});
   const invalid = Object.values(drafts).some(draft => !draft.values.every(validNumber));
   const status = invalid ? 'draft' : props.status;
   useEffect(() => onDraft(invalid), [invalid, onDraft]);
@@ -50,9 +49,7 @@ export function EquationList(props: Props) {
     const key = kind + index;
     const saved = drafts[key]?.source === source ? drafts[key] : undefined;
     const fields = saved?.fields ?? result.equation_fields[kind][index];
-    const components = fields.components;
     const values = saved?.values ?? fields.coefficients?.map(value => coefficientText(value, roundCoefficients))
-      ?? components?.flatMap(part => part.coefficients.map(value => coefficientText(value, roundCoefficients)))
       ?? fields.editable?.literals.map(literal => literal.text) ?? [];
     const firstTerm = fields.coefficients?.findIndex(value => value !== 0) ?? -1;
     const degree = external || sourceEquations && fields.argument ? 3 : firstTerm < 0 ? 0 : 3 - firstTerm;
@@ -66,41 +63,13 @@ export function EquationList(props: Props) {
       const next = values.map((value, i) => i === slot ? text : value);
       const expression = !next.every(validNumber) ? source : fields.editable
         ? replaceLiterals(fields.source, fields.editable, next)
-        : components ? polynomialSumSource(components.map((part, i) => ({
-          ...part, coefficients: next.slice(i * 4, i * 4 + 4).map(numeric),
-        }))) : polynomialSource(next.map(numeric), fields.projection ? '(' + fields.projection.source + ')' : argument,
+        : polynomialSource(next.map(numeric), fields.projection ? '(' + fields.projection.source + ')' : argument,
           fields.multiplier?.source, !!fields.projection || !!sourceEquations && !external);
       setDrafts(previous => ({ ...previous, [key]: { source: expression, fields, values: next } }));
       if (expression !== source) onChange(kind, index, expression);
     }
 
     if (!saved && source.trim() !== fields.source) return <p className="note">Обновляется {label}…</p>;
-    if (components) {
-      const inputs = components.map(part => variableTex(part.argument, true)).join(',\\allowbreak ');
-      const selected = components.findIndex(part => part.argument === selectedInputs[key]);
-      const position = Math.max(0, selected);
-      const part = components[position];
-      return <div role="group" aria-label={label} key={key}>
-        <div className="component-heading">
-          <MathFormula linkVariables source={prefix.slice(0, -1) + '(' + inputs + ')'} />
-          <label className="component-picker">Кубик по
-            <select value={part.argument} disabled={!values.every(validNumber)} aria-label={'Аргумент кубика. ' + label}
-              onChange={e => {
-                const next = e.target.value;
-                setSelectedInputs(previous => ({ ...previous, [key]: next }));
-              }}>
-              {components.map(item => <option key={item.argument}>{item.argument}</option>)}
-            </select>
-          </label>
-        </div>
-        <div className="inline-formula equation-fields component-equation" role="group" aria-label={'Кубик по ' + part.argument} key={part.argument}>
-          <span className="polynomial-terms">
-            <PolynomialFields round={roundCoefficients} stateTime values={values.slice(position * 4, position * 4 + 4)}
-              argument={part.argument} degree={3} onChange={(slot, value) => edit(position * 4 + slot, value)} />
-          </span>
-        </div>
-      </div>;
-    }
     return <div role="group" aria-label={label} key={key}>
       <div className="inline-formula equation-fields">
       {fields.coefficients ? <span className="polynomial-terms">
@@ -108,11 +77,12 @@ export function EquationList(props: Props) {
         <PolynomialFields round={roundCoefficients} stateTime values={values} argument={argument} degree={degree}
           prefix={fields.multiplier ? undefined : prefix} onChange={edit} />
         {fields.multiplier && <><span>)</span><MathFormula linkVariables source={'\\displaystyle \\cdot ' + fields.multiplier.tex} /></>}
-      </span> : fields.editable && <>
+      </span> : fields.editable ? <>
         <MathFormula linkVariables source={prefix} />
         <InlineExpression stateTime node={fields.editable.tree} values={values} onChange={edit} />
-      </>}
+      </> : <MathFormula block wrap linkVariables source={prefix + fields.tex} />}
       </div>
+      <FixedArguments values={result.equation_fields[kind][index].fixed_arguments} />
       {fields.projection && <p className="polynomial-input"><MathFormula linkVariables source={argument + '=' + fields.projection.tex} /></p>}
     </div>;
   }
@@ -153,13 +123,13 @@ export function EquationList(props: Props) {
         </button>
       </div>
     </div>
-    {roundCoefficients && <p className="section-note">Коэффициенты a, b, c и d округляются до сотых перед расчётом. {props.system4Cubic && 'У функций с несколькими входами можно выбрать, какой кубик редактировать.'}</p>}
+    {roundCoefficients && <p className="section-note">Коэффициенты a, b, c и d округляются до сотых перед расчётом.</p>}
     <p className="section-note">Нажмите на X или F в формуле, чтобы перейти к его уравнению.</p>
     {sourceEquations ? <details className="plain-details system4-source">
       <summary>Источник формул и обозначения</summary>
       <p>Аргументы и индексы взяты с рисунка (4) задания. {props.system4Cubic
-        ? 'В расчётном примере каждому входу соответствует свой кубик. Значения этих кубиков складываются для вычисления части уравнения. Коэффициенты и начальные условия задаются для учебного примера.'
-        : 'Исходные выражения и коэффициенты взяты из таблицы 2 статьи Цвиркуна и соавторов.'}</p>
+        ? 'В частном примере каждая часть задана одним кубиком. Остальные аргументы зафиксированы при t = 0 для этой части. Коэффициенты задают зависимость в этих условиях.'
+        : 'Для сравнения доступны выражения из таблицы 2 статьи Цвиркуна и соавторов.'}</p>
       <p>В строке X₃ делитель X₃₁ᵐᵃˣ прочитан как X₃ᵐᵃˣ.{!props.system4Cubic && ' В строке f₁₃⁺ использован коэффициент k₁₃⁺ = 0,025, указанный в таблице для этой функции.'}</p>
       <p>Начальные значения, делители и профили F(t) заданы для учебного расчёта.</p>
       <a href="https://hi-tech.asu-edu.ru/files/1%2845%29/137-154.pdf#page=8" target="_blank" rel="noreferrer">Статья, таблица 2 ↗</a>

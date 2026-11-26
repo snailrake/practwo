@@ -66,16 +66,16 @@ try{
  await page.evaluate(()=>scrollTo(0,0));
  await page.screenshot({path:path.join(output,'overview.png')});
  const part=page.getByRole('group',{name:'Вычитаемая часть X1',exact:true});
- const arg=part.getByRole('combobox',{name:'Аргумент кубика. Вычитаемая часть X1',exact:true});
- check('The default minus part displays one editable cubic and all its original inputs',
-   await part.locator('.component-equation input').count()===4 &&
-   JSON.stringify(await arg.locator('option').allTextContents())===JSON.stringify(['X10','X11','F3','F4']) &&
-   JSON.stringify(base.equation_fields.minus[0].components.map(term=>term.argument))===JSON.stringify(['X10','X11','F3','F4']) &&
-   base.equation_fields.minus[0].components.every(term=>term.coefficients[0]!==0));
- await arg.selectOption('F3');
- check('Selecting another input displays only its cubic',await part.locator('.component-equation input').count()===4&&
-   Number(await part.getByRole('textbox',{name:'Коэффициент a',exact:true}).inputValue())===base.equation_fields.minus[0].components[2].coefficients[0]);
- await arg.selectOption('X10');
+ const fixed=part.locator('.fixed-arguments a');
+ check('The X1 minus part shows one cubic in X10 and the three fixed inputs',
+   await part.locator('.equation-fields input').count()===4 && await part.locator('select').count()===0 &&
+   await part.locator('.equation-fields a[href="#definition-X10"]').count()===4 &&
+   JSON.stringify(await fixed.evaluateAll(links=>links.map(link=>link.getAttribute('href'))))===JSON.stringify(['#initial-X11','#definition-F3','#definition-F4']) &&
+   base.equation_fields.minus[0].argument==='X10');
+ const stateRows=page.locator('.equation-editor > .equation-row').filter({has:page.locator('h3[id^="definition-X"]')});
+ check('All 19 parts in figure (4) have four visible coefficient fields in order',
+   await stateRows.count()===13 && await stateRows.locator('.equation-fields').count()===19 &&
+   await stateRows.locator('.equation-fields').evaluateAll(parts=>parts.every(node=>node.querySelectorAll('input').length===4)));
  check('Default normalization equals the declared radar bounds',JSON.stringify(base.config.scales)===JSON.stringify(base.config.radar_limits));
  const t=base.t,y=base.y,indices=base.profile_indices;
  const values=y.flatMap(r=>indices.map(i=>r[i]));const span=Math.max(...values)-Math.min(...values);

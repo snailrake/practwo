@@ -70,8 +70,7 @@ export function App() {
   const isSystem4 = config?.initial.length === 13;
   const result = solved?.y[0].length === config?.initial.length ? solved : null;
   const presets = presetData ? [...presetData.presets, presetData.startup, presetData.system4, presetData.system4_cubic] : [];
-  const system4Cubic = isSystem4 && (scenarioDefaults?.name === presetData?.system4_cubic.name ||
-    scenarioDefaults?.name === 'Система (4) · случайный кубический пример');
+  const system4Cubic = config?.single_input_cubics === true;
   const dirty = !!result && configKey(config) !== configKey(result.config);
   const comparison = reference && result && reference.y[0].length === result.y[0].length &&
     reference.config.t_end === result.config.t_end ? reference : null;
@@ -349,7 +348,7 @@ export function App() {
             <details className="plain-details all-equations"><summary>Все уравнения</summary><section><h2>Система уравнений</h2><MathFormula block source={isSystem4 ? '\\frac{dX_i(t)}{dt}=\\frac{f_i^+-f_i^-}{X_i^{\\max}},\\qquad X_i(0)=X_i^0' : '\\frac{dX_i}{d\\tau}=\\frac{f_i^+-f_i^-}{S_i},\\qquad X_i(0)=X_i^0'} /><p className="section-note">{dirty || draftPending ? 'Математическая запись показывает предыдущий расчёт.' : 'Формулы ниже соответствуют выполненному расчёту.'} Изменения в полях автоматически запускают новый расчёт.</p>
               <details className="plain-details"><summary>Синтаксис формул и исходные допущения</summary>
                 <p>В выражениях доступны X1…X{names.length}, F1…F{factorNames.length}, t и константы pi, e. Операции + − * / ** и функции sqrt, exp, log, sin, cos, tanh, abs, min, max. Для внешних факторов допустимы только время и константы.</p>
-                <p>{system4Cubic ? 'В кубическом примере каждому входу соответствует свой полином. Для вычисления части уравнения значения полиномов складываются.' : isSystem4 ? 'Система (4) сохраняет аргументы рисунка в каждой части. Исходные коэффициенты взяты из таблицы 2 статьи.' : 'Здесь используются формулы учебной таблицы 1 и её нумерация.'} Начальные значения и делители заданы для вычислительного эксперимента.</p>
+                <p>{system4Cubic ? 'В частном примере каждая часть задана одним кубиком. Остальные аргументы этой части фиксированы при t = 0.' : isSystem4 ? 'Списки аргументов в каждой части соответствуют рисунку (4).' : 'Здесь используются формулы учебной таблицы 1 и её нумерация.'} Начальные значения и делители заданы для вычислительного эксперимента.</p>
                 <p>Вычитаемая часть берётся со знаком коэффициента из источника. Вычитание отрицательного значения увеличивает производную.</p>
               </details>
               <div className="equation-list">{names.map((n, i) => <div className="equation" key={n}><h3>{symbol('X', i)} {n} <span><MathFormula linkVariables source={divisorTex(i, isSystem4)} /> = {fmt(result.config.scales[i], 6)}</span></h3><MathFormula block linkVariables source={result.source_equations?.[i].tex ?? result.equations_tex[i]} />

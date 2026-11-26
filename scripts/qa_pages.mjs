@@ -8,6 +8,8 @@ const url=process.env.PAGES_URL||'http://127.0.0.1:8002/pages-dist/';
 const output=path.resolve(process.env.PAGES_EVIDENCE||'report/evidence/pages');await fs.mkdir(output,{recursive:true});
 const browser=await chromium.launch({headless:true,...(process.env.CHROME_PATH?{executablePath:process.env.CHROME_PATH}:{})});
 const context=await browser.newContext({viewport:{width:1366,height:1000},deviceScaleFactor:1});
+let coreRequests=0;
+await context.route('**/pydantic_core-*.whl', route=>++coreRequests===1 ? route.abort() : route.continue());
 const page=await context.newPage();page.setDefaultTimeout(180000);
 const checks=[],errors=[],requests=[];let environment={},loadMs=0,largestDifference=0;
 page.on('pageerror',e=>errors.push(e.message));context.on('request',r=>requests.push(r.url()));
@@ -26,13 +28,22 @@ const importConfig=async c=>{
 try{
  const start=performance.now();await page.goto(url);
  await page.getByRole('button',{name:'Перейти к расчёту',exact:true}).click();
- await page.locator('.calculation-status[data-ready=true]').waitFor();
+ const retry=page.getByRole('button',{name:'Повторить загрузку',exact:true});
+ await page.locator('.calculation-status[data-ready=true]').or(retry).waitFor();
+ check('The initial solve recovers after an interrupted package request',coreRequests>=2&&!await retry.isVisible());
  await tab('Все результаты');
  await page.locator('.profile canvas').waitFor();
  check('All results starts with the combined plot',await page.locator('canvas').count()===1);
  const system4 = await exportResult();
  check('Browser Python starts with the 13 equations of system (4)',system4.y[0].length===13&&system4.factors[0].length===8&&await page.locator('.source-equation').count()===13);
  check('System (4) has editable cubic functions and 8 cubic factor profiles',system4.equation_fields.plus[3].coefficients[0]!==0&&system4.equation_fields.factors.every(f=>f.coefficients[0]!==0));
+ check('The worker serves the single-input cubic build without a version-independent model request',
+  system4.config.single_input_cubics===true&&system4.equation_fields.minus[0].argument==='X10'&&
+  !requests.some(u=>new URL(u).pathname.endsWith('/python/model.zip')));
+ const [nativeSystem4]=JSON.parse(await fs.readFile('report/evidence/system4-experiments.json','utf8'));
+ check('The cubic example matches native Python for all 13 trajectories',
+  system4.fingerprint===nativeSystem4.fingerprint && system4.t.length===nativeSystem4.t.length &&
+  system4.y.every((row,j)=>row.every((value,i)=>Math.abs(value-nativeSystem4.y[j][i])<1e-9)));
  check('All 11 selected results use the original figure indices',JSON.stringify(system4.profile_indices)===JSON.stringify([0,1,2,3,4,5,7,8,9,10,11]));
  await page.getByRole('button',{name:'Один график',exact:true}).click();
  await page.getByLabel('Модельный пример',{exact:true}).selectOption('0');await run();

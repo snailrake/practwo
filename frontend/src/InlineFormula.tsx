@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { fmt } from './Charts';
 import { MathFormula } from './Math';
 import { coefficientText, roundCoefficient } from './polynomial';
 
@@ -11,6 +12,15 @@ export const numeric = (text: string) => /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?
 export const validNumber = (text: string) => Number.isFinite(numeric(text)) && Math.abs(numeric(text)) <= 1e12;
 export const variableTex = (name: string, stateTime = false) => name === 't' ? '\\tau' : /^[XF]\d+$/.test(name)
   ? name[0] + '_{' + name.slice(1) + '}' + (stateTime && name[0] === 'X' ? '(t)' : '') : name === 'pi' ? '\\pi' : name;
+
+export function FixedArguments({ values }: { values?: Record<string, number> }) {
+  if (!values) return null;
+  return <div className="fixed-arguments">
+    <span>Фиксированы в этой части</span>
+    {Object.entries(values).map(([name, value]) => <MathFormula key={name} linkVariables
+      source={variableTex(name) + '(0)=' + fmt(value, 6).replace(',', '{,}')} />)}
+  </div>;
+}
 
 function NumberSlot({ label, value, onChange, onFocus, onBlur, symbol, round = false }: {
   label: string; value: string; onChange: (text: string) => void; onFocus?: () => void; onBlur?: () => void; symbol?: string; round?: boolean;

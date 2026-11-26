@@ -12,10 +12,10 @@ from scipy.integrate import solve_ivp
 
 from .defaults import (
     STATE_NAMES, FACTOR_NAMES, RADAR_LIMITS, SYSTEM4_NAMES, SYSTEM4_FACTORS,
-    SYSTEM4_RADAR_LIMITS, SYSTEM4_PROFILES, SYSTEM4_ARGUMENTS, polynomial, polynomial_sum, startup, system4, system4_cubic,
+    SYSTEM4_RADAR_LIMITS, SYSTEM4_PROFILES, SYSTEM4_ARGUMENTS, polynomial, startup, system4, system4_cubic,
 )
 from .expressions import Expression, ModelError
-from .notation import equation_fields, equation_tex, system4_equation_tex, to_tex
+from .notation import equation_fields, equation_tex, polynomial_coefficients, system4_equation_tex, to_tex
 
 
 class SimulationConfig(BaseModel):
@@ -30,6 +30,7 @@ class SimulationConfig(BaseModel):
     factors: list[str] = Field(min_length=7, max_length=8)
     plus: list[str] = Field(min_length=11, max_length=13)
     minus: list[str] = Field(min_length=11, max_length=13)
+    single_input_cubics: Literal[True] | None = None
     method: Literal["DOP853", "RK45", "Radau"] = "DOP853"
     rtol: float = Field(default=1e-8, ge=1e-12, le=1e-3)
     atol: float = Field(default=1e-10, ge=1e-14, le=1e-4)
@@ -51,6 +52,8 @@ class SimulationConfig(BaseModel):
             len(values) != n for values in (self.scales, self.plus, self.minus, self.radar_limits)
         ):
             raise ValueError("Таблица 1 требует 11 состояний и 7 факторов, система (4) — 13 состояний и 8 факторов")
+        if self.single_input_cubics and not self.is_system4:
+            raise ValueError("Кубический пример с одним аргументом относится к системе (4)")
         return self
 
     @field_validator("scales")
@@ -91,10 +94,18 @@ class Dynamics:
     def check_system4(self):
         for i, (parts, arguments) in enumerate(zip(zip(self.plus, self.minus), SYSTEM4_ARGUMENTS), 1):
             for part, expected, sign in zip(parts, arguments, ('+', '−')):
-                if set(part.dependencies) != set(expected.split()):
-                    raise ModelError(f"Система (4), f{i}{sign}: аргументы по рисунку — {expected.replace(' ', ', ') or 'часть отсутствует'}")
-                if not expected and part({}) != 0:
-                    raise ModelError(f"Система (4), f{i}{sign}: эта часть отсутствует на рисунке")
+                label = f"Система (4), f{i}{sign}"
+                allowed = expected.split()
+                if not allowed:
+                    if part.dependencies or part({}) != 0:
+                        raise ModelError(f"{label}: эта часть отсутствует на рисунке")
+                    continue
+                if self.config.single_input_cubics:
+                    if (len(part.dependencies) != 1 or part.dependencies[0] not in allowed
+                            or polynomial_coefficients(part, part.dependencies[0]) is None):
+                        raise ModelError(f"{label}: задайте полином по одному из аргументов: {', '.join(allowed)}")
+                elif set(part.dependencies) != set(allowed):
+                    raise ModelError(f"{label}: аргументы по рисунку — {', '.join(allowed)}")
 
     def components(self, t, y):
         factors = []
@@ -169,7 +180,17 @@ def simulate(config: SimulationConfig, *, step_divisor: int = 100):
     alarm = 11 if config.is_system4 else 10
     if np.min(y[:, alarm]) < 0 or np.max(y[:, alarm]) > 1:
         warnings.append(f"X{alarm+1} выходит за 0…1. Эффективность оповещения за пределами шкалы.")
-    payload = config.model_dump()
+    fields = {"plus": [equation_fields(p, initial_values) for p in dynamics.plus],
+              "minus": [equation_fields(m, initial_values) for m in dynamics.minus],
+              "factors": [equation_fields(f) for f in dynamics.factors]}
+    if config.single_input_cubics:
+        for index, arguments in enumerate(SYSTEM4_ARGUMENTS):
+            for kind, expected in zip(('plus', 'minus'), arguments):
+                field = fields[kind][index]
+                fixed = {name: initial_values[name] for name in expected.split() if name != field['argument']}
+                if fixed:
+                    field['fixed_arguments'] = fixed
+    payload = config.model_dump(exclude_none=True)
     fingerprint_payload = payload.copy()
     if config.radar_limits == RADAR_LIMITS:
         # Older scenario exports implied these display limits.
@@ -186,9 +207,7 @@ def simulate(config: SimulationConfig, *, step_divisor: int = 100):
         "source_equations": [{"tex": system4_equation_tex(i, args), "has_minus": bool(args[1])}
                              for i, args in enumerate(SYSTEM4_ARGUMENTS, 1)] if config.is_system4 else None,
         "equations_tex": [equation_tex(i+1, p, m) for i, (p,m) in enumerate(zip(config.plus, config.minus))],
-        "equation_fields": {"plus": [equation_fields(p, initial_values) for p in dynamics.plus],
-                            "minus": [equation_fields(m, initial_values) for m in dynamics.minus],
-                            "factors": [equation_fields(f) for f in dynamics.factors]},
+        "equation_fields": fields,
         "factors_tex": [to_tex(s) for s in config.factors],
         "dependencies": [{"target": f"X{i+1}", "sources": sorted(set(p.dependencies + m.dependencies))}
                          for i, (p, m) in enumerate(zip(dynamics.plus, dynamics.minus))],
@@ -220,11 +239,6 @@ def random_scenario(use_system4=False, cubic=False):
                         continue
                     fields = equation_fields(Expression(source, names))
                     weight = random.uniform(low, high)
-                    if fields['components']:
-                        candidate[kind][index] = polynomial_sum(
-                            (part['argument'], [weight * c for c in part['coefficients']])
-                            for part in fields['components'])
-                        continue
                     projection = fields['projection']
                     argument = f"({projection['source']})" if projection else fields['argument']
                     cubic = polynomial(argument, *(weight * c for c in fields['coefficients']))
@@ -243,5 +257,5 @@ def random_scenario(use_system4=False, cubic=False):
             chord = profiles[0] + np.asarray(result["t"])[:, None] / config.t_end * (profiles[-1] - profiles[0])
             if np.any(np.max(np.abs(profiles - chord), axis=0) < .05 * np.ptp(profiles)):
                 continue
-        return config.model_dump()
+        return config.model_dump(exclude_none=True)
     raise ModelError("Не удалось подобрать пример в пределах шкал. Нажмите кнопку ещё раз.")
