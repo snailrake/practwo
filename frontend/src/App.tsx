@@ -54,6 +54,7 @@ export function App() {
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
   const [frame, setFrame] = useState(400);
   const [allCharts, setAllCharts] = useState(true);
+  const [showProfileValues, setShowProfileValues] = useState(false);
   const [definitionJump, setDefinitionJump] = useState<{ id: string } | null>(null);
   const [verification, setVerification] = useState<Verification | null>(null);
   const [checking, setChecking] = useState(false);
@@ -228,6 +229,7 @@ export function App() {
   const values = result?.y[Math.min(frame, result.y.length - 1)] ?? config.initial;
   const snapshots = result?.quarters ?? [];
   const timeSymbol = isSystem4 ? 't' : 'τ';
+  const timeLabel = timeSymbol + ' = ' + fmt(cursor, 3);
   const formulaView = tab === 1 || tab === 2;
   const roundCoefficients = system4Cubic || scenarioDefaults?.name === presetData.startup.name ||
     scenarioDefaults?.name === 'Случайный учебный пример';
@@ -304,20 +306,44 @@ export function App() {
           {tab === 0 && <>
             <section className="profile">
               <div className="results-view" role="group" aria-label="Отображение результатов"><button aria-pressed={!allCharts} onClick={() => setAllCharts(false)}>Один график</button><button aria-pressed={allCharts} onClick={() => setAllCharts(true)}>Все 11 графиков</button></div>
-              {allCharts ? <><h2>Все 11 временных зависимостей</h2>
+              {allCharts ? <>
+                <h2>Все 11 временных зависимостей</h2>
                 {isSystem4 && <p className="section-note">11 показателей задания в нумерации системы (4). Амбулаторная помощь X₇ и фоновое воздействие X₁₃ доступны в режиме «Один график».</p>}
-                <OverviewChart key={names.length + '-' + scenarioVersion} r={result} cursor={cursor} comparison={comparison}
-                  activeIndex={previewIndex} status={resultStatus} sidebar={sidebar} sidebarEnd={sidebarEnd} /></> : <>
-              <div className="section-heading"><h2>Временной профиль</h2><select aria-label="Характеристика на основном графике" value={selected} onChange={e => setSelected(+e.target.value)}>{names.map((n, i) => <option key={n} value={i}>{'X' + (i + 1)} · {n}</option>)}</select></div>
-              <h3 className="profile-title">{symbol('X', selected)} {names[selected]}</h3>
-              <Chart label={'Временной профиль X' + (selected + 1)} height={360} option={lineOption(result, selected, cursor, comparison)} />
-              </>}
-              <div className="time-control">
-                <label htmlFor="model-time">Время {timeSymbol}</label>
-                <input id="model-time" aria-label="Момент машинного времени" type="range" min={0} max={result.t.length - 1} value={Math.min(frame, result.t.length - 1)} onChange={e => setFrame(+e.target.value)} />
-                <output>{timeSymbol} = {fmt(cursor, 3)}</output>
+              </> : <div className="section-heading">
+                <h2>Временной профиль</h2>
+                <select aria-label="Характеристика на основном графике" value={selected} onChange={e => setSelected(+e.target.value)}>
+                  {names.map((n, i) => <option key={n} value={i}>{'X' + (i + 1) + ' · ' + n}</option>)}
+                </select>
+              </div>}
+              <div className="profile-time-controls">
+                <div className="time-control">
+                  <label htmlFor="model-time">Время {timeSymbol}</label>
+                  <input id="model-time" aria-label="Момент машинного времени" aria-valuetext={timeLabel} type="range"
+                    min={0} max={result.t.length - 1} value={Math.min(frame, result.t.length - 1)} onChange={e => setFrame(+e.target.value)} />
+                  <output htmlFor="model-time">{fmt(cursor, 3)}</output>
+                </div>
+                <div className="profile-time-actions">
+                  <div className="quarter-controls" role="group" aria-label="Четверти интервала">
+                    <span aria-hidden="true">Четверти</span>
+                    {snapshots.map(q => <button key={q.t} type="button" aria-pressed={cursor === q.t} onClick={() => moveTo(q.t)}>{fmt(q.t, 3)}</button>)}
+                  </div>
+                  <button type="button" className="profile-values-toggle" aria-expanded={showProfileValues} aria-controls="profile-values"
+                    onClick={() => setShowProfileValues(open => !open)}>Значения при {timeLabel}</button>
+                </div>
               </div>
-              <div className="quarter-controls"><span>Четверти:</span>{snapshots.map(q => <button key={q.t} onClick={() => moveTo(q.t)}>{fmt(q.t, 3)}</button>)}</div>
+              <div id="profile-values" hidden={!showProfileValues}>
+                <div className="metrics" role="group" aria-label={'Характеристики при ' + timeLabel}>
+                  {(allCharts ? result.profile_indices : names.map((_, i) => i)).map(i => <button type="button" title={names[i]}
+                    className="metric" aria-pressed={selected === i} key={i} onClick={() => setSelected(i)}>
+                    <span><b>{symbol('X', i)}</b> {labels[i]}</span><strong>{fmt(values[i], 5)}</strong>
+                  </button>)}
+                </div>
+              </div>
+              {allCharts ? <OverviewChart key={names.length + '-' + scenarioVersion} r={result} cursor={cursor} comparison={comparison}
+                activeIndex={previewIndex} status={resultStatus} sidebar={sidebar} sidebarEnd={sidebarEnd} /> : <>
+                <h3 className="profile-title">{symbol('X', selected)} {names[selected]}</h3>
+                <Chart label={'Временной профиль X' + (selected + 1)} height={360} option={lineOption(result, selected, cursor, comparison)} />
+              </>}
               {comparison && <p className="note">Сплошная линия – текущий расчёт, пунктир – эталон.</p>}
               {allCharts && <EquationList key={'profiles-' + scenarioVersion} config={config} result={result} randomizing={randomizing}
                 roundCoefficients={roundCoefficients} status={resultStatus}
@@ -326,7 +352,6 @@ export function App() {
                 onUseArticle={() => applyScenario(presetData.system4)} system4Cubic={system4Cubic} />}
             </section>
             <details className="plain-details comparison-controls"><summary>Сравнение экспериментов</summary><p>Сохраните текущий результат, затем измените параметры. Новый расчёт появится автоматически.</p><div className="button-row"><button disabled={dirty || busy || draftPending} onClick={() => setReference(clone(result))}>Запомнить эталон</button>{reference && <button onClick={() => setReference(null)}>Убрать</button>}</div>{reference && <p>Эталон: {reference.config.name}</p>}</details>
-            <section><h2>Характеристики при {timeSymbol} = {fmt(cursor, 3)}</h2><div className="metrics">{(allCharts ? result.profile_indices : names.map((_, i) => i)).map(i => <button title={names[i]} className={selected === i ? 'metric active-metric' : 'metric'} key={i} onClick={() => setSelected(i)}><span>{symbol('X', i)} {labels[i]}</span><strong>{fmt(values[i], 5)}</strong></button>)}</div></section>
           </>}
           {tab === 2 && <EquationList key={'factors-' + scenarioVersion} factorsOnly config={config} result={result}
             roundCoefficients={roundCoefficients} status={resultStatus} comparison={comparison} onChange={array} onDraft={setDraftPending}
